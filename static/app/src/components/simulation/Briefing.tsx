@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import Button from '@atlaskit/button/new';
 import type { SimulationScenario } from '@shared/domain/types';
 import { EvidenceItem } from './Evidence';
@@ -5,16 +6,23 @@ import { EvidenceItem } from './Evidence';
 export function Briefing({
   scenario,
   onStart,
+  focusOnMount = false,
 }: {
   scenario: SimulationScenario;
   onStart: () => void;
+  /** Set when returning from a discarded rehearsal, whose controls no longer exist. */
+  focusOnMount?: boolean;
 }) {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focusOnMount) titleRef.current?.focus();
+  }, [focusOnMount]);
   const change = scenario.evidence.find((e) => e.id === 'ev-change');
   const service = scenario.evidence.find((e) => e.id === 'ev-service');
   return (
     <div className="briefing">
       <section className="region briefing-main" aria-labelledby="briefing-title">
-        <h2 id="briefing-title" className="briefing-title">
+        <h2 id="briefing-title" className="briefing-title" ref={titleRef} tabIndex={-1}>
           {scenario.title}
         </h2>
         <p className="briefing-summary">{scenario.summary}</p>

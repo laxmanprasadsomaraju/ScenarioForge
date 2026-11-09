@@ -41,6 +41,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Frontend component tests
+        run: npm test --prefix static/app
+
       - name: Build frontend
         run: npm run frontend:build
 

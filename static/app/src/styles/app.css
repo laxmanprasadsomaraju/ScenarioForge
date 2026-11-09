@@ -352,6 +352,9 @@
 }
 .field input,
 .field select {
+  /* Fill the field instead of the input's intrinsic 20-character width. */
+  width: 100%;
+  min-width: 0;
   height: var(--control-h);
   padding: 0 var(--space-sm);
   border: var(--rule-hair) solid var(--color-rule-strong);
@@ -501,6 +504,23 @@ code {
 .skeleton-text {
   width: 70%;
 }
+.screen-skeleton {
+  display: grid;
+  gap: var(--space-lg);
+}
+.screen-skeleton-head {
+  display: grid;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-lg);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.skeleton-title {
+  width: min(16rem, 60%);
+  height: 20px;
+}
+.skeleton-lead {
+  width: min(28rem, 85%);
+}
 @keyframes pulse {
   50% {
     opacity: 0.45;
@@ -563,6 +583,7 @@ code {
   align-items: start;
 }
 .briefing-title {
+  outline: none;
   font-size: var(--text-2xl);
   font-weight: 650;
   line-height: 1.25;
@@ -647,6 +668,10 @@ code {
   display: grid;
   gap: var(--space-md);
   min-width: 0;
+}
+/* The live region stays mounted (so it announces); while empty it leaves the grid flow. */
+.consequence-region:empty {
+  position: absolute;
 }
 .situation-title {
   font-size: var(--text-xl);
@@ -892,6 +917,7 @@ code {
   margin-bottom: var(--space-xl);
 }
 .result-figure {
+  outline: none;
   font-variant-numeric: tabular-nums;
   font-size: var(--text-3xl);
   font-weight: 700;

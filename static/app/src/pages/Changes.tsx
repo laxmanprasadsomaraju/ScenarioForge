@@ -48,6 +48,17 @@ export function ChangesPage() {
   const types = useMemo(() => distinctIssueTypes(issues), [issues]);
   const visible = useMemo(() => filterAndSortIssues(issues, filter, sort), [issues, filter, sort]);
 
+  // Announced through one region that stays mounted, so filtering, refreshing
+  // and failures are all spoken. Loading is announced by the skeleton.
+  let announcement = '';
+  if (state.status === 'error') announcement = 'Jira issues could not be loaded.';
+  else if (state.status === 'ready' && issues.length === 0)
+    announcement = 'No issues in this window.';
+  else if (state.status === 'ready' && visible.length === 0)
+    announcement = 'No issues match these filters.';
+  else if (state.status === 'ready')
+    announcement = `Showing ${visible.length} of ${issues.length} issues.`;
+
   return (
     <>
       <PageHeader
@@ -133,6 +144,9 @@ export function ChangesPage() {
         <h2 id="changes-results" className="visually-hidden">
           Results
         </h2>
+        <p className="visually-hidden" role="status">
+          {announcement}
+        </p>
         {state.status === 'loading' ? <SkeletonRows rows={8} label="Loading Jira issues" /> : null}
         {state.status === 'error' ? <ErrorPanel error={state.error} onRetry={retry} /> : null}
         {state.status === 'ready' && issues.length === 0 ? (
@@ -159,7 +173,7 @@ export function ChangesPage() {
         ) : null}
         {state.status === 'ready' && visible.length > 0 ? (
           <>
-            <p className="results-meta" aria-live="polite">
+            <p className="results-meta">
               Showing {visible.length} of {issues.length}
               {state.data.truncated ? ' (Jira has more; narrow the window to see older ones)' : ''}.
               Fetched {formatAbsolute(state.data.fetchedAt)} with <code>{state.data.jql}</code>

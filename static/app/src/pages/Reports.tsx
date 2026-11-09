@@ -1,5 +1,5 @@
 import Button from '@atlaskit/button/new';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
 import { formatAbsolute } from '../lib/format';
 import { useRouter } from '../lib/router';
@@ -13,6 +13,12 @@ export function ReportsPage() {
   const { completed } = useExercises();
   const { navigate } = useRouter();
   const [open, setOpen] = useState<CompletedExercise | null>(null);
+  // After "Back to reports", return focus to the row the report was opened from.
+  const [returnTo, setReturnTo] = useState<string | null>(null);
+  const returnButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open && returnTo) returnButton.current?.focus();
+  }, [open, returnTo]);
 
   if (open) {
     return (
@@ -20,7 +26,16 @@ export function ReportsPage() {
         <PageHeader
           title="After-action report"
           lead={authBackupRetiredScenario.title}
-          aside={<Button onClick={() => setOpen(null)}>Back to reports</Button>}
+          aside={
+            <Button
+              onClick={() => {
+                setReturnTo(open.session.id);
+                setOpen(null);
+              }}
+            >
+              Back to reports
+            </Button>
+          }
         />
         <Debrief scenario={authBackupRetiredScenario} exercise={open} />
       </>
@@ -72,7 +87,12 @@ export function ReportsPage() {
                   </td>
                   <td className="num">{ex.evaluation.elapsedMinutes} min</td>
                   <td>
-                    <Button appearance="subtle" onClick={() => setOpen(ex)}>
+                    <Button
+                      appearance="subtle"
+                      ref={ex.session.id === returnTo ? returnButton : undefined}
+                      aria-label={`Open report from ${formatAbsolute(ex.completedAt)}`}
+                      onClick={() => setOpen(ex)}
+                    >
                       Open report
                     </Button>
                   </td>

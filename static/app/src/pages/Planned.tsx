@@ -11,7 +11,9 @@ interface PlannedScreen {
   meanwhile: { label: string; route: RouteId };
 }
 
-export const PLANNED: Record<'plans' | 'readiness' | 'crisis-room', PlannedScreen> = {
+export type PlannedId = 'plans' | 'readiness' | 'crisis-room';
+
+export const PLANNED: Record<PlannedId, PlannedScreen> = {
   plans: {
     title: 'Recovery plans',
     lead: 'Runbooks from Confluence and the services they recover.',
@@ -47,8 +49,9 @@ export const PLANNED: Record<'plans' | 'readiness' | 'crisis-room', PlannedScree
   },
 };
 
-export function PlannedPage({ screen }: { screen: PlannedScreen }) {
+export function PlannedPage({ id }: { id: PlannedId }) {
   const { navigate } = useRouter();
+  const screen = PLANNED[id];
   return (
     <>
       <PageHeader

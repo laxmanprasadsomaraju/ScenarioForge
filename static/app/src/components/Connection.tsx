@@ -9,29 +9,34 @@ export function useConnection() {
   return useApi(load);
 }
 
-/** Compact live status of the asUser Jira connection. */
+/**
+ * Compact live status of the asUser Jira connection. One status region stays
+ * mounted across checking, connected and failed so each change is announced;
+ * the retry button sits outside it.
+ */
 export function ConnectionStatusLine() {
   const { state, retry } = useConnection();
-  if (state.status === 'loading') {
-    return (
-      <span className="conn conn-checking" role="status">
-        <Spinner size="small" label="Checking" /> Checking Jira connection
+  const tone = state.status === 'loading' ? 'checking' : state.status === 'error' ? 'error' : 'ok';
+  return (
+    <span className={`conn conn-${tone}`}>
+      {state.status === 'loading' ? <Spinner size="small" label="Checking" /> : null}
+      <span role="status">
+        {state.status === 'loading' ? 'Checking Jira connection' : null}
+        {state.status === 'error' ? 'Jira not connected' : null}
+        {state.status === 'ready'
+          ? `Connected to Jira${state.data.userDisplayName ? ` as ${state.data.userDisplayName}` : ''}`
+          : null}
       </span>
-    );
-  }
-  if (state.status === 'error') {
-    return (
-      <span className="conn conn-error" role="status">
-        <span>Jira not connected</span>
-        <Button appearance="subtle" spacing="compact" onClick={retry}>
+      {state.status === 'error' ? (
+        <Button
+          appearance="subtle"
+          spacing="compact"
+          onClick={retry}
+          aria-label="Retry Jira connection"
+        >
           Retry
         </Button>
-      </span>
-    );
-  }
-  return (
-    <span className="conn conn-ok" role="status">
-      Connected to Jira{state.data.userDisplayName ? ` as ${state.data.userDisplayName}` : ''}
+      ) : null}
     </span>
   );
 }

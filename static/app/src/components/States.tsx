@@ -1,7 +1,55 @@
-import type { ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
 import Button from '@atlaskit/button/new';
 import SectionMessage, { SectionMessageAction } from '@atlaskit/section-message';
 import type { ApiError } from '@shared/api';
+
+/** Placeholder for a screen whose code is still loading: a heading bar, a lead and rows. */
+export function ScreenSkeleton({ label }: { label: string }) {
+  return (
+    <div className="screen-skeleton" role="status" aria-live="polite">
+      <span className="visually-hidden">{label}</span>
+      <div className="screen-skeleton-head" aria-hidden="true">
+        <span className="skeleton-bar skeleton-title" />
+        <span className="skeleton-bar skeleton-lead" />
+      </div>
+      <div aria-hidden="true">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="skeleton-row">
+            <span className="skeleton-bar skeleton-key" />
+            <span className="skeleton-bar skeleton-text" />
+            <span className="skeleton-bar skeleton-meta" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Catches a screen that fails to load (for example a chunk request that fails) and offers a reload. */
+export class ScreenErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <SectionMessage
+        appearance="error"
+        title="This screen could not be loaded"
+        actions={
+          <SectionMessageAction onClick={() => window.location.reload()}>
+            Reload ScenarioForge
+          </SectionMessageAction>
+        }
+      >
+        <p>Part of the app did not download. Check your connection, then reload.</p>
+      </SectionMessage>
+    );
+  }
+}
 
 export function SkeletonRows({ rows = 5, label }: { rows?: number; label: string }) {
   return (
