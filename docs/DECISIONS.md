@@ -47,3 +47,19 @@ Eight destinations in a sidebar (collapses to a menu under 60rem). The current s
 ## D12. Repo-local Git identity (2026-11-09)
 
 The machine's global Git identity is an employer account. This repo uses a local identity with the personal GitHub no-reply email.
+
+## D13. Four development lanes with worktree isolation (2026-11-09)
+
+Lane A (integrations, owns `manifest.yml` and root package files), Lane B (UI, owns `static/app` package files), Lane C (simulation engine, pure modules in `shared/simulation`), Lane D (bonus research). Each lane ran as a separate agent in its own git worktree and branch; only the lead merges, through `integration/lanes-1`, and only the lead deploys. Shared contracts in `shared/domain/types.ts` are owned by the lead.
+
+## D14. Confluence scopes held from deployment (2026-11-09)
+
+Lane A's Confluence code is merged but not deployed. The scopes make a major version requiring admin re-approval and per-user consent, and the demo site's Confluence availability and the Jira-to-Confluence compatibility declaration are unverified. The development install stays on the M1 build until the owner approves.
+
+## D15. Retest verdicts are rule-based and conservative (2026-11-09)
+
+A gap is `resolved` only if the retest actually followed the procedure that had the gap, that step was effective, and the tied objectives were met. A retest that avoids the procedure is `inconclusive`, even with every objective met. The UI shows the procedure's assessment before and after, not just objectives, because an objective can be met in both runs.
+
+## D16. Contract-change proposals pending (2026-11-09)
+
+Proposed by lanes, not yet applied to `shared/domain/types.ts`: `remediatedFrom` on scenarios and `scenarioFingerprint` / `appliedRemediationIds` on sessions (Lane C, needed for M5 persistence); an optional `path` on `EvidenceReference` and confidence on `RecoveryStep.dependsOn` (Lane A); `'teamwork-graph'` as an evidence kind (Lane D). To be decided when M5 persistence starts, with tests.

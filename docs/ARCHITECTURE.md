@@ -16,23 +16,26 @@ Jira (browser)                         Forge platform (Atlassian-hosted)
 
 ## Modules
 
-| Path                                 | Responsibility                                                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `manifest.yml`                       | `global:fullPage` module, resolver function, scopes, CSP for Atlaskit styles                                             |
-| `src/index.ts`                       | Resolvers: `getConnectionStatus`, `listRecentChanges`, `listRecoveryPages`, `getRecoveryProcedure`. Return `ApiResult`   |
-| `src/validation.ts`                  | Validates untrusted payloads; builds JQL from enum values only                                                           |
-| `src/jira/client.ts`                 | Jira calls behind a `JiraGateway` interface (testable without Forge)                                                     |
-| `src/jira/mapping.ts`                | Maps Jira responses defensively; maps HTTP status to user-safe errors                                                    |
-| `src/confluence/client.ts`           | Confluence calls behind a `ConfluenceGateway` interface: recovery page search, procedure excerpt with evidence           |
-| `src/confluence/mapping.ts`          | Maps Confluence responses; strips markup to plain text (never rendered); extracts ordered-list steps                     |
-| `shared/api.ts`                      | Request/response contract for UI ↔ resolver                                                                              |
-| `shared/domain/types.ts`             | Domain model: service, change, procedure, finding, evidence, scenario, decision, objective, session, remediation, retest |
-| `shared/simulation/engine.ts`        | Deterministic exercise engine (pure functions, no clock, no randomness, no AI)                                           |
-| `shared/simulation/scenarios/`       | Authored scenarios. Currently one synthetic demo                                                                         |
-| `shared/issueFilters.ts`             | Pure filter and sort for the Changes table                                                                               |
-| `static/app/src/lib`                 | Bridge wrappers, router (Forge history), site context, session exercise log                                              |
-| `static/app/src/pages`, `components` | Screens and UI components                                                                                                |
-| `static/app/src/dev`                 | Development-only preview fixtures and bridge stub (never in production builds)                                           |
+| Path                                            | Responsibility                                                                                                                                         |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `manifest.yml`                                  | `global:fullPage` module, resolver function, scopes, CSP for Atlaskit styles                                                                           |
+| `src/index.ts`                                  | Resolvers: `getConnectionStatus`, `listRecentChanges`, `listRecoveryPages`, `getRecoveryProcedure`. Return `ApiResult`                                 |
+| `src/validation.ts`                             | Validates untrusted payloads; builds JQL from enum values only                                                                                         |
+| `src/jira/client.ts`                            | Jira calls behind a `JiraGateway` interface (testable without Forge)                                                                                   |
+| `src/jira/mapping.ts`                           | Maps Jira responses defensively; maps HTTP status to user-safe errors                                                                                  |
+| `src/confluence/client.ts`                      | Confluence calls behind a `ConfluenceGateway` interface: recovery page search, procedure excerpt with evidence                                         |
+| `src/confluence/mapping.ts`                     | Maps Confluence responses; strips markup to plain text (never rendered); extracts ordered-list steps                                                   |
+| `shared/api.ts`                                 | Request/response contract for UI ↔ resolver                                                                                                            |
+| `shared/domain/types.ts`                        | Domain model: service, change, procedure, finding, evidence, scenario, decision, objective, session, remediation, retest                               |
+| `shared/simulation/engine.ts`                   | Deterministic exercise engine (pure functions, no clock, no randomness, no AI)                                                                         |
+| `shared/simulation/scenarios/`                  | Authored scenarios. Currently one synthetic demo                                                                                                       |
+| `shared/simulation/remediation.ts`, `retest.ts` | Applies approved remediations as a new scenario version; compares a retest with the original using fixed rules (resolved, still failing, inconclusive) |
+| `shared/simulation/replay.ts`, `scoring.ts`     | Replays sessions, builds and verifies tamper-evident audit records, and scores objectives                                                              |
+| `shared/agents/contracts.ts`                    | Types only: proposed Rovo action and MCP tool contracts (Lane D)                                                                                       |
+| `shared/issueFilters.ts`                        | Pure filter and sort for the Changes table                                                                                                             |
+| `static/app/src/lib`                            | Bridge wrappers, router (Forge history), site context, session exercise log                                                                            |
+| `static/app/src/pages`, `components`            | Screens and UI components                                                                                                                              |
+| `static/app/src/dev`                            | Development-only preview fixtures and bridge stub (never in production builds)                                                                         |
 
 ## Data flow: live changes
 
