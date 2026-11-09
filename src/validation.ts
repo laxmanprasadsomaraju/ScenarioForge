@@ -1,5 +1,16 @@
-import type { ListChangesRequest, UpdatedWindow } from '../shared/api';
-import { MAX_RESULTS_LIMIT, UPDATED_WINDOWS } from '../shared/api';
+import type {
+  GetRecoveryProcedureRequest,
+  ListChangesRequest,
+  ListRecoveryPagesRequest,
+  RecoveryTerm,
+  UpdatedWindow,
+} from '../shared/api';
+import {
+  MAX_RECOVERY_PAGES,
+  MAX_RESULTS_LIMIT,
+  RECOVERY_TERMS,
+  UPDATED_WINDOWS,
+} from '../shared/api';
 
 export type Validated<T> = { ok: true; value: T } | { ok: false; message: string };
 
@@ -42,4 +53,111 @@ export function parseListChangesRequest(payload: unknown): Validated<ListChanges
 /** JQL is built only from validated enum values. */
 export function buildRecentChangesJql(window: UpdatedWindow): string {
   return `updated >= -${window} ORDER BY updated DESC`;
+}
+
+/**
+ * Confluence space keys are "only alphanumeric characters (A-Z, 0-9)" and at
+ * most 255 long (support.atlassian.com, "Create a space"). Personal spaces use
+ * a leading `~`. Anything else is rejected rather than escaped.
+ */
+const SPACE_KEY = /^~?[A-Za-z0-9]{1,255}$/;
+
+/** Confluence content ids are int64, so at most 19 digits. */
+const PAGE_ID = /^[0-9]{1,19}$/;
+
+const DEFAULT_RECOVERY_REQUEST: ListRecoveryPagesRequest = {
+  terms: [...RECOVERY_TERMS],
+  spaceKey: null,
+  maxResults: 10,
+};
+
+function asPayloadRecord(payload: unknown): Record<string, unknown> | null {
+  if (payload === undefined || payload === null) {
+    return {};
+  }
+  return typeof payload === 'object' && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Validates a recovery page search. Search text is limited to enumerated
+ * recovery terms; raw CQL or free text from the browser is never accepted.
+ */
+export function parseListRecoveryPagesRequest(
+  payload: unknown,
+): Validated<ListRecoveryPagesRequest> {
+  const record = asPayloadRecord(payload);
+  if (!record) {
+    return { ok: false, message: 'Request payload must be an object.' };
+  }
+  const { terms, spaceKey, maxResults } = record;
+
+  const chosen = terms ?? DEFAULT_RECOVERY_REQUEST.terms;
+  if (
+    !Array.isArray(chosen) ||
+    chosen.length === 0 ||
+    !chosen.every((t) => typeof t === 'string' && (RECOVERY_TERMS as readonly string[]).includes(t))
+  ) {
+    return {
+      ok: false,
+      message: `terms must be a non-empty list of: ${RECOVERY_TERMS.join(', ')}.`,
+    };
+  }
+
+  const space = spaceKey ?? null;
+  if (space !== null && (typeof space !== 'string' || !SPACE_KEY.test(space))) {
+    return { ok: false, message: 'spaceKey must be a Confluence space key (letters and digits).' };
+  }
+
+  const limit = maxResults ?? DEFAULT_RECOVERY_REQUEST.maxResults;
+  if (
+    typeof limit !== 'number' ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > MAX_RECOVERY_PAGES
+  ) {
+    return {
+      ok: false,
+      message: `maxResults must be an integer between 1 and ${MAX_RECOVERY_PAGES}.`,
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      terms: [...new Set(chosen as RecoveryTerm[])],
+      spaceKey: space,
+      maxResults: limit,
+    },
+  };
+}
+
+export function parseGetRecoveryProcedureRequest(
+  payload: unknown,
+): Validated<GetRecoveryProcedureRequest> {
+  const record = asPayloadRecord(payload);
+  const pageId = record?.pageId;
+  if (typeof pageId !== 'string' || !PAGE_ID.test(pageId)) {
+    return { ok: false, message: 'pageId must be a numeric Confluence page id.' };
+  }
+  return { ok: true, value: { pageId } };
+}
+
+/**
+ * Quotes a CQL string value. Inputs are already restricted to enum terms and
+ * validated space keys; escaping is a second line of defence.
+ */
+export function cqlString(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * CQL is built only from validated values. `text` is Confluence's master
+ * field covering title, body and labels, so it also matches page titles.
+ */
+export function buildRecoveryPagesCql(request: ListRecoveryPagesRequest): string {
+  const termClause = request.terms.map((term) => `text ~ ${cqlString(term)}`).join(' OR ');
+  const spaceClause = request.spaceKey ? ` AND space = ${cqlString(request.spaceKey)}` : '';
+  return `type = page AND (${termClause})${spaceClause}`;
 }

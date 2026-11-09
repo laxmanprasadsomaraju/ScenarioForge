@@ -19,10 +19,12 @@ Jira (browser)                         Forge platform (Atlassian-hosted)
 | Path                                 | Responsibility                                                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `manifest.yml`                       | `global:fullPage` module, resolver function, scopes, CSP for Atlaskit styles                                             |
-| `src/index.ts`                       | Resolver definitions: `getConnectionStatus`, `listRecentChanges`. Catches all errors and returns `ApiResult`             |
+| `src/index.ts`                       | Resolvers: `getConnectionStatus`, `listRecentChanges`, `listRecoveryPages`, `getRecoveryProcedure`. Return `ApiResult`   |
 | `src/validation.ts`                  | Validates untrusted payloads; builds JQL from enum values only                                                           |
 | `src/jira/client.ts`                 | Jira calls behind a `JiraGateway` interface (testable without Forge)                                                     |
 | `src/jira/mapping.ts`                | Maps Jira responses defensively; maps HTTP status to user-safe errors                                                    |
+| `src/confluence/client.ts`           | Confluence calls behind a `ConfluenceGateway` interface: recovery page search, procedure excerpt with evidence           |
+| `src/confluence/mapping.ts`          | Maps Confluence responses; strips markup to plain text (never rendered); extracts ordered-list steps                     |
 | `shared/api.ts`                      | Request/response contract for UI ↔ resolver                                                                              |
 | `shared/domain/types.ts`             | Domain model: service, change, procedure, finding, evidence, scenario, decision, objective, session, remediation, retest |
 | `shared/simulation/engine.ts`        | Deterministic exercise engine (pure functions, no clock, no randomness, no AI)                                           |
@@ -51,7 +53,7 @@ The engine is in `shared/` so it can move server-side in M5 (persisted, auditabl
 
 ## Security model
 
-- **Least privilege:** `read:jira-work`, `read:jira-user`. No write scopes until remediation (M8), and then only with explicit approval in the UI.
+- **Least privilege:** `read:jira-work`, `read:jira-user`, `search:confluence`, `read:page:confluence`. No write scopes until remediation (M8), and then only with explicit approval in the UI.
 - **asUser everywhere:** users only see Jira data they can already browse. No app-level credentials reach the browser.
 - **No client JQL:** the browser sends enum values; the backend builds the query.
 - **Errors are explicit:** resolvers never throw to the client and never fabricate success. Unknown readiness stays "Not assessed".
@@ -65,6 +67,15 @@ The engine is in `shared/` so it can move server-side in M5 (persisted, auditabl
 | ---------------------------- | ---------------- | ---------------------------------------------------------- |
 | `GET /rest/api/3/search/jql` | `read:jira-work` | Recent issues (summary, status, type, updated, project)    |
 | `GET /rest/api/3/myself`     | `read:jira-user` | Connection check (display name only is returned to the UI) |
+
+## Confluence APIs used
+
+Both run `asUser`. The browser sends enumerated recovery terms and an optional validated space key; the resolver builds the CQL. A 404 is reported as `NOT_FOUND` ("Confluence is not available on this site") because the demo site may not have Confluence.
+
+| Call                                              | Scope                  | Purpose                                                       |
+| ------------------------------------------------- | ---------------------- | ------------------------------------------------------------- |
+| `GET /wiki/rest/api/search` (CQL, v1)             | `search:confluence`    | Find recovery pages: id, title, space key, last updated, link |
+| `GET /wiki/api/v2/pages/{id}?body-format=storage` | `read:page:confluence` | Read one page body; plain-text excerpt and ordered steps      |
 
 ## Planned integrations
 

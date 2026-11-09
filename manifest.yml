@@ -20,6 +20,12 @@ permissions:
     - read:jira-work
     # Read the calling user's own profile for the connection status check.
     - read:jira-user
+    # CQL search for recovery pages: GET /wiki/rest/api/search (classic scope
+    # listed as current for this operation). Returns titles and links only.
+    - search:confluence
+    # Read one recovery page body: GET /wiki/api/v2/pages/{id}. v2 lists only
+    # this granular scope; no classic scope covers the v2 page endpoint.
+    - read:page:confluence
   content:
     styles:
       # Atlaskit components inject runtime style tags.
