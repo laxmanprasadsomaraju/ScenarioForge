@@ -24,7 +24,10 @@ Status values: **Done** (acceptance criteria verified), **Partly done** (named c
 - [x] Connection status
 - [x] Future screens labelled as planned
 - [x] Demo rehearsal with deterministic rules and tests (pulled forward from M5 as a foundation)
-- [ ] **App opened inside Jira and live issues seen** (needs a signed-in browser session; see SETUP_STATUS)
+- [x] **App opened inside Jira and live issues seen** (2026-11-09, owner in Jira dark mode: "Connected to Jira as laxman prasad somaraju", live MC-10, MC-9, MC-7, MC-42 with real statuses; no resolver error lines in `forge logs` over 2 h)
+- [ ] Developer console monitoring shows successful `resolver` invocations (owner to confirm; not readable from the CLI)
+- [ ] Changes page "Fetched … with `updated >= …`" line seen in Jira (owner to confirm)
+- [ ] Demo rehearsal played to the debrief inside Jira (verified in local preview and unit tests; owner to confirm in Jira)
 - [ ] Permission-denied path observed live (verified in unit tests and preview only)
 
 ## M2: Jira, Confluence and JSM context

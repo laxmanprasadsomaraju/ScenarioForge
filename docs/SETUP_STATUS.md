@@ -37,6 +37,6 @@ Verified on 2026-11-09 unless noted. "Verified" means checked by a command in th
 
 ## Open items
 
-1. Open **Apps → ScenarioForge** in Jira, grant access, and confirm live issues load (needs a signed-in browser; not possible from the CLI).
+1. ~~Open the app and confirm live issues load.~~ Done 2026-11-09 via https://one-atlas-cegq.atlassian.net/apps/full-page/3edeba6c-fe02-4ad8-a48a-4468dc416a08/scenarioforge (the app is not listed in the Jira sidebar; use this direct `global:fullPage` URL).
 2. Confirm which products the demo site includes (Confluence and JSM are needed for M2).
 3. An API token was pasted into a chat transcript on 2026-11-09. It must be revoked and replaced.
