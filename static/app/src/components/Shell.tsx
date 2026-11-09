@@ -66,7 +66,11 @@ export function Shell({ children }: { children: ReactNode }) {
                 }}
               >
                 <span>{r.label}</span>
-                {r.plannedFor ? <span className="nav-planned">{r.plannedFor}</span> : null}
+                {r.plannedFor ? (
+                  <span className="nav-planned">
+                    <span className="visually-hidden">, planned for</span> {r.plannedFor}
+                  </span>
+                ) : null}
               </a>
             </li>
           ))}

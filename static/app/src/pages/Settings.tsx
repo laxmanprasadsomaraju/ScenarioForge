@@ -7,7 +7,7 @@ import { formatAbsolute } from '../lib/format';
 const SOURCES: { name: string; status: string; detail: string }[] = [
   {
     name: 'Jira',
-    status: 'Connected',
+    status: 'Checking',
     detail: 'Issue search and your own profile, read only, as you.',
   },
   { name: 'Confluence', status: 'Not connected', detail: 'Recovery runbooks, planned for M2.' },
@@ -31,6 +31,13 @@ const SOURCES: { name: string; status: string; detail: string }[] = [
 export function SettingsPage() {
   const { siteUrl } = useSite();
   const { state, retry } = useConnection();
+  // The Jira row reflects the live check rather than assuming success.
+  const jiraStatus =
+    state.status === 'ready'
+      ? 'Connected'
+      : state.status === 'error'
+        ? 'Not connected'
+        : 'Checking';
 
   return (
     <>
@@ -77,7 +84,7 @@ export function SettingsPage() {
             {SOURCES.map((s) => (
               <tr key={s.name}>
                 <th scope="row">{s.name}</th>
-                <td>{s.status}</td>
+                <td>{s.name === 'Jira' ? jiraStatus : s.status}</td>
                 <td>{s.detail}</td>
               </tr>
             ))}

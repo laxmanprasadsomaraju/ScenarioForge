@@ -13,5 +13,5 @@
     "types": ["vite/client"],
     "paths": { "@shared/*": ["./../../shared/*"] }
   },
-  "include": ["src", "../../shared", "vite.config.ts"]
+  "include": ["src", "test", "../../shared", "vite.config.ts", "vitest.config.ts"]
 }

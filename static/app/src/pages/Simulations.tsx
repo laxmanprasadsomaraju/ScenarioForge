@@ -10,7 +10,7 @@ import { Debrief } from '../components/simulation/Debrief';
 import { Rehearsal } from '../components/simulation/Rehearsal';
 
 type Phase =
-  | { kind: 'briefing' }
+  | { kind: 'briefing'; returned?: boolean }
   | { kind: 'running'; session: ExerciseSession }
   | { kind: 'debrief'; exercise: CompletedExercise };
 
@@ -60,13 +60,15 @@ export function SimulationsPage() {
         Synthetic scenario. It does not read your Jira, Confluence or service data yet; live
         evidence arrives in M2 and M3.
       </p>
-      {phase.kind === 'briefing' ? <Briefing scenario={scenario} onStart={start} /> : null}
+      {phase.kind === 'briefing' ? (
+        <Briefing scenario={scenario} onStart={start} focusOnMount={phase.returned} />
+      ) : null}
       {phase.kind === 'running' ? (
         <Rehearsal
           scenario={scenario}
           session={phase.session}
           onDecide={(id) => decide(phase.session, id)}
-          onLeave={() => setPhase({ kind: 'briefing' })}
+          onLeave={() => setPhase({ kind: 'briefing', returned: true })}
         />
       ) : null}
       {phase.kind === 'debrief' ? (

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import Button from '@atlaskit/button/new';
 import type { SimulationScenario } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
@@ -23,11 +24,18 @@ export function Debrief({
   const { evaluation, session } = exercise;
   const trail = decisionTrail(scenario, session);
   const gapFound = session.flags.runbookGapIdentified !== undefined;
+  const resultRef = useRef<HTMLHeadingElement>(null);
+
+  // The control that opened the debrief (the last decision, or "Open report")
+  // is gone once it renders, so move focus to the result instead of the page body.
+  useEffect(() => {
+    resultRef.current?.focus();
+  }, []);
 
   return (
     <div className="debrief">
       <section className="debrief-result" aria-labelledby="result-title">
-        <h2 id="result-title" className="result-figure num">
+        <h2 id="result-title" className="result-figure num" ref={resultRef} tabIndex={-1}>
           {evaluation.metCount} of {evaluation.totalCount} objectives met
         </h2>
         <p className="result-sub num">

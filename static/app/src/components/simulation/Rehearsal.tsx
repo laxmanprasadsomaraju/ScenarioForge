@@ -65,21 +65,21 @@ export function Rehearsal({ scenario, session, onDecide, onLeave }: Props) {
         </section>
 
         <section className="rehearsal-stage" aria-labelledby="situation-title">
-          {last ? (
-            <div
-              className={`consequence consequence-${last.decision.consequence.assessment}`}
-              role="status"
-            >
-              <p className="consequence-head">
-                <span>What happened: {last.decision.label}</span>
-                <span className={`assessment assessment-${last.decision.consequence.assessment}`}>
-                  {ASSESSMENT[last.decision.consequence.assessment]},{' '}
-                  {last.decision.consequence.minutes} min
-                </span>
-              </p>
-              <p>{last.decision.consequence.narrative}</p>
-            </div>
-          ) : null}
+          {/* Always mounted so screen readers announce each new consequence. */}
+          <div role="status" aria-live="polite" className="consequence-region">
+            {last ? (
+              <div className={`consequence consequence-${last.decision.consequence.assessment}`}>
+                <p className="consequence-head">
+                  <span>What happened: {last.decision.label}</span>
+                  <span className={`assessment assessment-${last.decision.consequence.assessment}`}>
+                    {ASSESSMENT[last.decision.consequence.assessment]},{' '}
+                    {last.decision.consequence.minutes} min
+                  </span>
+                </p>
+                <p>{last.decision.consequence.narrative}</p>
+              </div>
+            ) : null}
+          </div>
           {step ? (
             <>
               <h2 id="situation-title" className="situation-title" ref={situationRef} tabIndex={-1}>
