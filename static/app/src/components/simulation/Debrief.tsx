@@ -52,7 +52,12 @@ export function Debrief({
       </section>
 
       {exercise.retest ? (
-        <RetestVerdict comparison={exercise.retest.comparison} objectiveLabels={objectiveLabels} />
+        <RetestVerdict
+          comparison={exercise.retest.comparison}
+          original={exercise.retest.original}
+          retest={exercise}
+          objectiveLabels={objectiveLabels}
+        />
       ) : null}
 
       <div className="debrief-grid">

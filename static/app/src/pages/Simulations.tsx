@@ -78,6 +78,7 @@ export function SimulationsPage() {
     if (retestOf) {
       exercise.retest = {
         appliedRemediationIds: retestOf.appliedRemediationIds,
+        original: retestOf.original,
         comparison: compareRetest(retestOf.original, exercise, remediationModel, {
           id: newId('retest'),
           comparedAt: exercise.completedAt,

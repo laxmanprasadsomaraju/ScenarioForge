@@ -9,7 +9,11 @@ export interface CompletedExercise {
   evaluation: ExerciseEvaluation;
   completedAt: string;
   /** Present when this run was a targeted retest of an earlier one. */
-  retest?: { comparison: RetestComparison; appliedRemediationIds: string[] };
+  retest?: {
+    comparison: RetestComparison;
+    appliedRemediationIds: string[];
+    original: CompletedExercise;
+  };
 }
 
 interface ExerciseLog {

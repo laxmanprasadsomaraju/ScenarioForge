@@ -63,6 +63,13 @@ describe('Fix and retest', () => {
         .getAllByRole('cell')
         .map((c) => c.textContent),
     ).toEqual(['Met', 'Met']);
+    // The objective was met both times; what the fix changed is the procedure itself.
+    const procedure = within(table).getByRole('row', { name: /Following RB-AUTH-01 as written/ });
+    expect(
+      within(procedure)
+        .getAllByRole('cell')
+        .map((c) => c.textContent),
+    ).toEqual(['Costly', 'Effective']);
     expect(screen.getByText('Applied in this retest (demo approval).')).toBeInTheDocument();
     // A retest compares against its original; it cannot itself be retested.
     expect(screen.queryByRole('button', { name: 'Run targeted retest' })).not.toBeInTheDocument();

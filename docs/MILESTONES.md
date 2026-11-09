@@ -30,7 +30,9 @@ Status values: **Done** (acceptance criteria verified), **Partly done** (named c
 - [ ] Demo rehearsal played to the debrief inside Jira (verified in local preview and unit tests; owner to confirm in Jira)
 - [ ] Permission-denied path observed live (verified in unit tests and preview only)
 
-## M2: Jira, Confluence and JSM context
+## M2: Jira, Confluence and JSM context, Partly done (code only, not deployed)
+
+Confluence search and page-step extraction implemented and unit-tested on `integration/lanes-1` (Lane A). Not deployed: adds `search:confluence` and `read:page:confluence` (major version, admin and user consent) and probably `compatibility.confluence.required: false`. Awaiting owner approval and confirmation that the demo site has Confluence.
 
 Read Confluence recovery pages and JSM services with user permissions; evidence references with source URLs and retrieval time. Acceptance: real runbook page shown with a link back; permission-denied page excluded, not leaked.
 
@@ -42,7 +44,9 @@ Match changes to affected runbook steps. Confirmed (rule-based) vs suspected (AI
 
 Services, changes, runbooks, owners and gaps with an explanation on every edge. Acceptance: no edge without a cited source.
 
-## M5: Interactive recovery simulation
+## M5: Interactive recovery simulation, Partly done
+
+Done on `integration/lanes-1`: deterministic remediation variants, targeted retest with rule-based verdicts, session replay and tamper-evident audit records (Lane C), and the fix → retest loop in the UI. Open: scenarios generated from real changes and runbooks, persistence in Forge Storage.
 
 Scenarios generated from a real change and runbook; sessions persisted in Forge Storage; replay produces identical results. Acceptance: audit record reproduces the evaluation.
 
@@ -54,7 +58,9 @@ Investigator and facilitator agent with real actions. Acceptance: grounded answe
 
 Roles, shared session, Forge Realtime events. Acceptance: two browsers see the same state; decisions attributed and replayable.
 
-## M8: Corrective actions and verification
+## M8: Corrective actions and verification, Partly done
+
+Retest engine and UI verdict exist for the demo scenario. Open: Jira work-item creation with explicit approval, retest linked to a stored finding.
 
 After-action report, Jira remediation tasks created only after explicit approval, targeted retest. Acceptance: retest result linked to the original finding.
 

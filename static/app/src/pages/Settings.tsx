@@ -84,8 +84,8 @@ export function SettingsPage() {
             {SOURCES.map((s) => (
               <tr key={s.name}>
                 <th scope="row">{s.name}</th>
-                <td>{s.name === 'Jira' ? jiraStatus : s.status}</td>
-                <td>{s.detail}</td>
+                <td data-label="Status">{s.name === 'Jira' ? jiraStatus : s.status}</td>
+                <td data-label="Used for">{s.detail}</td>
               </tr>
             ))}
           </tbody>

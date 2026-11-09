@@ -79,15 +79,17 @@ export function ReportsPage() {
             <tbody>
               {completed.map((ex) => (
                 <tr key={ex.session.id}>
-                  <td>{formatAbsolute(ex.completedAt)}</td>
+                  <td data-label="Finished">{formatAbsolute(ex.completedAt)}</td>
                   <th scope="row">
                     {ex.scenario.title}
                     {ex.retest ? ' (retest)' : ''}
                   </th>
-                  <td className="num">
+                  <td className="num" data-label="Objectives met">
                     {ex.evaluation.metCount} of {ex.evaluation.totalCount}
                   </td>
-                  <td className="num">{ex.evaluation.elapsedMinutes} min</td>
+                  <td className="num" data-label="Simulated time">
+                    {ex.evaluation.elapsedMinutes} min
+                  </td>
                   <td>
                     <Button
                       appearance="subtle"

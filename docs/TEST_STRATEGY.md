@@ -9,7 +9,13 @@
 | `test/validation.test.ts`   | Payload defaults, enum enforcement, JQL injection attempts, numeric bounds                                                                          |
 | `test/issueFilters.test.ts` | Text, status and type filters; date and key sorting; undated issues last                                                                            |
 
-Latest run: **53 tests, 4 files, all passing** (2026-11-09).
+Latest run: **194 root tests in 8 files, plus 19 component tests in 3 files, all passing** (2026-11-09, integration branch).
+
+Added since M1: `test/confluence.test.ts` (Lane A: CQL building, HTML stripping, step extraction, HTTP error mapping), `test/retest.test.ts`, `test/replay.test.ts` and `test/scoring.test.ts` (Lane C: remediation variants, retest rules, audit tamper detection).
+
+## Component tests (Vitest + Testing Library, `npm test --prefix static/app`)
+
+`static/app/test/` mocks `@forge/bridge` and the API layer. It covers error/empty/filtered states on Changes, origin labels, Jira links, rehearsal focus management and announcements, planned screens, Settings honesty when the connection fails, and the full **fix → retest** loop with resolved, still-failing and inconclusive verdicts.
 
 ## Static checks
 
