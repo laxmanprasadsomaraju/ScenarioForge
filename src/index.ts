@@ -1,9 +1,15 @@
 import api, { route } from '@forge/api';
 import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
+import type { ConfluenceGateway } from './confluence/client';
+import { getRecoveryProcedure, searchRecoveryPages } from './confluence/client';
 import type { JiraGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
-import { parseListChangesRequest } from './validation';
+import {
+  parseGetRecoveryProcedureRequest,
+  parseListChangesRequest,
+  parseListRecoveryPagesRequest,
+} from './validation';
 
 /**
  * All Jira calls run asUser so results are limited to what the signed-in user
@@ -14,7 +20,21 @@ const forgeJira: JiraGateway = {
   myself: () => api.asUser().requestJira(route`/rest/api/3/myself`),
 };
 
-async function guarded<T>(work: () => Promise<ApiResult<T>>): Promise<ApiResult<T>> {
+/**
+ * Confluence calls also run asUser: search results and page bodies respect the
+ * user's space and page restrictions. CQL search only exists in the v1 API;
+ * page bodies use v2.
+ */
+const forgeConfluence: ConfluenceGateway = {
+  searchContent: (params) => api.asUser().requestConfluence(route`/wiki/rest/api/search?${params}`),
+  getPage: (pageId, params) =>
+    api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?${params}`),
+};
+
+async function guarded<T>(
+  work: () => Promise<ApiResult<T>>,
+  product: 'Jira' | 'Confluence' = 'Jira',
+): Promise<ApiResult<T>> {
   try {
     return await work();
   } catch (error) {
@@ -23,7 +43,7 @@ async function guarded<T>(work: () => Promise<ApiResult<T>>): Promise<ApiResult<
       ok: false,
       error: {
         code: 'UPSTREAM_ERROR',
-        message: 'ScenarioForge could not reach Jira. Try again shortly.',
+        message: `ScenarioForge could not reach ${product}. Try again shortly.`,
       },
     };
   }
@@ -41,6 +61,26 @@ resolver.define('listRecentChanges', ({ payload }) =>
     }
     return listRecentChanges(forgeJira, parsed.value);
   }),
+);
+
+resolver.define('listRecoveryPages', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parseListRecoveryPagesRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return searchRecoveryPages(forgeConfluence, parsed.value);
+  }, 'Confluence'),
+);
+
+resolver.define('getRecoveryProcedure', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parseGetRecoveryProcedureRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return getRecoveryProcedure(forgeConfluence, parsed.value.pageId);
+  }, 'Confluence'),
 );
 
 export const handler = resolver.getDefinitions();
