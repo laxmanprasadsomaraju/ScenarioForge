@@ -7,7 +7,6 @@ import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
 import { EmptyState } from '../components/States';
 import { Debrief } from '../components/simulation/Debrief';
-import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';
 
 export function ReportsPage() {
   const { completed } = useExercises();
@@ -25,7 +24,7 @@ export function ReportsPage() {
       <>
         <PageHeader
           title="After-action report"
-          lead={authBackupRetiredScenario.title}
+          lead={open.scenario.title}
           aside={
             <Button
               onClick={() => {
@@ -37,7 +36,7 @@ export function ReportsPage() {
             </Button>
           }
         />
-        <Debrief scenario={authBackupRetiredScenario} exercise={open} />
+        <Debrief scenario={open.scenario} exercise={open} />
       </>
     );
   }
@@ -81,7 +80,10 @@ export function ReportsPage() {
               {completed.map((ex) => (
                 <tr key={ex.session.id}>
                   <td>{formatAbsolute(ex.completedAt)}</td>
-                  <th scope="row">{authBackupRetiredScenario.title}</th>
+                  <th scope="row">
+                    {ex.scenario.title}
+                    {ex.retest ? ' (retest)' : ''}
+                  </th>
                   <td className="num">
                     {ex.evaluation.metCount} of {ex.evaluation.totalCount}
                   </td>

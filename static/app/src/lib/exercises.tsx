@@ -1,10 +1,15 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-import type { ExerciseEvaluation, ExerciseSession } from '@shared/domain/types';
+import type { ExerciseEvaluation, ExerciseSession, SimulationScenario } from '@shared/domain/types';
+import type { RetestComparison } from '@shared/simulation/types';
 
 export interface CompletedExercise {
+  /** The exact scenario version played; a retest runs a remediated version. */
+  scenario: SimulationScenario;
   session: ExerciseSession;
   evaluation: ExerciseEvaluation;
   completedAt: string;
+  /** Present when this run was a targeted retest of an earlier one. */
+  retest?: { comparison: RetestComparison; appliedRemediationIds: string[] };
 }
 
 interface ExerciseLog {

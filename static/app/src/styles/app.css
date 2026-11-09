@@ -987,6 +987,62 @@ code {
   margin-top: var(--space-md);
 }
 
+.fix-approve {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--hit);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.fix-approve input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}
+.fix-approve input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.retest-note {
+  margin-bottom: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  max-width: 75ch;
+}
+.verdict {
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.verdict-title {
+  font-size: var(--text-xl);
+  font-weight: 650;
+}
+.verdict-met {
+  color: var(--color-success);
+}
+.verdict-missed {
+  color: var(--color-error);
+}
+.verdict-pending {
+  color: var(--color-warning);
+}
+.verdict-gap {
+  display: grid;
+  gap: var(--space-sm);
+}
+.verdict-table td.objective-met {
+  color: var(--color-success);
+  font-weight: 600;
+}
+.verdict-table td.objective-missed {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 75rem) {
   .rehearsal-grid {
