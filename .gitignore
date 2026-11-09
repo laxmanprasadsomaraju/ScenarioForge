@@ -1,0 +1,30 @@
+# Dependencies and build output
+node_modules/
+static/*/build/
+dist/
+coverage/
+
+# Forge local state
+/.forge/
+
+# Environment files and credentials (never commit)
+.env
+.env.*
+*.pem
+*.key
+.npmrc
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Hallmark local review artefacts (screenshots, preflight cache)
+.hallmark/
+static/app/.hallmark/

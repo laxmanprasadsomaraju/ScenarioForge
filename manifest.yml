@@ -1,0 +1,35 @@
+modules:
+  global:fullPage:
+    - key: scenarioforge-global-full-page
+      title: ScenarioForge
+      resource: main
+      resolver:
+        function: resolver
+      routePrefix: scenarioforge
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/app/build
+    tunnel:
+      port: 3000
+permissions:
+  scopes:
+    # Search issues and read issue fields (summary, status, type, updated).
+    - read:jira-work
+    # Read the calling user's own profile for the connection status check.
+    - read:jira-user
+  content:
+    styles:
+      # Atlaskit components inject runtime style tags.
+      - unsafe-inline
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/113a7a88-0d52-4161-b72e-791a83bd9355
+  compatibility:
+    jira:
+      required: true

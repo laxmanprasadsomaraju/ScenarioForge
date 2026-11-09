@@ -1,0 +1,42 @@
+{
+  "name": "scenarioforge",
+  "version": "0.1.0",
+  "description": "ScenarioForge AI: change-specific recovery rehearsals for Atlassian teams (Forge app).",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "src/index.ts",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "frontend:install": "npm ci --prefix static/app",
+    "frontend:typecheck": "npm run typecheck --prefix static/app",
+    "frontend:build": "npm run build --prefix static/app",
+    "verify": "npm run typecheck && npm run frontend:typecheck && npm run lint && npm test && npm run frontend:build"
+  },
+  "dependencies": {
+    "@forge/api": "^8.5.0",
+    "@forge/resolver": "^2.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.14.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5"
+  }
+}

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feature/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            static/app/package-lock.json
+
+      - name: Install backend and tooling
+        run: npm ci
+
+      - name: Install frontend
+        run: npm ci --prefix static/app
+
+      - name: Typecheck backend and shared domain
+        run: npm run typecheck
+
+      - name: Typecheck frontend
+        run: npm run frontend:typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run frontend:build
+
+      - name: Production bundle contains no dev preview fixtures
+        run: '! grep -rlE "previewFixtures|PREVIEW-14|bridgeStub" static/app/build'
+
+      - name: Dependency audit (fail on high or critical)
+        run: |
+          npm audit --audit-level=high
+          npm audit --audit-level=high --prefix static/app
