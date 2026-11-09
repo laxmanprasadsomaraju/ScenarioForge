@@ -4,3 +4,4 @@ dist
 .forge
 coverage
 package-lock.json
+.claude

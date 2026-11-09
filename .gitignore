@@ -28,3 +28,6 @@ Thumbs.db
 # Hallmark local review artefacts (screenshots, preflight cache)
 .hallmark/
 static/app/.hallmark/
+
+# Local agent worktrees and Claude Code state
+.claude/
