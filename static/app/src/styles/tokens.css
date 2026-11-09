@@ -1,0 +1,86 @@
+/*
+ * ScenarioForge design tokens. Ground, ink and semantic colours defer to the
+ * Atlassian Design System tokens the Jira host injects (view.theme.enable()),
+ * so the app follows Jira's light and dark themes. The literal values are
+ * fallbacks for local development outside Jira.
+ */
+:root {
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.266rem;
+  --text-2xl: 1.424rem;
+  --text-3xl: 1.602rem;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --container: 1360px;
+  --gutter: 40px;
+  --gap-columns: 32px;
+  --sidebar: 248px;
+  --control-h: 36px;
+  --hit: 44px;
+  --z-raised: 10;
+  --z-sticky: 200;
+  --z-sticky-nav: 300;
+
+  --color-paper: var(--ds-surface, #ffffff);
+  --color-paper-2: var(--ds-background-neutral-subtle-hovered, #f4f5f7);
+  --color-paper-3: var(--ds-surface-sunken, #f7f8f9);
+  --color-ink: var(--ds-text, #172b4d);
+  --color-ink-2: var(--ds-text-subtle, #44546f);
+  --color-muted: var(--ds-text-subtlest, #626f86);
+  --color-rule: var(--ds-border, #dcdfe4);
+  --color-rule-strong: var(--ds-border-bold, #758195);
+
+  /* Forge copper: the product's one signal. Primary action, selection, the exercise clock. */
+  --color-accent: oklch(52% 0.13 50);
+  --color-accent-ink: oklch(99% 0.01 50);
+  --color-accent-soft: oklch(95% 0.03 50);
+  --color-accent-text: oklch(46% 0.13 50);
+  --color-focus: var(--ds-border-focused, #388bff);
+
+  --color-success: var(--ds-text-success, #216e4e);
+  --color-success-soft: var(--ds-background-success, #dcfff1);
+  --color-error: var(--ds-text-danger, #ae2e24);
+  --color-error-soft: var(--ds-background-danger, #ffeceb);
+  --color-warning: var(--ds-text-warning, #a54800);
+  --color-warning-soft: var(--ds-background-warning, #fff7d6);
+  --color-info-soft: var(--ds-background-information, #e9f2ff);
+  --color-demo: var(--ds-text-discovery, #5e4db2);
+  --color-demo-soft: var(--ds-background-discovery, #f3f0ff);
+
+  --font-display:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    sans-serif;
+  --font-body: var(--font-display);
+  --font-outlier: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-pill: 999px;
+  --rule-hair: 1px;
+  --shadow-raised: var(
+    --ds-shadow-raised,
+    0 1px 1px rgb(9 30 66 / 0.25),
+    0 0 1px rgb(9 30 66 / 0.31)
+  );
+  --tracking-display: -0.01em;
+}
+
+html[data-color-mode='dark'] {
+  --color-accent: oklch(72% 0.13 55);
+  --color-accent-ink: oklch(20% 0.03 50);
+  --color-accent-soft: oklch(30% 0.05 50);
+  --color-accent-text: oklch(78% 0.12 55);
+}

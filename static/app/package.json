@@ -1,0 +1,35 @@
+{
+  "name": "scenarioforge-ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "homepage": ".",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@atlaskit/button": "^25.7.1",
+    "@atlaskit/css-reset": "^8.4.10",
+    "@atlaskit/lozenge": "^17.0.6",
+    "@atlaskit/section-message": "^10.2.6",
+    "@atlaskit/spinner": "^20.4.4",
+    "@atlaskit/tokens": "^20.11.0",
+    "@forge/bridge": "^7.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.7"
+  },
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5",
+    "prosemirror-view": "^1.42.3"
+  }
+}
