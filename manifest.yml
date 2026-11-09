@@ -39,3 +39,7 @@ app:
   compatibility:
     jira:
       required: true
+    # Recovery runbooks are read from Confluence on the same site when it is
+    # connected; the app still installs and works without it.
+    confluence:
+      required: false

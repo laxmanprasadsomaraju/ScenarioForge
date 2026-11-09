@@ -66,22 +66,43 @@ export function SkeletonRows({ rows = 5, label }: { rows?: number; label: string
   );
 }
 
-const ERROR_TITLES: Record<ApiError['code'], string> = {
-  INVALID_REQUEST: 'The request was rejected',
-  UNAUTHENTICATED: 'ScenarioForge needs access to Jira',
-  FORBIDDEN: 'You do not have permission to view these issues',
-  NOT_FOUND: 'Jira could not find that resource',
-  RATE_LIMITED: 'Jira is busy',
-  UPSTREAM_ERROR: 'Jira could not be reached',
-  UNEXPECTED_RESPONSE: 'Jira sent an unreadable response',
-};
+export type Product = 'Jira' | 'Confluence';
+
+function errorTitle(code: ApiError['code'], product: Product): string {
+  switch (code) {
+    case 'INVALID_REQUEST':
+      return 'The request was rejected';
+    case 'UNAUTHENTICATED':
+      return `ScenarioForge needs access to ${product}`;
+    case 'FORBIDDEN':
+      return product === 'Jira'
+        ? 'You do not have permission to view these issues'
+        : 'You do not have permission to view this content';
+    case 'NOT_FOUND':
+      return `${product} could not find that resource`;
+    case 'RATE_LIMITED':
+      return `${product} is busy`;
+    case 'UPSTREAM_ERROR':
+      return `${product} could not be reached`;
+    case 'UNEXPECTED_RESPONSE':
+      return `${product} sent an unreadable response`;
+  }
+}
 
 /** Shown instead of data whenever a call fails; never replaced by placeholder rows. */
-export function ErrorPanel({ error, onRetry }: { error: ApiError; onRetry?: () => void }) {
+export function ErrorPanel({
+  error,
+  onRetry,
+  product = 'Jira',
+}: {
+  error: ApiError;
+  onRetry?: () => void;
+  product?: Product;
+}) {
   return (
     <SectionMessage
       appearance="error"
-      title={ERROR_TITLES[error.code]}
+      title={errorTitle(error.code, product)}
       actions={
         onRetry ? (
           <SectionMessageAction onClick={onRetry}>Try again</SectionMessageAction>

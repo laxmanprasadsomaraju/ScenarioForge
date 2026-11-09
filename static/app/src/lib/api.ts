@@ -3,8 +3,12 @@ import { bridgeCall, previewMode } from './preview';
 import type {
   ApiResult,
   ConnectionStatus,
+  GetRecoveryProcedureRequest,
   ListChangesRequest,
   ListChangesResponse,
+  ListRecoveryPagesRequest,
+  ListRecoveryPagesResponse,
+  RecoveryProcedureExcerpt,
 } from '@shared/api';
 
 /**
@@ -41,4 +45,8 @@ export const api = {
   getConnectionStatus: () => call<ConnectionStatus>('getConnectionStatus'),
   listRecentChanges: (request: ListChangesRequest) =>
     call<ListChangesResponse>('listRecentChanges', request),
+  listRecoveryPages: (request: ListRecoveryPagesRequest) =>
+    call<ListRecoveryPagesResponse>('listRecoveryPages', request),
+  getRecoveryProcedure: (request: GetRecoveryProcedureRequest) =>
+    call<RecoveryProcedureExcerpt>('getRecoveryProcedure', request),
 };
