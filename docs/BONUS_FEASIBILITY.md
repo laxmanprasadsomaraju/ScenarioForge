@@ -2,6 +2,8 @@
 
 Research date: 2026-11-09. Scope: feasibility and interface design only. No manifest, `src/`, `static/` or `shared/domain` changes were made. Proposed type contracts are in `shared/agents/contracts.ts` (types only, no runtime).
 
+Follow-ups: [CONTEST_RULES_CHECKLIST.md](CONTEST_RULES_CHECKLIST.md), [MARKETPLACE_PLAN.md](MARKETPLACE_PLAN.md) (supersedes §5's timeline), [TEAMWORK_GRAPH_TEST_PLAN.md](TEAMWORK_GRAPH_TEST_PLAN.md).
+
 **How to read this document.** "Verified" means read on an official Atlassian page (developer.atlassian.com or support.atlassian.com) at the cited URL on the research date. "Rules extract" means text from the Codegeist rules page as returned by a search engine, because the Devpost page returned HTTP 403 to automated fetches (see [Unverified, rules](#unverified-rules)). "Community" means a developer-community post with no Atlassian staff answer; it is a signal, not a fact. Nothing here claims eligibility.
 
 ---
