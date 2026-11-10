@@ -2,8 +2,12 @@ import { useState } from 'react';
 import type { ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import { applyDecision, evaluateSession, startSession } from '@shared/simulation/engine';
 import { buildRetest, compareRetest } from '@shared/simulation/retest';
+import { buildDeepLink } from '@shared/links/deepLink';
 import Button from '@atlaskit/button/new';
 import { useRehearsalSource } from '../lib/rehearsalSource';
+import { useRouter } from '../lib/router';
+import { LinkedRehearsal } from '../components/readiness/LinkedRehearsal';
+import { RejectedLinkNotice } from '../components/readiness/LinkNotice';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
@@ -33,7 +37,27 @@ function newId(prefix: string): string {
     : `${prefix}-${Date.now().toString(36)}`;
 }
 
+/**
+ * A valid rehearsal link opens the linked check first; a rejected link shows
+ * its notice above the default screen and applies nothing.
+ */
 export function SimulationsPage() {
+  const { link } = useRouter();
+  if (link.kind === 'link' && link.link.route === 'simulations') {
+    // Keyed by the canonical link so back/forward between links starts each one afresh.
+    return <LinkedRehearsal key={buildDeepLink(link.link)} link={link.link} />;
+  }
+  return (
+    <>
+      {link.kind === 'rejected' && link.route === 'simulations' ? (
+        <RejectedLinkNotice link={link} />
+      ) : null}
+      <RehearsalScreen />
+    </>
+  );
+}
+
+function RehearsalScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'briefing' });
   const { record } = useExercises();
   const { source, selectDemo } = useRehearsalSource();

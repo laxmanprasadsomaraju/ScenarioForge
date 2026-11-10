@@ -3,30 +3,65 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { view } from '@forge/bridge';
+import { parseDeepLink, type ParsedLink } from '@shared/links/deepLink';
 import { bridgeCall } from './preview';
 import { routeForPath, ROUTES, type RouteDef, type RouteId } from './routes';
 
-interface RouterValue {
-  route: RouteDef;
-  navigate: (id: RouteId) => void;
+/** The part of the global page URL after `/scenarioforge`. */
+export interface AppLocation {
+  pathname: string;
+  search: string;
 }
 
-const RouterContext = createContext<RouterValue>({ route: ROUTES[0]!, navigate: () => {} });
+interface RouterValue {
+  route: RouteDef;
+  /**
+   * The link in the current URL, parsed strictly. It names identifiers only;
+   * screens still load every record through the user's own resolvers.
+   */
+  link: ParsedLink;
+  navigate: (id: RouteId) => void;
+  /** Pushes an app path that may carry a query, such as a canonical deep link. */
+  navigatePath: (path: string) => void;
+}
+
+const RouterContext = createContext<RouterValue>({
+  route: ROUTES[0]!,
+  link: { kind: 'none' },
+  navigate: () => {},
+  navigatePath: () => {},
+});
 
 type ForgeHistory = Awaited<ReturnType<typeof view.createHistory>>;
 
+function splitPath(path: string): AppLocation {
+  const q = path.indexOf('?');
+  return q < 0
+    ? { pathname: path, search: '' }
+    : { pathname: path.slice(0, q), search: path.slice(q) };
+}
+
+function toLocation(location: { pathname?: unknown; search?: unknown }): AppLocation {
+  return {
+    pathname: typeof location.pathname === 'string' ? location.pathname : '/',
+    search: typeof location.search === 'string' ? location.search : '',
+  };
+}
+
 /**
- * Keeps the current screen in Jira's URL through Forge's history bridge so
- * screens can be linked and the browser back button works. Outside Jira (local
- * development) it falls back to in-memory state.
+ * Keeps the current screen, and any deep link, in Jira's URL through Forge's
+ * history bridge so screens can be linked and back/forward work. Outside Jira
+ * (local development, tests without a history) it falls back to in-memory
+ * state.
  */
 export function RouterProvider({ children }: { children: ReactNode }) {
-  const [route, setRoute] = useState<RouteDef>(ROUTES[0]!);
+  const [location, setLocation] = useState<AppLocation>({ pathname: '/', search: '' });
   const history = useRef<ForgeHistory | null>(null);
 
   useEffect(() => {
@@ -34,8 +69,8 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     bridgeCall(() => view.createHistory())
       .then((h) => {
         history.current = h;
-        setRoute(routeForPath(h.location.pathname));
-        unlisten = h.listen((location) => setRoute(routeForPath(location.pathname)));
+        setLocation(toLocation(h.location));
+        unlisten = h.listen((next) => setLocation(toLocation(next)));
       })
       .catch(() => {
         history.current = null;
@@ -43,16 +78,31 @@ export function RouterProvider({ children }: { children: ReactNode }) {
     return () => unlisten?.();
   }, []);
 
-  const navigate = useCallback((id: RouteId) => {
-    const target = ROUTES.find((r) => r.id === id) ?? ROUTES[0]!;
+  const navigatePath = useCallback((path: string) => {
     if (history.current) {
-      history.current.push(target.path);
+      history.current.push(path);
     } else {
-      setRoute(target);
+      setLocation(splitPath(path));
     }
   }, []);
 
-  return <RouterContext.Provider value={{ route, navigate }}>{children}</RouterContext.Provider>;
+  const navigate = useCallback(
+    (id: RouteId) => navigatePath((ROUTES.find((r) => r.id === id) ?? ROUTES[0]!).path),
+    [navigatePath],
+  );
+
+  const value = useMemo<RouterValue>(
+    () => ({
+      route: routeForPath(location.pathname),
+      // Only Readiness checks and Simulations take links; elsewhere the query is ignored.
+      link: parseDeepLink(location.pathname, location.search),
+      navigate,
+      navigatePath,
+    }),
+    [location, navigate, navigatePath],
+  );
+
+  return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 }
 
 export const useRouter = () => useContext(RouterContext);

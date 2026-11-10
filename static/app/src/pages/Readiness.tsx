@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Button from '@atlaskit/button/new';
-import type { JiraIssueSummary } from '@shared/api';
 import { MAX_RUNBOOKS_READ } from '@shared/analysis/types';
 import { api } from '../lib/api';
-import { useChangeSelection } from '../lib/changeSelection';
+import { useChangeSelection, type SelectedChange } from '../lib/changeSelection';
 import { formatAbsolute } from '../lib/format';
 import { useRouter } from '../lib/router';
 import { useSite } from '../lib/site';
@@ -18,14 +17,23 @@ import {
   AnalysisStatement,
   CoverageFacts,
   FindingItem,
+  findingItemId,
   SubjectsTable,
 } from '../components/readiness/Analysis';
+import { MissingFindingNotice, RejectedLinkNotice } from '../components/readiness/LinkNotice';
 import { ImpactPath } from '../components/readiness/ImpactPath';
 import { RehearseFinding } from '../components/readiness/RehearseFinding';
 
 export function ReadinessPage() {
   const { selected } = useChangeSelection();
-  return selected ? <AnalysisView change={selected} /> : <ChangePicker />;
+  const { link } = useRouter();
+  if (selected) return <AnalysisView change={selected} />;
+  return (
+    <>
+      {link.kind === 'rejected' ? <RejectedLinkNotice link={link} /> : null}
+      <ChangePicker />
+    </>
+  );
 }
 
 function ChangePicker() {
@@ -89,19 +97,38 @@ function ChangePicker() {
   );
 }
 
-function AnalysisView({ change }: { change: JiraIssueSummary }) {
+function AnalysisView({ change }: { change: SelectedChange }) {
   const { clear } = useChangeSelection();
   const { openInJira } = useSite();
   // One run: the graph carries the analysis; analyzeChange is only a fallback.
   const { analysis: state, graph, retry, retryGraph } = useReadinessCheck(change.key);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const { focusFinding } = change;
+  // A linked finding counts only when the user's own result contains it.
+  const linkedId =
+    state.status === 'ready' && focusFinding
+      ? (state.data.findings.find((f) => f.id === focusFinding)?.id ?? null)
+      : null;
 
   useEffect(() => {
-    headingRef.current?.focus();
-  }, [state.status]);
+    const item = linkedId ? document.getElementById(findingItemId(linkedId)) : null;
+    if (item) {
+      item.scrollIntoView?.({ block: 'start' });
+      item.focus();
+    } else {
+      headingRef.current?.focus();
+    }
+  }, [state.status, linkedId]);
 
   // Once loaded, show the change exactly as the analysis read it from Jira.
-  const shown = state.status === 'ready' ? state.data.change : change;
+  const shown =
+    state.status === 'ready'
+      ? state.data.change
+      : (change.summary ?? {
+          key: change.key,
+          summary: `Reading ${change.key} from Jira with your access.`,
+          browsePath: `/browse/${change.key}`,
+        });
 
   return (
     <>
@@ -140,6 +167,10 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
         ) : null}
       </section>
 
+      {state.status === 'ready' && focusFinding && !linkedId ? (
+        <MissingFindingNotice changeKey={state.data.changeKey} />
+      ) : null}
+
       {state.status === 'ready' && state.data.findings.length > 0 ? (
         <section className="region" aria-labelledby="findings-title">
           <h2 id="findings-title" className="section-title">
@@ -147,13 +178,24 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
           </h2>
           <ol className="findings">
             {state.data.findings.map((f) => (
-              <FindingItem key={f.id} finding={f} change={state.data.change} />
+              <FindingItem
+                key={f.id}
+                finding={f}
+                change={state.data.change}
+                linked={f.id === linkedId}
+              />
             ))}
           </ol>
         </section>
       ) : null}
 
-      {state.status === 'ready' ? <RehearseFinding analysis={state.data} /> : null}
+      {state.status === 'ready' ? (
+        <RehearseFinding
+          key={linkedId ?? ''}
+          analysis={state.data}
+          {...(linkedId ? { prefill: { findingId: linkedId } } : {})}
+        />
+      ) : null}
 
       {state.status === 'ready' ? (
         <section
