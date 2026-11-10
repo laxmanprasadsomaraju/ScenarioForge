@@ -1,4 +1,6 @@
+import type { ChangeEvidence } from '../../shared/analysis/types';
 import type { ApiError, JiraIssueSummary } from '../../shared/api';
+import { adfToText } from './adf';
 
 const STATUS_CATEGORIES = new Set(['new', 'indeterminate', 'done']);
 
@@ -56,6 +58,70 @@ export function mapSearchResponse(body: unknown): MappedSearch | null {
   const issues = record.issues.map(mapIssue).filter((i): i is JiraIssueSummary => i !== null);
   const truncated = record.isLast === false || typeof record.nextPageToken === 'string';
   return { issues, truncated };
+}
+
+/** Fields of a change read for analysis; remote links are read separately. */
+export type IssueDetail = Omit<ChangeEvidence, 'remoteLinks' | 'retrievedAt'>;
+
+/**
+ * Maps `GET /rest/api/3/issue/{key}?fields=summary,description,status,issuetype,updated`.
+ * Text is kept as written (the description is flattened from ADF, see adf.ts);
+ * missing fields are reported as "Unknown" or null, never guessed.
+ */
+export function mapIssueDetail(raw: unknown): IssueDetail | null {
+  const issue = asRecord(raw);
+  const key = asString(issue?.key);
+  if (!issue || !key || !/^[A-Z][A-Z0-9_]*-\d+$/.test(key)) {
+    return null;
+  }
+  const fields = asRecord(issue.fields) ?? {};
+  return {
+    origin: 'live',
+    key,
+    summary: asString(fields.summary) ?? '(no summary)',
+    descriptionText: adfToText(fields.description),
+    status: asString(asRecord(fields.status)?.name) ?? 'Unknown',
+    issueType: asString(asRecord(fields.issuetype)?.name) ?? 'Unknown',
+    updated: asString(fields.updated),
+    browsePath: `/browse/${key}`,
+  };
+}
+
+/** Remote links kept per issue; more than this is not useful evidence. */
+export const MAX_REMOTE_LINKS = 50;
+const MAX_URL_LENGTH = 2_048;
+
+/** Only absolute http(s) URLs without whitespace or credentials are kept. */
+function safeAbsoluteUrl(value: unknown): string | null {
+  const url = asString(value);
+  if (!url || url.length > MAX_URL_LENGTH || !/^https?:\/\/[^\s/@]+(\/[^\s]*)?$/i.test(url)) {
+    return null;
+  }
+  return url;
+}
+
+/**
+ * Maps `GET /rest/api/3/issue/{key}/remotelink` (an array of remote links).
+ * Links without a safe http(s) URL are dropped; a missing title falls back to
+ * the URL so the link is still identifiable.
+ */
+export function mapRemoteLinks(body: unknown): ChangeEvidence['remoteLinks'] | null {
+  if (!Array.isArray(body)) {
+    return null;
+  }
+  const links: ChangeEvidence['remoteLinks'] = [];
+  for (const raw of body) {
+    const object = asRecord(asRecord(raw)?.object);
+    const url = safeAbsoluteUrl(object?.url);
+    if (!url) {
+      continue;
+    }
+    links.push({ title: asString(object?.title) ?? url, url });
+    if (links.length >= MAX_REMOTE_LINKS) {
+      break;
+    }
+  }
+  return links;
 }
 
 /** Translates an Atlassian HTTP status into a user-safe error. */

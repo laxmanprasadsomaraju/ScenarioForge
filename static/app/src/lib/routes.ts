@@ -20,7 +20,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'overview', path: '/', label: 'Overview' },
   { id: 'changes', path: '/changes', label: 'Changes' },
   { id: 'plans', path: '/recovery-plans', label: 'Recovery plans' },
-  { id: 'readiness', path: '/readiness-checks', label: 'Readiness checks', plannedFor: 'M3' },
+  { id: 'readiness', path: '/readiness-checks', label: 'Readiness checks' },
   { id: 'simulations', path: '/simulations', label: 'Simulations' },
   { id: 'crisis-room', path: '/crisis-room', label: 'Crisis room', plannedFor: 'M7' },
   { id: 'reports', path: '/reports', label: 'Reports' },

@@ -12,6 +12,7 @@ import { api } from '../lib/api';
 import { formatAbsolute } from '../lib/format';
 import { useApi } from '../lib/useApi';
 import { IssueTable } from '../components/IssueTable';
+import { CheckImpactButton } from '../components/readiness/CheckImpactButton';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
@@ -63,7 +64,7 @@ export function ChangesPage() {
     <>
       <PageHeader
         title="Changes"
-        lead="Jira work updated recently. In M3 each change is checked against the recovery plans it could break."
+        lead="Jira work updated recently. Check any change against the recovery runbooks it could affect."
         aside={<OriginTag origin="live" />}
       />
 
@@ -178,7 +179,11 @@ export function ChangesPage() {
               {state.data.truncated ? ' (Jira has more; narrow the window to see older ones)' : ''}.
               Fetched {formatAbsolute(state.data.fetchedAt)} with <code>{state.data.jql}</code>
             </p>
-            <IssueTable issues={visible} caption="Jira issues updated recently" />
+            <IssueTable
+              issues={visible}
+              caption="Jira issues updated recently"
+              rowAction={(issue) => <CheckImpactButton issue={issue} />}
+            />
           </>
         ) : null}
       </section>

@@ -11,20 +11,9 @@ interface PlannedScreen {
   meanwhile: { label: string; route: RouteId };
 }
 
-export type PlannedId = 'readiness' | 'crisis-room';
+export type PlannedId = 'crisis-room';
 
 export const PLANNED: Record<PlannedId, PlannedScreen> = {
-  readiness: {
-    title: 'Readiness checks',
-    lead: 'Evidence-backed checks that a recovery plan still works after a change.',
-    milestone: 'M3',
-    will: [
-      'Flag runbook steps that depend on something a change removed.',
-      'Cite the Jira issue and runbook text behind every finding.',
-      'Keep unverified AI suggestions separate from confirmed facts.',
-    ],
-    meanwhile: { label: 'Review recent Jira changes', route: 'changes' },
-  },
   'crisis-room': {
     title: 'Crisis room',
     lead: 'A shared rehearsal where each participant holds a role.',

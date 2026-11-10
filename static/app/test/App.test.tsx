@@ -71,25 +71,23 @@ describe('Rehearsal', () => {
 });
 
 describe('Planned screens', () => {
-  it.each([
-    ['Readiness checks', 'M3', 'Review recent Jira changes', 'Changes'],
-    ['Crisis room', 'M7', 'Rehearse solo with the demo scenario', 'Recovery rehearsal'],
-  ])('%s says Planned for %s and offers a working alternative', async (label, m, action, dest) => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(nav().getByRole('link', { name: `${label}, planned for ${m}` }));
+  it.each([['Crisis room', 'M7', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
+    '%s says Planned for %s and offers a working alternative',
+    async (label, m, action, dest) => {
+      const user = userEvent.setup();
+      render(<App />);
+      await user.click(nav().getByRole('link', { name: `${label}, planned for ${m}` }));
 
-    // Lazy screen: the skeleton shows until its chunk resolves.
-    expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
-    expect(screen.getByText(`Planned for ${m}`)).toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveFocus();
+      // Lazy screen: the skeleton shows until its chunk resolves.
+      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
+      expect(screen.getByText(`Planned for ${m}`)).toBeInTheDocument();
+      expect(screen.getByRole('main')).toHaveFocus();
 
-    await user.click(screen.getByRole('button', { name: action }));
-    expect(await screen.findByRole('heading', { level: 1, name: dest })).toBeInTheDocument();
-    expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent(
-      dest === 'Changes' ? 'Changes' : 'Simulations',
-    );
-  });
+      await user.click(screen.getByRole('button', { name: action }));
+      expect(await screen.findByRole('heading', { level: 1, name: dest })).toBeInTheDocument();
+      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Simulations');
+    },
+  );
 });
 
 describe('Origin labels', () => {

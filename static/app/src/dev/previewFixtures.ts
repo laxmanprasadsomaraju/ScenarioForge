@@ -1,4 +1,5 @@
 import type { ApiResult } from '@shared/api';
+import type { ChangeAnalysis, ChangeSubject } from '@shared/analysis/types';
 import type { PreviewMode } from '../lib/preview';
 
 // DEV PREVIEW FIXTURES: used only by the local Vite dev server for visual
@@ -37,9 +38,160 @@ const ISSUES = [
   ],
 ] as const;
 
+const LEGACY_AUTH: ChangeSubject = {
+  term: 'legacyauth',
+  display: 'LegacyAuth',
+  action: 'retire',
+  excerpt: 'We will decommission the LegacyAuth tenant on 30 November.',
+  replacement: 'NimbusID',
+};
+
+function previewAnalysis(issueKey: string): ChangeAnalysis {
+  const base = {
+    changeKey: issueKey,
+    change: { key: issueKey, summary: 'Preview change', browsePath: `/browse/${issueKey}` },
+    analyzedAt: iso(0),
+  };
+  if (issueKey === 'PREVIEW-14') {
+    return {
+      ...base,
+      status: 'findings',
+      subjects: [LEGACY_AUTH],
+      coverage: {
+        pagesFound: 4,
+        pagesRead: 3,
+        pagesWithoutSteps: 1,
+        pagesSkipped: 1,
+        pagesChecked: [
+          {
+            pageId: '1001',
+            title: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+            webuiPath: '/spaces/SFDEMO/pages/1001',
+            stepSource: 'ordered-list',
+          },
+          {
+            pageId: '1002',
+            title: '[DEMO] RB-DB-02 Database failover runbook',
+            webuiPath: '/spaces/SFDEMO/pages/1002',
+            stepSource: 'ordered-list',
+          },
+          {
+            pageId: '1003',
+            title: '[DEMO] Recovery notes without steps',
+            webuiPath: '/spaces/SFDEMO/pages/1003',
+            stepSource: 'none',
+          },
+        ],
+      },
+      findings: [
+        {
+          id: 'f1',
+          changeKey: issueKey,
+          pageId: '1001',
+          pageTitle: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+          stepOrder: 3,
+          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
+          subject: LEGACY_AUTH,
+          confidence: 'confirmed',
+          basis: ['term-match', 'page-mentions-issue'],
+          explanation: `Step 3 names LegacyAuth, which ${issueKey} retires, and the page mentions ${issueKey}.`,
+          aiAssisted: false,
+          evidence: [
+            {
+              id: 'e1',
+              origin: 'live',
+              kind: 'jira-issue',
+              title: issueKey,
+              excerpt: LEGACY_AUTH.excerpt,
+            },
+            {
+              id: 'e2',
+              origin: 'live',
+              kind: 'runbook-step',
+              title: '[DEMO] RB-AUTH-01 Customer sign-in recovery, step 3',
+              excerpt:
+                'Fail over to the backup identity provider: authctl failover --target legacyauth',
+              url: '/spaces/SFDEMO/pages/1001',
+            },
+          ],
+        },
+        {
+          id: 'f2',
+          changeKey: issueKey,
+          pageId: '1003',
+          pageTitle: '[DEMO] RB-SSO-04 Partner single sign-on outage',
+          stepOrder: 2,
+          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
+          subject: LEGACY_AUTH,
+          confidence: 'suspected',
+          basis: ['term-match'],
+          explanation: `Step 2 names LegacyAuth, which ${issueKey} retires. No explicit link between the change and this page was found.`,
+          aiAssisted: false,
+          evidence: [
+            {
+              id: 'e3',
+              origin: 'live',
+              kind: 'jira-issue',
+              title: issueKey,
+              excerpt: LEGACY_AUTH.excerpt,
+            },
+            {
+              id: 'e4',
+              origin: 'live',
+              kind: 'runbook-step',
+              title: '[DEMO] RB-SSO-04 Partner single sign-on outage, step 2',
+              excerpt:
+                'If partner logins fail, route them through LegacyAuth until the primary recovers.',
+              url: '/spaces/SFDEMO/pages/1003',
+            },
+          ],
+        },
+      ],
+    };
+  }
+  if (issueKey === 'PREVIEW-13') {
+    return {
+      ...base,
+      status: 'no-findings',
+      subjects: [
+        {
+          term: 'session store',
+          display: 'session store',
+          action: 'migrate',
+          excerpt: 'Move the session store to the regional cluster.',
+        },
+      ],
+      findings: [],
+      coverage: {
+        pagesFound: 5,
+        pagesRead: 5,
+        pagesWithoutSteps: 0,
+        pagesSkipped: 0,
+        pagesChecked: [],
+      },
+    };
+  }
+  return {
+    ...base,
+    status: 'not-assessed',
+    notAssessedReason:
+      'No retirement, replacement, migration, rename, disable or upgrade was recognised in the change text, so no runbook was checked.',
+    subjects: [],
+    findings: [],
+    coverage: {
+      pagesFound: 0,
+      pagesRead: 0,
+      pagesWithoutSteps: 0,
+      pagesSkipped: 0,
+      pagesChecked: [],
+    },
+  };
+}
+
 export async function previewCall(
   functionKey: string,
   mode: PreviewMode,
+  payload?: object,
 ): Promise<ApiResult<unknown>> {
   await new Promise((r) => setTimeout(r, 400));
   if (mode === 'error') {
@@ -51,6 +203,13 @@ export async function previewCall(
         upstreamStatus: 403,
       },
     };
+  }
+  if (functionKey === 'analyzeChange') {
+    const issueKey =
+      payload && 'issueKey' in payload && typeof payload.issueKey === 'string'
+        ? payload.issueKey
+        : '';
+    return { ok: true, data: previewAnalysis(issueKey) };
   }
   if (functionKey === 'listRecoveryPages') {
     return {

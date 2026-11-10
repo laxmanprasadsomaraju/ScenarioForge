@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import type { ApiResult, JiraIssueSummary, ListChangesResponse } from '@shared/api';
+import { ChangeSelectionProvider } from '../src/lib/changeSelection';
 import { ExerciseProvider } from '../src/lib/exercises';
 import { RouterProvider } from '../src/lib/router';
 import { SiteProvider } from '../src/lib/site';
@@ -10,7 +11,9 @@ export function renderInApp(ui: ReactNode) {
   return render(
     <SiteProvider>
       <RouterProvider>
-        <ExerciseProvider>{ui}</ExerciseProvider>
+        <ChangeSelectionProvider>
+          <ExerciseProvider>{ui}</ExerciseProvider>
+        </ChangeSelectionProvider>
       </RouterProvider>
     </SiteProvider>,
   );

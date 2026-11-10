@@ -19,7 +19,7 @@ Jira (browser)                         Forge platform (Atlassian-hosted)
 | Path                                            | Responsibility                                                                                                                                         |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `manifest.yml`                                  | `global:fullPage` module, resolver function, scopes, CSP for Atlaskit styles                                                                           |
-| `src/index.ts`                                  | Resolvers: `getConnectionStatus`, `listRecentChanges`, `listRecoveryPages`, `getRecoveryProcedure`. Return `ApiResult`                                 |
+| `src/index.ts`                                  | Resolvers: `getConnectionStatus`, `listRecentChanges`, `listRecoveryPages`, `getRecoveryProcedure`, `analyzeChange`. Return `ApiResult`                |
 | `src/validation.ts`                             | Validates untrusted payloads; builds JQL from enum values only                                                                                         |
 | `src/jira/client.ts`                            | Jira calls behind a `JiraGateway` interface (testable without Forge)                                                                                   |
 | `src/jira/mapping.ts`                           | Maps Jira responses defensively; maps HTTP status to user-safe errors                                                                                  |
@@ -66,10 +66,12 @@ The engine is in `shared/` so it can move server-side in M5 (persisted, auditabl
 
 ## Jira APIs used
 
-| Call                         | Scope            | Purpose                                                    |
-| ---------------------------- | ---------------- | ---------------------------------------------------------- |
-| `GET /rest/api/3/search/jql` | `read:jira-work` | Recent issues (summary, status, type, updated, project)    |
-| `GET /rest/api/3/myself`     | `read:jira-user` | Connection check (display name only is returned to the UI) |
+| Call                                                                              | Scope            | Purpose                                                                                                               |
+| --------------------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `GET /rest/api/3/search/jql`                                                      | `read:jira-work` | Recent issues (summary, status, type, updated, project)                                                               |
+| `GET /rest/api/3/myself`                                                          | `read:jira-user` | Connection check (display name only is returned to the UI)                                                            |
+| `GET /rest/api/3/issue/{key}?fields=summary,description,status,issuetype,updated` | `read:jira-work` | Change analysis (M3): one change, description flattened from ADF (`src/jira/adf.ts`)                                  |
+| `GET /rest/api/3/issue/{key}/remotelink`                                          | `read:jira-work` | Change analysis (M3): remote links (title, http(s) URL) as cross-references; a 404 (issue linking off) means no links |
 
 ## Confluence APIs used
 
@@ -79,6 +81,18 @@ Both run `asUser`. The browser sends enumerated recovery terms and an optional v
 | ------------------------------------------------- | ---------------------- | ------------------------------------------------------------- |
 | `GET /wiki/rest/api/search` (CQL, v1)             | `search:confluence`    | Find recovery pages: id, title, space key, last updated, link |
 | `GET /wiki/api/v2/pages/{id}?body-format=storage` | `read:page:confluence` | Read one page body; plain-text excerpt and ordered steps      |
+
+### Change analysis (M3, `analyzeChange` resolver)
+
+`src/analysis/analyzeChange.ts` orchestrates, with the pure engine (`shared/analysis`) injected as an `AnalysisEngine`. The browser sends only `{ issueKey }` (validated with the issue key pattern). Steps, all `asUser`, no AI:
+
+1. Read the issue and its remote links. Any Jira failure is an `ApiResult` error.
+2. The engine extracts change subjects. None: the engine's `not-assessed` result is returned and Confluence is not called.
+3. Subject search terms from the engine are re-validated (`^[A-Za-z0-9][A-Za-z0-9._-]{1,39}$`, at most 5) and quoted with `cqlString`: `type = page AND (text ~ "runbook" OR text ~ "recovery" OR text ~ "failover" OR text ~ "disaster recovery") AND (text ~ "<term>" OR ...)`, limit 25.
+4. Up to `MAX_RUNBOOKS_READ` (5) pages are read with the same storage-to-text mapping as `getRecoveryProcedure`. Pages not read (limit, permission, any error) count as `coverage.pagesSkipped`.
+5. A Confluence search failure, or no page read, gives `not-assessed` with `notAssessedReason` and the subjects kept, never an error that hides the subjects and never `no-findings`.
+
+Text is quoted as retrieved. The only change is whitespace: block boundaries and hard breaks end a line, whitespace and control characters within a line collapse to one space, empty lines are dropped. No list or heading markers are added. ADF limits: depth 32, 10,000 nodes, 50,000 characters.
 
 ## Planned integrations
 

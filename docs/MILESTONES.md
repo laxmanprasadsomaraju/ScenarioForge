@@ -40,9 +40,15 @@ Status values: **Done** (acceptance criteria verified), **Partly done** (named c
 - [ ] JSM services and owners
 - [ ] Confluence scopes on the `development` install (needs owner approval: major version, consent)
 
-## M3: Change-to-recovery intelligence
+## M3: Change-to-recovery intelligence, Done (live-verified on confluence-test)
 
-Match changes to affected runbook steps. Confirmed (rule-based) vs suspected (AI) findings, separated in data and UI. Acceptance: labelled fixture set with false-positive and false-negative tests; failed analysis shows "unknown".
+- [x] Deterministic, AI-free engine: subjects (retire, replace, migrate, rename, disable, upgrade), step matching with word boundaries, confirmed only with an explicit cross-reference
+- [x] Cancelled, historical, partial, replacement-only and ambiguous changes handled; 34 labelled synthetic cases, precision 1.000, recall 0.923
+- [x] Exact quotes from Jira and Confluence (tested as substrings of the source)
+- [x] "No findings" reported with coverage, never as a pass; unreadable or step-less runbooks give "Not assessed"
+- [x] Readiness checks screen with Confirmed / Suspected / Not assessed in words
+- [x] Live test on real Jira and Confluence: MC-62 suspected then confirmed, MC-63 and MC-42 not assessed (docs/M3_LIVE_TEST.md)
+- [x] Evidence: runbook links, pages checked, Jira summary and link in every analysis
 
 ## M4: Recovery readiness graph
 

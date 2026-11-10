@@ -115,3 +115,9 @@ export interface RecoveryProcedureExcerpt {
   stepSource: 'ordered-list' | 'none';
   evidence: EvidenceReference;
 }
+
+/*
+ * Change-to-recovery analysis (M3). The contract lives in shared/analysis;
+ * re-exported here so the UI can import every resolver type from one place.
+ */
+export type { AnalyzeChangeRequest, AnalyzeChangeResponse, ChangeAnalysis } from './analysis/types';
