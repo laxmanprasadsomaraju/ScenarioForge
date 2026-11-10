@@ -1,4 +1,5 @@
 import type { ChangeAnalysis } from '../../shared/analysis/types';
+import { FINDING_ID, MAX_FINDING_ID_LENGTH } from '../../shared/links/deepLink';
 import type { CallOutcome, ReserveResult, UsageGovernor } from '../../shared/agents/budget';
 import type { CacheInputValue, ResponseCache } from '../../shared/agents/cache';
 import { evidenceFingerprint } from '../../shared/agents/cache';
@@ -158,8 +159,6 @@ type Parsed<T> = { ok: true; value: T } | { ok: false; failure: ActionFailure };
 
 const ACCOUNT_ID = /^[A-Za-z0-9:_-]{1,128}$/;
 /** `{changeKey}:{pageId}:{stepOrder}:{term}` as built by shared/analysis/engine.ts. */
-const FINDING_ID = /^([A-Z][A-Z0-9_]*-\d+):(\d{1,19}):(\d{1,4}):([a-z0-9]{1,40})$/;
-const MAX_FINDING_ID_LENGTH = 160;
 /** Opaque run id: a UUID or `session-…`; never interpreted. */
 const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{7,63}$/;
 

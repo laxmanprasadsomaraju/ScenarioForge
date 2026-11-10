@@ -19,8 +19,8 @@ const ISSUE_KEY = /^[A-Z][A-Z0-9_]*-\d+$/;
 const MAX_ISSUE_KEY_LENGTH = 64;
 
 /** M3 engine finding id: `{KEY}:{pageId}:{step}:{term}` (shared/analysis/engine.ts). */
-const FINDING_ID = /^([A-Z][A-Z0-9_]*-\d+):(\d{1,19}):(\d{1,4}):([a-z0-9]{1,40})$/;
-const MAX_FINDING_ID_LENGTH = 160;
+export const FINDING_ID = /^([A-Z][A-Z0-9_]*-\d+):(\d{1,19}):(\d{1,4}):([a-z0-9]{1,40})$/;
+export const MAX_FINDING_ID_LENGTH = 160;
 
 export const RESTORE_RANGE = { min: 5, max: 1440 } as const;
 export const NOTIFY_RANGE = { min: 1, max: 240 } as const;
