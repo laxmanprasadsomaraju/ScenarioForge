@@ -11,6 +11,7 @@ import type {
   RecoveryProcedureExcerpt,
 } from '@shared/api';
 import type { AnalyzeChangeRequest, AnalyzeChangeResponse } from '@shared/analysis/types';
+import type { GetReadinessGraphRequest, GetReadinessGraphResponse } from '@shared/graph/types';
 
 /**
  * Typed wrappers around Forge resolver calls. A bridge failure (network,
@@ -52,4 +53,6 @@ export const api = {
     call<RecoveryProcedureExcerpt>('getRecoveryProcedure', request),
   analyzeChange: (request: AnalyzeChangeRequest) =>
     call<AnalyzeChangeResponse>('analyzeChange', request),
+  getReadinessGraph: (request: GetReadinessGraphRequest) =>
+    call<GetReadinessGraphResponse>('getReadinessGraph', request),
 };

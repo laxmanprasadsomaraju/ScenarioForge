@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   analyzeChange: vi.fn(),
+  getReadinessGraph: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ api }));
 
@@ -95,6 +96,13 @@ beforeEach(() => {
   });
   api.listRecentChanges.mockResolvedValue(changes([MC12, issue({ key: 'MC-9' })]));
   api.analyzeChange.mockReset();
+  // These tests cover the M3 findings on their own: the readiness graph is
+  // unavailable, so the screen falls back to analyzeChange. The graph path
+  // (one run, findings read from the graph) is covered in ImpactPath.test.tsx.
+  api.getReadinessGraph.mockReset().mockResolvedValue({
+    ok: false,
+    error: { code: 'NOT_FOUND', message: 'The impact path is not available for this change.' },
+  });
 });
 
 describe('Readiness checks', () => {
@@ -317,13 +325,18 @@ describe('Readiness checks', () => {
     expect(api.analyzeChange).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps change rehearsal disabled and says when it arrives', async () => {
+  it('asks for a restore target before rehearsing a finding', async () => {
     api.analyzeChange.mockResolvedValue(analysis({ findings: [finding()] }));
-    await openCheck();
-    const rehearse = screen.getByRole('button', { name: 'Rehearse this change' });
+    const user = await openCheck();
+    const rehearse = await screen.findByRole('button', { name: 'Rehearse this finding' });
     expect(rehearse).toBeDisabled();
-    expect(rehearse).toHaveAccessibleDescription('Change-specific rehearsals arrive in M5');
-    expect(screen.getByText('Change-specific rehearsals arrive in M5')).toBeVisible();
+    const target = screen.getByRole('textbox', { name: 'Restore target (minutes)' });
+    await user.type(target, '3');
+    expect(screen.getByText('Enter whole minutes from 5 to 1440.')).toBeInTheDocument();
+    expect(rehearse).toBeDisabled();
+    await user.clear(target);
+    await user.type(target, '30');
+    expect(rehearse).toBeEnabled();
   });
 
   it('returns to the list from the analysis', async () => {

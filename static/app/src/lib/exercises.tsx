@@ -1,10 +1,12 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { ExerciseEvaluation, ExerciseSession, SimulationScenario } from '@shared/domain/types';
-import type { RetestComparison } from '@shared/simulation/types';
+import type { RetestComparison, ScenarioRemediationModel } from '@shared/simulation/types';
 
 export interface CompletedExercise {
   /** The exact scenario version played; a retest runs a remediated version. */
   scenario: SimulationScenario;
+  /** Remediation model of the scenario played, used for retests and verdicts. */
+  remediation: ScenarioRemediationModel;
   session: ExerciseSession;
   evaluation: ExerciseEvaluation;
   completedAt: string;

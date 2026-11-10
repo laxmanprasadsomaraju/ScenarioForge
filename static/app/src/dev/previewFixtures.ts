@@ -1,5 +1,7 @@
 import type { ApiResult } from '@shared/api';
 import type { ChangeAnalysis, ChangeSubject } from '@shared/analysis/types';
+import type { EvidenceReference } from '@shared/domain/types';
+import type { GraphEdge, ReadinessGraph } from '@shared/graph/types';
 import type { PreviewMode } from '../lib/preview';
 
 // DEV PREVIEW FIXTURES: used only by the local Vite dev server for visual
@@ -121,7 +123,7 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
           pageId: '1003',
           pageTitle: '[DEMO] RB-SSO-04 Partner single sign-on outage',
           stepOrder: 2,
-          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
+          pageWebuiPath: '/spaces/SFDEMO/pages/1003',
           subject: LEGACY_AUTH,
           confidence: 'suspected',
           basis: ['term-match'],
@@ -188,6 +190,288 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
   };
 }
 
+function quote(id: string, title: string, excerpt: string, url?: string): EvidenceReference {
+  return {
+    id,
+    origin: 'live',
+    kind: url?.startsWith('/browse') ? 'jira-issue' : 'runbook-step',
+    title,
+    excerpt,
+    url,
+  };
+}
+
+function previewGraph(issueKey: string): ReadinessGraph {
+  const analysis = previewAnalysis(issueKey);
+  const change = `change:${issueKey}`;
+  const base = {
+    changeKey: issueKey,
+    builtAt: iso(0),
+    analysis,
+    unassessed: [],
+  };
+  const sources: ReadinessGraph['sources'] = [
+    { source: 'jira', status: 'used', detail: `Read ${issueKey}.` },
+    { source: 'confluence', status: 'used', detail: '3 of 4 runbook pages read.' },
+    { source: 'jsm', status: 'not-connected', detail: 'No service source is connected yet.' },
+    {
+      source: 'teamwork-graph',
+      status: issueKey === 'PREVIEW-14' ? 'used' : 'not-connected',
+      detail:
+        issueKey === 'PREVIEW-14'
+          ? 'Service and owner relations read for 1 page.'
+          : 'Teamwork Graph not connected.',
+    },
+  ];
+  if (issueKey !== 'PREVIEW-14') {
+    return {
+      ...base,
+      sources,
+      nodes: [
+        {
+          id: change,
+          kind: 'change',
+          label: issueKey,
+          origin: 'live',
+          source: 'jira',
+          path: `/browse/${issueKey}`,
+        },
+        ...analysis.subjects.map((s) => ({
+          id: `subject:${s.term}`,
+          kind: 'subject' as const,
+          label: s.display,
+          origin: 'live' as const,
+          source: 'm3-analysis' as const,
+        })),
+      ],
+      edges: analysis.subjects.map((s) => ({
+        id: `names:${s.term}`,
+        kind: 'change-names-subject' as const,
+        from: change,
+        to: `subject:${s.term}`,
+        confidence: 'confirmed' as const,
+        basis: `${issueKey} names ${s.display} in its description.`,
+        source: 'jira' as const,
+        evidence: [quote(`q-${s.term}`, issueKey, s.excerpt, `/browse/${issueKey}`)],
+      })),
+    };
+  }
+  const changeQuote = quote('q1', issueKey, LEGACY_AUTH.excerpt, `/browse/${issueKey}`);
+  const edges: GraphEdge[] = [
+    {
+      id: 'e-names',
+      kind: 'change-names-subject',
+      from: change,
+      to: 'subject:legacyauth',
+      confidence: 'confirmed',
+      basis: `${issueKey} says it retires LegacyAuth.`,
+      source: 'jira',
+      evidence: [changeQuote],
+    },
+    {
+      id: 'e-replaced',
+      kind: 'subject-replaced-by',
+      from: 'subject:legacyauth',
+      to: 'subject:nimbusid',
+      confidence: 'confirmed',
+      basis: `${issueKey} names NimbusID as the replacement.`,
+      source: 'jira',
+      evidence: [changeQuote],
+    },
+    {
+      id: 'e-step3',
+      kind: 'step-depends-on-subject',
+      from: 'step:1001:3',
+      to: 'subject:legacyauth',
+      confidence: 'confirmed',
+      basis: `Step 3 names LegacyAuth and the page mentions ${issueKey}.`,
+      source: 'm3-analysis',
+      evidence: [
+        changeQuote,
+        quote(
+          'q2',
+          '[DEMO] RB-AUTH-01 Customer sign-in recovery, step 3',
+          'Fail over to the backup identity provider: authctl failover --target legacyauth',
+          '/spaces/SFDEMO/pages/1001',
+        ),
+      ],
+    },
+    {
+      id: 'e-page3',
+      kind: 'step-in-page',
+      from: 'step:1001:3',
+      to: 'page:1001',
+      confidence: 'confirmed',
+      basis: 'Step 3 is item 3 of the numbered list on this page.',
+      source: 'confluence',
+      evidence: [
+        quote(
+          'q3',
+          '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+          'Fail over to the backup identity provider: authctl failover --target legacyauth',
+          '/spaces/SFDEMO/pages/1001',
+        ),
+      ],
+    },
+    {
+      id: 'e-service',
+      kind: 'page-recovers-service',
+      from: 'page:1001',
+      to: 'service:customer-sign-in',
+      confidence: 'confirmed',
+      basis: 'The page is linked to this service in Teamwork Graph.',
+      source: 'teamwork-graph',
+      evidence: [
+        {
+          id: 'q4',
+          origin: 'live',
+          kind: 'jsm-service',
+          title: 'Customer sign-in recovers through RB-AUTH-01',
+        },
+      ],
+    },
+    {
+      id: 'e-team',
+      kind: 'team-owns-service',
+      from: 'team:identity-platform',
+      to: 'service:customer-sign-in',
+      confidence: 'confirmed',
+      basis: 'Teamwork Graph lists this team as the owner of the service.',
+      source: 'teamwork-graph',
+      evidence: [
+        {
+          id: 'q5',
+          origin: 'live',
+          kind: 'jsm-service',
+          title: 'Identity Platform owns Customer sign-in',
+        },
+      ],
+    },
+    {
+      id: 'e-step2',
+      kind: 'step-depends-on-subject',
+      from: 'step:1003:2',
+      to: 'subject:legacyauth',
+      confidence: 'suspected',
+      basis: 'Step 2 names LegacyAuth. No explicit link to the change was found.',
+      source: 'm3-analysis',
+      evidence: [
+        changeQuote,
+        quote(
+          'q6',
+          '[DEMO] RB-SSO-04 Partner single sign-on outage, step 2',
+          'If partner logins fail, route them through LegacyAuth until the primary recovers.',
+          '/spaces/SFDEMO/pages/1003',
+        ),
+      ],
+    },
+    {
+      id: 'e-page2',
+      kind: 'step-in-page',
+      from: 'step:1003:2',
+      to: 'page:1003',
+      confidence: 'confirmed',
+      basis: 'Step 2 is item 2 of the numbered list on this page.',
+      source: 'confluence',
+      evidence: [
+        quote(
+          'q7',
+          '[DEMO] RB-SSO-04 Partner single sign-on outage',
+          'If partner logins fail, route them through LegacyAuth until the primary recovers.',
+          '/spaces/SFDEMO/pages/1003',
+        ),
+      ],
+    },
+  ];
+  return {
+    ...base,
+    sources,
+    nodes: [
+      {
+        id: change,
+        kind: 'change',
+        label: issueKey,
+        origin: 'live',
+        source: 'jira',
+        path: `/browse/${issueKey}`,
+      },
+      {
+        id: 'subject:legacyauth',
+        kind: 'subject',
+        label: 'LegacyAuth',
+        origin: 'live',
+        source: 'm3-analysis',
+      },
+      {
+        id: 'subject:nimbusid',
+        kind: 'subject',
+        label: 'NimbusID',
+        origin: 'live',
+        source: 'jira',
+      },
+      {
+        id: 'step:1001:3',
+        kind: 'runbook-step',
+        label: 'Step 3',
+        origin: 'live',
+        source: 'confluence',
+      },
+      {
+        id: 'page:1001',
+        kind: 'runbook-page',
+        label: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+        origin: 'demo',
+        source: 'confluence',
+        path: '/wiki/spaces/SFDEMO/pages/1001',
+      },
+      {
+        id: 'service:customer-sign-in',
+        kind: 'service',
+        label: 'Customer sign-in',
+        origin: 'live',
+        source: 'teamwork-graph',
+      },
+      {
+        id: 'team:identity-platform',
+        kind: 'team',
+        label: 'Identity Platform',
+        origin: 'live',
+        source: 'teamwork-graph',
+      },
+      {
+        id: 'step:1003:2',
+        kind: 'runbook-step',
+        label: 'Step 2',
+        origin: 'live',
+        source: 'confluence',
+      },
+      {
+        id: 'page:1003',
+        kind: 'runbook-page',
+        label: '[DEMO] RB-SSO-04 Partner single sign-on outage',
+        origin: 'demo',
+        source: 'confluence',
+        path: '/wiki/spaces/SFDEMO/pages/1003',
+      },
+    ],
+    edges,
+    unassessed: [
+      {
+        from: 'page:1003',
+        expected: 'service',
+        source: 'jsm',
+        reason: 'No service source is connected yet.',
+      },
+      {
+        from: 'page:1003',
+        expected: 'team',
+        source: 'teamwork-graph',
+        reason: 'No service was found for this page, so no owner could be looked up.',
+      },
+    ],
+  };
+}
+
 export async function previewCall(
   functionKey: string,
   mode: PreviewMode,
@@ -203,6 +487,24 @@ export async function previewCall(
         upstreamStatus: 403,
       },
     };
+  }
+  if (functionKey === 'getReadinessGraph') {
+    const issueKey =
+      payload && 'issueKey' in payload && typeof payload.issueKey === 'string'
+        ? payload.issueKey
+        : '';
+    // PREVIEW-12 shows the impact path failing on its own while the findings stay.
+    if (issueKey === 'PREVIEW-12') {
+      return {
+        ok: false,
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'The readiness graph could not be built.',
+          upstreamStatus: 502,
+        },
+      };
+    }
+    return { ok: true, data: previewGraph(issueKey) };
   }
   if (functionKey === 'analyzeChange') {
     const issueKey =
