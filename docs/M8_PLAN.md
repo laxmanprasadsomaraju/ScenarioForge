@@ -73,7 +73,69 @@ Each is a major version with admin re-approval. Test first in a separate environ
 - A retest after the work item is done stores a verdict linked to the original finding and the work item.
 - No write without approval in any path (checked in Jira and Confluence audit logs).
 
-## 9. Unverified
+## 9. As built: exact request and fingerprint (Lane A3, 2026-11-10)
+
+Read-only preparation is built; **nothing is created**. There is no create resolver, no POST/PUT/DELETE call, no new scope. Sources read 2026-11-10: Jira platform v3 OpenAPI (`https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json`), ADF reference (`https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/` and the `blockquote`, `paragraph`, `text`, `hardBreak` node and `link` mark pages), ADF JSON schema `@atlaskit/adf-schema` 57.7.39 `dist/json-schema/v1/full.json`, Forge resolver context (`https://developer.atlassian.com/platform/forge/runtime-reference/custom-ui-resolver/`).
+
+**Description as ADF** (`shared/remediation/adf.ts`). `{ version: 1, type: 'doc', content }`. Each blank-line-separated block is a `paragraph`; line breaks inside a block are `hardBreak`. A block starting `Quoted exactly from …:` is that line as a paragraph plus a `blockquote` holding the quoted lines verbatim (no trimming, no smart quotes, never linked). A line `Link: <url>` gets a `link` mark (`attrs.href` = the URL text) only when the URL is absolute https on the trusted site origin; any other URL stays plain text. The footer is a plain paragraph. Flattening with `src/jira/adf.ts` reproduces the normalised description and each quote exactly (tested).
+
+**Requests** (`shared/remediation/request.ts`, `buildCreateIssueRequest(draft, { siteUrl, issueTypeId? })`):
+
+```json
+{
+  "schemaVersion": 1,
+  "createIssue": {
+    "method": "POST",
+    "path": "/rest/api/3/issue",
+    "body": {
+      "fields": {
+        "project": { "key": "OPS" },
+        "issuetype": { "name": "Task" },
+        "summary": "Update … step 3: LegacyAuth retired by MC-62",
+        "description": { "version": 1, "type": "doc", "content": ["…"] },
+        "labels": ["scenarioforge-remediation", "sf-rem-<16 hex>"]
+      }
+    }
+  },
+  "issueLink": {
+    "method": "POST",
+    "path": "/rest/api/3/issueLink",
+    "body": {
+      "type": { "name": "Relates" },
+      "inwardIssue": { "key": "MC-62" },
+      "outwardIssue": { "key": "{createdIssueKey}" }
+    }
+  },
+  "remoteLink": {
+    "method": "POST",
+    "path": "/rest/api/3/issue/{createdIssueKey}/remotelink",
+    "body": {
+      "globalId": "scenarioforge:finding:<findingId>",
+      "object": { "url": "https://<site>/wiki/spaces/…", "title": "<page>, step 3" }
+    }
+  }
+}
+```
+
+- `createIssue` body is `IssueUpdateDetails.fields`; the spec says `description` takes ADF. `issuetype`: the spec example uses `{ "id": … }`; `{ "name": … }` is sent until the issue type id is read from createmeta (`issueTypeId` switches to `{ "id" }`). `project` uses `key` (spec example uses `id`; both are documented field forms). [Verify on first live create] that `{ name }` is accepted.
+- `issueLink` body is `LinkIssueRequestJsonBean` (required `type`, `inwardIssue`, `outwardIssue`; `additionalProperties: false`). The new work item is the outward ("from") issue, so _Link issues_ is needed in the user's chosen project.
+- `remoteLink` body is `RemoteIssueLinkRequest` (required `object` with required `title`, `url`; `globalId` ≤ 255, create-or-update). Omitted when the page path is unknown.
+- `{createdIssueKey}` is a placeholder: the follow-up calls need the key Jira returns. `resolveFollowUpRequests(request, key)` fills it in only for a key in the request's project and changes nothing else.
+
+**Fingerprint.** `requestHash = SHA-256(canonicalJson(request))` over every call's method, path and body exactly as sent (placeholder included). Any byte change (project, issue type, summary, ADF text or href, labels, link type/direction/keys, remote link URL/title/globalId, paths, methods) gives a new hash (tested field by field). `approveRequest(draft, context, approver, at)` returns `{ draftHash, requestHash, approverAccountId, approvedAt }`; `checkApproval` (draft) is unchanged; `checkRequestApproval(request, approval, actor)` is missing → wrong-approver → stale → valid, and a draft-only approval (no `requestHash`) is stale.
+
+**Link trust rule** (`src/remediation/site.ts`). The site origin comes only from `GET /rest/api/3/serverInfo` `baseUrl` (spec: OAuth scopes `[]`, "Permissions required: None"), read through Forge `requestJira`, which reaches only the installation's site. The Forge resolver context has `cloudId` but no site URL, and the Custom UI `getContext().siteUrl` comes from the browser, so neither is used. Accepted only as `https://<host>.atlassian.net` (no user info, port, path, query, fragment; one trailing `/` dropped). The browser never supplies a URL: unknown payload fields are ignored. `buildCreateIssueRequest` refuses a change link other than `<site>/browse/<changeKey>` and a page link not under `<site>/wiki/`.
+
+**Resolvers** (`src/remediation/prepare.ts`, registered in `src/index.ts`, all GET as the user):
+
+- `prepareRemediationRequest({ changeKey, findingId, fixId, projectKey, issueTypeName, summary? })`: serverInfo → `analyzeChange` (issue, remote links, Confluence search, pages) → finding by id → fix text from `generateRehearsal` (`rem-step`, `rem-change-check`) or `review-step` → draft → exact request → duplicate search `GET /rest/api/3/search/jql?jql=labels = "<sf-rem-…>" ORDER BY created ASC&maxResults=10&fields=summary,labels`. Returns `{ draft, request, draftHash, requestHash, duplicate: { decision: none|duplicate|ambiguous, issueKey?, matches, reason }, siteUrl, preparedAt }`. A failed duplicate search (403, 429, …) is an error, never `none`.
+- `checkRemediationApproval({ …same fields, requestHash, approval })`: rebuilds everything, then `stale` if the fresh hash differs from the hash seen or approved (e.g. the change or runbook step text changed), `wrong-approver` if the approval is not the caller's Forge `context.accountId`.
+
+Until approvals are stored server-side (`storage:app`), the approval record comes from the browser: the check proves the bytes still match, not that ScenarioForge issued the record. No retest result is attached server-side yet (description says so).
+
+**Remaining approval before any write:** `write:jira-work` (create, issue link, remote link), plus `storage:app` for server-held approvals and the conditional `creating` write (§3). Neither is requested here.
+
+## 10. Unverified
 
 - Search-index delay for the label duplicate check.
 - Whether `write:jira-work` alone is accepted for `POST /rest/api/3/issueLink` when issue linking is disabled on a site (the API requires linking to be active).

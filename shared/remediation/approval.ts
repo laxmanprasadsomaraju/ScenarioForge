@@ -1,5 +1,11 @@
 import { canonicalJson } from '../simulation/replay';
 import { validateDraft } from './draft';
+import {
+  buildCreateIssueRequest,
+  requestHash,
+  type RemediationRequest,
+  type RequestContext,
+} from './request';
 import { sha256Hex } from './sha256';
 import { FIXED_ISSUE_TYPES } from './types';
 import type {
@@ -66,6 +72,49 @@ export function checkApproval(
   if (!approval) return 'missing';
   if (approval.approverAccountId !== actorAccountId) return 'wrong-approver';
   return approval.draftHash === draftHash(draft) ? 'valid' : 'stale';
+}
+
+/**
+ * Records a person's approval of the exact Jira requests built from `draft`
+ * for `context`. Keeps `draftHash` (so `checkApproval` still works) and adds
+ * `requestHash`, which is what a create must match. Throws when the draft is
+ * invalid or cannot be turned into requests.
+ */
+export function approveRequest(
+  draft: WorkItemDraft,
+  context: RequestContext,
+  approverAccountId: string,
+  at: string,
+  issueTypes: readonly string[] = FIXED_ISSUE_TYPES,
+): DraftApproval {
+  const approval = approveDraft(draft, approverAccountId, at, issueTypes);
+  const built = buildCreateIssueRequest(draft, context, issueTypes);
+  if (!built.ok) {
+    throw new RemediationError(`The draft cannot be approved: ${built.message}`);
+  }
+  return {
+    draftHash: approval.draftHash,
+    requestHash: requestHash(built.request),
+    approverAccountId,
+    approvedAt: at,
+  };
+}
+
+/**
+ * Whether `approval` still covers the exact `request` for `actorAccountId`.
+ * Same order as `checkApproval`. A draft-only approval (no `requestHash`) is
+ * `stale`: it was never given for these bytes.
+ */
+export function checkRequestApproval(
+  request: RemediationRequest,
+  approval: DraftApproval | null | undefined,
+  actorAccountId: string,
+): ApprovalCheck {
+  if (!approval) return 'missing';
+  if (approval.approverAccountId !== actorAccountId) return 'wrong-approver';
+  return approval.requestHash !== undefined && approval.requestHash === requestHash(request)
+    ? 'valid'
+    : 'stale';
 }
 
 /** Allowed moves; anything else is refused. */

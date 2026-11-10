@@ -10,6 +10,12 @@ import type { JiraFieldGateway } from './jira/affectedServices';
 import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
+import { forgeRemediationJira } from './remediation/forge';
+import { checkRemediationApproval, prepareRemediationRequest } from './remediation/prepare';
+import {
+  parseCheckRemediationApprovalRequest,
+  parsePrepareRemediationRequest,
+} from './remediation/validation';
 import {
   parseAnalyzeChangeRequest,
   parseGetReadinessGraphRequest,
@@ -126,6 +132,40 @@ resolver.define('getReadinessGraph', ({ payload }) =>
       { jira: forgeJira, confluence: forgeConfluence, engine: analysisEngine },
       parsed.value,
     );
+  }),
+);
+
+// M8 preparation only: read-only (GETs as the user). There is no create resolver.
+const remediationDeps = {
+  jira: forgeRemediationJira,
+  confluence: forgeConfluence,
+  engine: analysisEngine,
+};
+
+resolver.define('prepareRemediationRequest', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parsePrepareRemediationRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return prepareRemediationRequest(remediationDeps, parsed.value);
+  }),
+);
+
+resolver.define('checkRemediationApproval', ({ payload, context }) =>
+  guarded(async () => {
+    const parsed = parseCheckRemediationApprovalRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    const accountId: unknown = context?.accountId;
+    if (typeof accountId !== 'string' || accountId === '') {
+      return {
+        ok: false,
+        error: { code: 'UNAUTHENTICATED', message: 'Sign in to Jira to check an approval.' },
+      };
+    }
+    return checkRemediationApproval(remediationDeps, parsed.value, accountId);
   }),
 );
 
