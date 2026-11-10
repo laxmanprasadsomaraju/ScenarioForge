@@ -50,15 +50,21 @@ Status values: **Done** (acceptance criteria verified), **Partly done** (named c
 - [x] Live test on real Jira and Confluence: MC-62 suspected then confirmed, MC-63 and MC-42 not assessed (docs/M3_LIVE_TEST.md)
 - [x] Evidence: runbook links, pages checked, Jira summary and link in every analysis
 
-## M4: Recovery readiness graph
+## M4: Recovery readiness graph, Partly done (path live-verified; services and teams pending sources)
 
-Services, changes, runbooks, owners and gaps with an explanation on every edge. Acceptance: no edge without a cited source.
+- [x] Evidence-backed graph contract and validator (no edge without evidence, no invented service or team)
+- [x] Impact path on the readiness check, live-verified on MC-62 (docs/M4_M5_LIVE_TEST.md)
+- [x] Unassessed links and source status shown in words
+- [ ] Service links from JSM (no-new-scope field probe in progress; Assets scopes need approval)
+- [ ] Owning teams from Teamwork Graph (scopes and org admin need approval)
 
-## M5: Interactive recovery simulation, Partly done
+## M5: Interactive recovery simulation, Partly done (rehearse a real finding live-verified)
 
-Done on `integration/lanes-1`: deterministic remediation variants, targeted retest with rule-based verdicts, session replay and tamper-evident audit records (Lane C), and the fix → retest loop in the UI. Open: scenarios generated from real changes and runbooks, persistence in Forge Storage.
-
-Scenarios generated from a real change and runbook; sessions persisted in Forge Storage; replay produces identical results. Acceptance: audit record reproduces the evaluation.
+- [x] Deterministic engine, remediation variants, targeted retest, replay and audit
+- [x] Rehearsal generated from a real M3 finding (real change text and runbook step; restore target from the user)
+- [x] Detect → Rehearse → Fix → Verify completed live on MC-62: 26 min 3/4 → retest 11 min 4/4, "Gap resolved"
+- [ ] Persisted, auditable sessions (needs `storage:app`, deferred to M6)
+- [ ] Restore targets from a real service tier (needs a service source)
 
 ## M6: Rovo agent and actions
 
