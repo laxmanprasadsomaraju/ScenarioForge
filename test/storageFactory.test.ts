@@ -22,6 +22,7 @@ import {
 import {
   PER_USER_DAILY_CAP_CEILING,
   PER_USER_DAILY_CAP_DEFAULT,
+  ROVO_TEST_AI_FLAG,
   ROVO_TEST_STORAGE_FLAG,
   USER_DAILY_CAP_VARIABLE,
   governancePolicy,
@@ -94,40 +95,82 @@ describe('per-user daily cap variable', () => {
   });
 
   it('changes only perUserDailyCap in the policy', () => {
-    const policy = governancePolicy({ [USER_DAILY_CAP_VARIABLE]: '300' });
+    const ai = { [ROVO_TEST_AI_FLAG]: 'enabled' };
+    const policy = governancePolicy({ ...ai, [USER_DAILY_CAP_VARIABLE]: '300' });
     expect(policy).toEqual({ ...DEFAULT_POLICY, perUserDailyCap: 300 });
-    expect(governancePolicy({})).toEqual(DEFAULT_POLICY);
+    expect(governancePolicy(ai)).toEqual(DEFAULT_POLICY);
+    // Without the site opt-in the policy is switched off (kill switch AND opt-in).
+    expect(governancePolicy({})).toEqual({ ...DEFAULT_POLICY, enabled: false });
   });
 });
 
 describe('wiring when enabled', () => {
-  it('governor uses ai-governance, stays DISABLED before opt-in and applies the cap', async () => {
+  it('governor is DISABLED without SF_ROVO_TEST_AI and touches no storage', async () => {
     const { clientFor, entities } = fakeStore();
     const env = { ...ON, [USER_DAILY_CAP_VARIABLE]: '300' };
+    for (const value of [undefined, 'true', 'Enabled', 'enabled ', '1']) {
+      const governor = usageGovernor({
+        env: { ...env, [ROVO_TEST_AI_FLAG]: value },
+        clientFor,
+        now: NOW,
+      })!;
+      const denied = await governor.checkAndReserve({
+        operation: 'find-recovery-risks',
+        accountId: 'user-1',
+      });
+      expect(denied).toMatchObject({ ok: false, reason: 'DISABLED' });
+    }
+    expect([...entities.values()].flatMap((e) => e.ops)).toEqual([]);
+  });
+
+  it('governor with SF_ROVO_TEST_AI=enabled uses ai-governance and applies the cap', async () => {
+    const { clientFor, entities } = fakeStore();
+    const env = { ...ON, [USER_DAILY_CAP_VARIABLE]: '300', [ROVO_TEST_AI_FLAG]: 'enabled' };
     const governor = usageGovernor({ env, clientFor, now: NOW })!;
-    expect(governor).not.toBeNull();
-
-    const denied = await governor.checkAndReserve({
-      operation: 'find-recovery-risks',
-      accountId: 'user-1',
-    });
-    expect(denied).toMatchObject({ ok: false, reason: 'DISABLED' });
-    expect([...entities.keys()]).toEqual([GOVERNANCE_ENTITY]);
-    expect(entities.get(GOVERNANCE_ENTITY)!.ops).toEqual([`get ${SETTINGS_KEY}`]);
-
-    // Opt-in as an admin would; the reservation lands in the same entity.
-    entities.get(GOVERNANCE_ENTITY)!.rows.set(SETTINGS_KEY, {
-      version: 1,
-      payload: JSON.stringify({ aiEnabled: true }),
-    });
     const reserved = await governor.checkAndReserve({
       operation: 'find-recovery-risks',
       accountId: 'user-1',
     });
     expect(reserved.ok).toBe(true);
+    expect([...entities.keys()]).toEqual([GOVERNANCE_ENTITY]);
     expect(entities.get(GOVERNANCE_ENTITY)!.rows.has(ledgerKey('2026-11'))).toBe(true);
+    // The opt-in is never written as a settings record.
+    expect(entities.get(GOVERNANCE_ENTITY)!.rows.has(SETTINGS_KEY)).toBe(false);
     const usage = await governor.getUsage();
-    expect(usage).toMatchObject({ ok: true, usage: { perUserDailyCap: 300, monthlyUnitCap: 500 } });
+    expect(usage).toMatchObject({
+      ok: true,
+      usage: { aiEnabled: true, perUserDailyCap: 300, monthlyUnitCap: 500 },
+    });
+  });
+
+  it('a stored settings record overrides the opt-in (off switch, fail closed)', async () => {
+    for (const payload of [{ aiEnabled: false }, { aiEnabled: 'yes' }]) {
+      const { clientFor, entities } = fakeStore();
+      const env = { ...ON, [ROVO_TEST_AI_FLAG]: 'enabled' };
+      const governor = usageGovernor({ env, clientFor, now: NOW })!;
+      await governor.checkAndReserve({ operation: 'find-recovery-risks', accountId: 'user-1' });
+      entities.get(GOVERNANCE_ENTITY)!.rows.set(SETTINGS_KEY, {
+        version: 1,
+        payload: JSON.stringify(payload),
+      });
+      const denied = await governor.checkAndReserve({
+        operation: 'find-recovery-risks',
+        accountId: 'user-2',
+      });
+      expect(denied).toMatchObject({ ok: false, reason: 'DISABLED' });
+    }
+  });
+
+  it('a stored settings record can only lower the cap', async () => {
+    const { clientFor, entities } = fakeStore();
+    const env = { ...ON, [USER_DAILY_CAP_VARIABLE]: '300', [ROVO_TEST_AI_FLAG]: 'enabled' };
+    const governor = usageGovernor({ env, clientFor, now: NOW })!;
+    await governor.checkAndReserve({ operation: 'find-recovery-risks', accountId: 'user-1' });
+    entities.get(GOVERNANCE_ENTITY)!.rows.set(SETTINGS_KEY, {
+      version: 1,
+      payload: JSON.stringify({ aiEnabled: true, perUserDailyCap: 20 }),
+    });
+    expect(await governor.getUsage()).toMatchObject({ ok: true, usage: { perUserDailyCap: 20 } });
   });
 
   it('response cache uses ai-governance with ai-cache keys', async () => {

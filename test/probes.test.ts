@@ -255,7 +255,11 @@ describe('storage-probe', () => {
     const h = storageHarness();
     const governance = h.clientFor(GOVERNANCE_ENTITY);
     governance.rows.set(SETTINGS_KEY, { version: 1, payload: '{"aiEnabled":true}' });
-    const result = await runStorageProbe(h.deps);
+    // Phase 2: the opt-in also needs SF_ROVO_TEST_AI=enabled.
+    const result = await runStorageProbe({
+      ...h.deps,
+      env: { ...h.deps.env, SF_ROVO_TEST_AI: 'enabled' },
+    });
     expect(observed(result.steps).S6).toBe('RESERVED(released)');
     expect(result.allPassed).toBe(false);
     const ledger = [...governance.rows.entries()].find(([k]) =>

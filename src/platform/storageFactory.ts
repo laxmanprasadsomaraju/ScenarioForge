@@ -1,8 +1,8 @@
 import type { BudgetPolicy } from '../../shared/agents/budget';
-import { DEFAULT_POLICY, UsageGovernor } from '../../shared/agents/budget';
+import { DEFAULT_POLICY, SETTINGS_KEY, UsageGovernor } from '../../shared/agents/budget';
 import type { CacheableResult } from '../../shared/agents/cache';
 import { ResponseCache } from '../../shared/agents/cache';
-import type { StorageAdapter } from '../../shared/agents/storage';
+import type { StorageAdapter, Versioned } from '../../shared/agents/storage';
 import { HistoryStore } from '../../shared/history';
 import type { GovernanceKvsClient } from '../ai/forgeStorage';
 import {
@@ -27,6 +27,20 @@ import {
 export const ROVO_TEST_STORAGE_FLAG = 'SF_ROVO_TEST_STORAGE';
 /** The only value that switches them on. Anything else (or absent) means off. */
 export const ROVO_TEST_STORAGE_FLAG_VALUE = 'enabled';
+
+/**
+ * Site AI opt-in for `rovo-test` (Phase 2). Admin-only: Forge variables are
+ * set by the app developer with `forge variables set`, never by site users.
+ * Absent or any value other than exactly `enabled` means AI is OFF: the
+ * governor gets `enabled: false` and denies every call as DISABLED without
+ * reading or writing storage, so nothing is spent.
+ */
+export const ROVO_TEST_AI_FLAG = 'SF_ROVO_TEST_AI';
+export const ROVO_TEST_AI_FLAG_VALUE = 'enabled';
+
+export function rovoTestAiEnabled(env: PlatformEnv = process.env): boolean {
+  return env[ROVO_TEST_AI_FLAG] === ROVO_TEST_AI_FLAG_VALUE;
+}
 
 /** Environment variable that raises the per-user daily cap on `rovo-test`. */
 export const USER_DAILY_CAP_VARIABLE = 'SF_ROVO_TEST_USER_DAILY_CAP';
@@ -69,7 +83,31 @@ export function perUserDailyCap(env: PlatformEnv = process.env): number {
 
 /** DEFAULT_POLICY with the clamped per-user cap. Everything else is code default. */
 export function governancePolicy(env: PlatformEnv = process.env): BudgetPolicy {
-  return { ...DEFAULT_POLICY, perUserDailyCap: perUserDailyCap(env) };
+  return {
+    ...DEFAULT_POLICY,
+    // Code kill switch AND site opt-in: both must allow.
+    enabled: DEFAULT_POLICY.enabled && rovoTestAiEnabled(env),
+    perUserDailyCap: perUserDailyCap(env),
+  };
+}
+
+/**
+ * Makes the `SF_ROVO_TEST_AI` opt-in visible to the governor as the settings
+ * record `aiEnabled: true`, but only when no settings record is stored. A
+ * stored record always wins, so a stored `aiEnabled: false` still switches AI
+ * off and a malformed record still fails closed. Caps in a stored record can
+ * only lower the code policy (UsageGovernor.loadLimits). Writes pass through.
+ */
+export function withSiteOptIn(storage: StorageAdapter): StorageAdapter {
+  return {
+    async get<T>(key: string): Promise<Versioned<T> | undefined> {
+      const stored = await storage.get<T>(key);
+      if (key !== SETTINGS_KEY || stored !== undefined) return stored;
+      return { value: { aiEnabled: true } as T, version: 0 };
+    },
+    set: (key, value, expectedVersion) => storage.set(key, value, expectedVersion),
+    delete: (key) => storage.delete(key),
+  };
 }
 
 function entityStorage(entityName: string, options?: PlatformOptions): StorageAdapter | null {
@@ -91,10 +129,12 @@ export function historyStorage(options?: PlatformOptions): StorageAdapter | null
 export function usageGovernor(options?: PlatformOptions): UsageGovernor | null {
   const storage = governanceStorage(options);
   if (!storage) return null;
+  const env = envOf(options);
   return new UsageGovernor({
-    storage,
+    // Without the opt-in the policy is disabled and storage is never touched.
+    storage: rovoTestAiEnabled(env) ? withSiteOptIn(storage) : storage,
     now: options?.now ?? (() => new Date()),
-    policy: governancePolicy(envOf(options)),
+    policy: governancePolicy(env),
   });
 }
 

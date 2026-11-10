@@ -7,50 +7,113 @@ modules:
         function: resolver
       routePrefix: scenarioforge
   # ---------------------------------------------------------------------------
-  # TEST-ONLY, rovo-test ONLY (branch rovo-test/build). PROPOSAL: probe
-  # from docs/M6_DEPLOYMENT_READINESS.md §1.4 and §2.5. Never merge into a
-  # branch that deploys to development or confluence-test without the owner's
-  # approval; removed in the next rovo-test deploy.
+  # rovo-test ONLY (branch rovo-test/phase2), owner-approved M6 Phase 2. Two
+  # read-only agents, four GET actions. The Phase 1 identity probe is removed.
+  # Never merge into a branch that deploys to development or confluence-test
+  # without the owner's approval. AI stays OFF until the Forge variable
+  # SF_ROVO_TEST_AI=enabled is set (docs/M6_ROVO_TEST_RUNBOOK.md §Phase 2).
   # ---------------------------------------------------------------------------
   rovo:agent:
-    - key: identity-probe
-      name: ScenarioForge identity probe
-      description: Test-only agent. Checks whether ScenarioForge actions run as the signed-in user and whether app storage works. Returns no Jira data.
-      prompt: >
-        You are a test agent. When the user says "run the identity probe", call the
-        whoami-probe action once and reply with its JSON result exactly. When the user
-        says "run the storage probe", call the storage-probe action once and reply with
-        its JSON result exactly. Do not call any action for any other message and do
-        not call any other tool.
+    - key: recovery-investigator
+      name: Recovery Investigator
+      description: Explains recovery readiness evidence for one Jira change, citing only the Jira and Confluence sources ScenarioForge returns. Read-only.
+      prompt: resource:agent-prompts;investigator.md
       conversationStarters:
-        - Run the identity probe
-        - Run the storage probe
+        - What recovery risks does this change have?
+        - Which services does this change affect?
       actions:
-        - whoami-probe
-        - storage-probe
+        - find-recovery-risks
+        - get-service-readiness
+    - key: exercise-facilitator
+      name: Exercise Facilitator
+      description: Briefs recovery rehearsals built from real findings and explains stored outcomes. Decisions are taken in the ScenarioForge app. Read-only.
+      prompt: resource:agent-prompts;facilitator.md
+      conversationStarters:
+        - Prepare a rehearsal for this change
+        - Explain the outcome of my rehearsal
+      actions:
+        - find-recovery-risks
+        - prepare-rehearsal
+        - explain-outcome
   action:
-    - key: whoami-probe
-      name: Identity probe
-      function: action-whoami-probe
+    - key: find-recovery-risks
+      name: Find recovery risks
+      function: fn-find-recovery-risks
       actionVerb: GET
-      description: Test-only. Call when the user says "run the identity probe". Returns whether the request ran as the signed-in user, and an HTTP status.
-    - key: storage-probe
-      name: Storage probe
-      function: action-storage-probe
+      description: Read-only. Checks one Jira change against its recovery runbooks and returns findings, evidence ids, unknowns and source warnings. Use for questions about a change's recovery risks.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: false
+          description: Jira issue key of the change, such as MC-62. Leave empty to use the issue in context.
+    - key: get-service-readiness
+      name: Get service readiness
+      function: fn-service-readiness
       actionVerb: GET
-      description: Test-only. Call when the user says "run the storage probe". Checks app storage with temporary probe records it deletes again. Returns step results only.
+      description: Read-only. Returns the impact path from one Jira change to services and recovery runbooks, with evidence ids and unassessed links.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: false
+          description: Jira issue key of the change, such as MC-62. Leave empty to use the issue in context.
+    - key: prepare-rehearsal
+      name: Prepare rehearsal
+      function: fn-prepare-rehearsal
+      actionVerb: GET
+      description: Read-only preview. Builds a recovery rehearsal briefing for one finding returned by find-recovery-risks. Nothing is stored; decisions are taken in the app.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: true
+          description: Jira issue key of the change, such as MC-62.
+        findingId:
+          title: Finding id
+          type: string
+          required: true
+          description: A finding id returned by find-recovery-risks for the same change.
+        restoreTargetMinutes:
+          title: Restore target (minutes)
+          type: integer
+          required: true
+          description: Restore target in whole minutes, 5 to 1440. Ask the user; never assume.
+        notifyTargetMinutes:
+          title: Notify target (minutes)
+          type: integer
+          required: false
+          description: Optional notification target in whole minutes, 1 to 240.
+    - key: explain-outcome
+      name: Explain outcome
+      function: fn-explain-outcome
+      actionVerb: GET
+      description: Read-only. Returns the stored, audit-verified outcome of one of the user's own rehearsal runs, with objectives, decision trail and evidence ids.
+      inputs:
+        sessionId:
+          title: Rehearsal session id
+          type: string
+          required: true
+          description: The rehearsal session id shown in the ScenarioForge app.
   function:
     - key: resolver
       handler: index.handler
-    - key: action-whoami-probe
-      handler: index.whoamiProbe
-    - key: action-storage-probe
-      handler: index.storageProbe
+    - key: fn-find-recovery-risks
+      handler: index.findRecoveryRisks
+    - key: fn-service-readiness
+      handler: index.getServiceReadiness
+    - key: fn-prepare-rehearsal
+      handler: index.prepareRehearsal
+    - key: fn-explain-outcome
+      handler: index.explainOutcome
 resources:
   - key: main
     path: static/app/build
     tunnel:
       port: 3000
+  # Agent prompts (rovo:agent prompt: resource:agent-prompts;<file>).
+  - key: agent-prompts
+    path: agents/prompts
 permissions:
   scopes:
     # Search issues and read issue fields (summary, status, type, updated).

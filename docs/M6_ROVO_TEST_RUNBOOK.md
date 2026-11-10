@@ -213,3 +213,105 @@ forge variables list -e confluence-test   # no SF_ROVO_TEST_* keys
 ```
 
 Record all outputs, the build SHA and the probe results in `docs/M6_LIVE_TEST.md` (acceptance A6, A7).
+
+---
+
+## Phase 2: two read-only agents (branch `rovo-test/phase2`)
+
+Prepared 2026-11-10 (Lane A5). Status: **prepared only.** Only `forge lint -e rovo-test` was run. No deploy, install, variable, uninstall or Atlassian change was made. Owner-approved scope: `rovo-test` only; two agents, four `GET` actions, the identity probe removed, the same five scopes, per-user cap 300, AI OFF until `SF_ROVO_TEST_AI=enabled`, no `asApp`, no write actions. Base: `rovo-test/build` @ `77e1262`.
+
+### P2.1 Atlassian guidance checked (2026-11-10)
+
+| Topic                                 | What the docs say (quotes under 15 words)                                                                                                           | Source                                                                                                     | What we did                                                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agent prompt: inline vs resource file | "specify the `prompt` as a string or provide it as a relative path to a declared resource"; resource form needs "Forge CLI version 10.6.0 or above" | [Rovo Agent module](https://developer.atlassian.com/platform/forge/manifest-reference/modules/rovo-agent/) | `prompt: resource:agent-prompts;investigator.md` / `facilitator.md`, resource `agent-prompts` → `agents/prompts`. CLI 15.1.0 `forge lint` accepts it (P2.4). |
+| Agent name                            | "Must not exceed 30 characters."                                                                                                                    | same                                                                                                       | "Recovery Investigator" (21), "Exercise Facilitator" (20)                                                                                                    |
+| Conversation starters                 | "suggested to the user when they engage with your Agent"; **no count or length limit is documented**                                                | same                                                                                                       | Two short starters per agent [limit unverified]                                                                                                              |
+| Action inputs                         | each input has `title`, `type`, `required`, `description`; type "`string`, `integer`, `number`, or `boolean`"                                       | [Action module](https://developer.atlassian.com/platform/forge/manifest-reference/modules/rovo-action/)    | Schemas match `src/agents/actions.ts` validation (test `agentForge.test.ts`)                                                                                 |
+| Action verbs                          | `GET`, `CREATE`, `UPDATE`, `DELETE`, `TRIGGER`                                                                                                      | same                                                                                                       | All four actions `GET`                                                                                                                                       |
+| Handler arguments                     | "The `payload` and `context` are passed into the function as arguments"; examples nest `context` inside `payload`                                   | same                                                                                                       | Adapter accepts both; second argument wins (`src/agents/forge.ts`)                                                                                           |
+| accountId                             | "If you need a user's `accountId` read it from the `context`."                                                                                      | same                                                                                                       | accountId only from context; inputs never used for authorization                                                                                             |
+| Finding an agent                      | "Open **Chat** in the navigation bar"; "From **Chat**, select **Agents**"; search "by typing its name"                                              | [Browse Rovo agents](https://support.atlassian.com/rovo/docs/browse-agents/)                               | P2.3 step 5                                                                                                                                                  |
+| Code-built agents                     | "will have their knowledge and instructions hidden for privacy"                                                                                     | same                                                                                                       | Users cannot read the prompt; it still ships in the app bundle                                                                                               |
+| Admin enablement of app agents        | **Not documented** on the agent module or Browse agents pages. A search found only that Rovo Agents need the site AI toggle on. [Unverified]        | as above                                                                                                   | Phase 1 showed the probe agent was usable after install with no admin step                                                                                   |
+| Function key length                   | (CLI lint, not docs) "The function key exceeds 23 characters"                                                                                       | `forge lint` 15.1.0                                                                                        | Function keys `fn-*`, ≤ 23 characters                                                                                                                        |
+
+### P2.2 What changes on `rovo-test`
+
+|            | Phase 1 (`77e1262`)                           | Phase 2 (this branch)                                                                                                                                  |
+| ---------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agents     | `identity-probe`                              | `recovery-investigator` (find-recovery-risks, get-service-readiness), `exercise-facilitator` (find-recovery-risks, prepare-rehearsal, explain-outcome) |
+| Actions    | `whoami-probe`, `storage-probe`               | `find-recovery-risks`, `get-service-readiness`, `prepare-rehearsal`, `explain-outcome` (all `GET`)                                                     |
+| Functions  | `action-whoami-probe`, `action-storage-probe` | `fn-find-recovery-risks`, `fn-service-readiness`, `fn-prepare-rehearsal`, `fn-explain-outcome`                                                         |
+| Resources  | `main`                                        | `main`, `agent-prompts`                                                                                                                                |
+| Scopes     | five                                          | the same five (asserted exactly by `test/storageFactory.test.ts`)                                                                                      |
+| Probe code | registered                                    | kept in `src/probes/**` with tests, **not exported, not in the manifest**                                                                              |
+
+Wiring (`src/agents/forge.ts`): identity from context only → `IDENTITY_UNAVAILABLE`; then the AI opt-in → `USAGE_LIMITED` (DISABLED) with no Jira, Confluence or storage access; then governor and cache from `storageFactory` (null → `GOVERNANCE_UNAVAILABLE`, fail closed); then `createAgentActions` with user gateways built only from `api.asUser()`, engine `ruleEngine`, and a history reader over `historyStore()` scoped to `{installContext, accountId}`.
+
+### P2.3 Variables and the AI opt-in
+
+| Variable                      | Value                                                    | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SF_ROVO_TEST_STORAGE`        | `enabled` (already set in phase 1)                       | Storage factories on                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `SF_ROVO_TEST_USER_DAILY_CAP` | `300`                                                    | Per-user daily cap, clamped to 50..300                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `SF_ROVO_TEST_AI`             | **unset** until the owner starts testing; then `enabled` | Site AI opt-in. Unset or any other value: `BudgetPolicy.enabled = false`, every action returns `USAGE_LIMITED` ("AI features are switched off for this site…") before any read or spend. `enabled`: the governor treats it as settings `aiEnabled: true` when no settings record is stored; a stored record always wins (stored `aiEnabled: false` is an off switch; malformed fails closed; stored caps can only lower). The opt-in is never written to storage. |
+
+Only the app developer can set Forge variables, so the switch is admin-only by construction.
+
+```sh
+# 1. Pre-checks: as phase 1 §3, on a clean checkout of rovo-test/phase2.
+forge lint -e rovo-test                      # "No issues found." Any MAJOR_VERSION_RULE: STOP
+
+# 2. Deploy with AI OFF
+forge variables set -e rovo-test SF_ROVO_TEST_USER_DAILY_CAP 300
+forge variables list -e rovo-test            # SF_ROVO_TEST_STORAGE, SF_ROVO_TEST_USER_DAILY_CAP only
+forge deploy -e rovo-test --non-interactive
+forge install list                           # rovo-test row still on 64f87111-…; scopes unchanged
+# Only if the CLI reports the installation is out of date:
+forge install --upgrade -e rovo-test --site one-atlas-cegq.atlassian.net --product jira
+
+# 3. Smoke test with AI OFF (test script block A): expect USAGE_LIMITED, no Jira reads in logs.
+
+# 4. Owner starts testing: switch AI ON
+forge variables set -e rovo-test SF_ROVO_TEST_AI enabled
+forge deploy -e rovo-test --non-interactive  # variables take effect only after a deploy
+```
+
+Find the agents: Jira → **Chat** → **Agents** → search "Recovery Investigator" / "Exercise Facilitator". If they are missing after a deploy, redeploy once (phase 1 §4.4, community 86838).
+
+### P2.4 `forge lint -e rovo-test` (CLI 15.1.0, Node 24.22.2, 2026-11-10)
+
+First run: four errors, three "The function key exceeds 23 characters" (`action-find-recovery-risks`, `action-get-service-readiness`, `action-prepare-rehearsal`) and missing `static/app/build` (not built yet). After renaming to `fn-*` and `npm run frontend:build`: **"No issues found."**
+
+### P2.5 Kill switch (fastest first)
+
+1. Stop chatting.
+2. `forge variables unset -e rovo-test SF_ROVO_TEST_AI` then `forge deploy -e rovo-test --non-interactive`: every action answers `USAGE_LIMITED`, reads and spends nothing.
+3. `forge variables unset -e rovo-test SF_ROVO_TEST_STORAGE` + deploy: governor null → `GOVERNANCE_UNAVAILABLE` for every action.
+4. Code kill switch: `DEFAULT_POLICY.enabled = false` + deploy.
+5. Rollback (P2.6). Extra usage stays off / limit 0.
+
+### P2.6 Rollback
+
+```sh
+# A. Back to the probe build (keeps the installation):
+git checkout 77e1262 && npm ci && npm ci --prefix static/app && npm run frontend:build
+forge variables unset -e rovo-test SF_ROVO_TEST_AI
+forge deploy -e rovo-test --non-interactive
+# B. Remove the app from rovo-test entirely:
+forge uninstall -i 64f87111-c12f-4eff-8d69-58f4f8bdc4d9    # id form only; never --batch
+```
+
+### P2.7 Isolation checks (before and after every deploy)
+
+```sh
+forge install list > /tmp/sf-p2-install.txt                # development, confluence-test rows unchanged
+forge deploy list -e development     | diff /tmp/sf-deploy-development-before.txt -       # empty
+forge deploy list -e confluence-test | diff /tmp/sf-deploy-confluence-test-before.txt -   # empty
+forge variables list -e development       # no SF_ROVO_TEST_* keys
+forge variables list -e confluence-test   # no SF_ROVO_TEST_* keys
+git log origin/main -1                    # unchanged; rovo-test/phase2 never merged
+```
+
+Monitoring: `forge logs -e rovo-test --since 15m --grouped` and `-f fn-find-recovery-risks` (etc.). Scripted test: [M6_PHASE2_TEST_SCRIPT.md](M6_PHASE2_TEST_SCRIPT.md).
