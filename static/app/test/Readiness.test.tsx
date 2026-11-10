@@ -13,6 +13,7 @@ const api = vi.hoisted(() => ({
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   analyzeChange: vi.fn(),
+  getReadinessGraph: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ api }));
 
@@ -95,6 +96,13 @@ beforeEach(() => {
   });
   api.listRecentChanges.mockResolvedValue(changes([MC12, issue({ key: 'MC-9' })]));
   api.analyzeChange.mockReset();
+  // These tests cover the M3 findings on their own: the readiness graph is
+  // unavailable, so the screen falls back to analyzeChange. The graph path
+  // (one run, findings read from the graph) is covered in ImpactPath.test.tsx.
+  api.getReadinessGraph.mockReset().mockResolvedValue({
+    ok: false,
+    error: { code: 'NOT_FOUND', message: 'The impact path is not available for this change.' },
+  });
 });
 
 describe('Readiness checks', () => {

@@ -8,6 +8,7 @@ import { formatAbsolute } from '../lib/format';
 import { useRouter } from '../lib/router';
 import { useSite } from '../lib/site';
 import { useApi } from '../lib/useApi';
+import { useReadinessCheck } from '../lib/useReadinessCheck';
 import { IssueTable } from '../components/IssueTable';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
@@ -19,6 +20,7 @@ import {
   FindingItem,
   SubjectsTable,
 } from '../components/readiness/Analysis';
+import { ImpactPath } from '../components/readiness/ImpactPath';
 
 export function ReadinessPage() {
   const { selected } = useChangeSelection();
@@ -89,8 +91,8 @@ function ChangePicker() {
 function AnalysisView({ change }: { change: JiraIssueSummary }) {
   const { clear } = useChangeSelection();
   const { openInJira } = useSite();
-  const load = useCallback(() => api.analyzeChange({ issueKey: change.key }), [change.key]);
-  const { state, retry } = useApi(load);
+  // One run: the graph carries the analysis; analyzeChange is only a fallback.
+  const { analysis: state, graph, retry, retryGraph } = useReadinessCheck(change.key);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -155,6 +157,29 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
               <FindingItem key={f.id} finding={f} change={state.data.change} />
             ))}
           </ol>
+        </section>
+      ) : null}
+
+      {state.status === 'ready' ? (
+        <section
+          className="region"
+          aria-labelledby="impact-title"
+          aria-busy={graph.status === 'loading'}
+        >
+          <h2 id="impact-title" className="section-title">
+            Impact path
+          </h2>
+          <p className="region-body">
+            How {state.data.changeKey} reaches recovery steps, runbook pages, services and owning
+            teams. Open any link to read the source text behind it.
+          </p>
+          {graph.status === 'loading' ? (
+            <SkeletonRows rows={3} label={`Tracing the impact path of ${change.key}`} />
+          ) : null}
+          {graph.status === 'error' ? (
+            <ErrorPanel error={graph.error} onRetry={retryGraph} product="Jira or Confluence" />
+          ) : null}
+          {graph.status === 'ready' ? <ImpactPath graph={graph.data} /> : null}
         </section>
       ) : null}
 
