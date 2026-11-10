@@ -168,6 +168,11 @@ describe('agent prompt files', () => {
   it('are not referenced by the manifest yet', () => {
     const manifest = readFileSync(join(__dirname, '..', 'manifest.yml'), 'utf8');
     expect(manifest).not.toContain('agent-prompts');
-    expect(manifest).not.toMatch(/rovo:agent/);
+    // rovo-test/build only: the single rovo:agent is the test-only identity
+    // probe (docs/M6_ROVO_TEST_RUNBOOK.md); no M6 agent is registered.
+    const agentBlock = manifest.split(/^ {2}rovo:agent:$/m)[1]?.split(/^ {2}action:$/m)[0] ?? '';
+    expect([...agentBlock.matchAll(/^ {4}- key: (\S+)$/gm)].map((m) => m[1])).toEqual([
+      'identity-probe',
+    ]);
   });
 });

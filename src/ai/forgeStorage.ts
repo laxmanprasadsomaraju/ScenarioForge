@@ -14,6 +14,11 @@ import type { StorageAdapter, Versioned, WriteResult } from '../../shared/agents
 
 /** Must match `app.storage.entities[].name` in manifest.yml. */
 export const GOVERNANCE_ENTITY = 'ai-governance';
+/**
+ * Rehearsal history (shared/history HistoryStore). Same record shape as
+ * `ai-governance`; must match manifest.yml.
+ */
+export const HISTORY_ENTITY = 'rehearsal-history';
 
 /** One stored record. `payload` is JSON text; strings must not be empty. */
 export interface GovernanceRecord {

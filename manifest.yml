@@ -6,9 +6,46 @@ modules:
       resolver:
         function: resolver
       routePrefix: scenarioforge
+  # ---------------------------------------------------------------------------
+  # TEST-ONLY, rovo-test ONLY (branch rovo-test/build). PROPOSAL: probe
+  # from docs/M6_DEPLOYMENT_READINESS.md §1.4 and §2.5. Never merge into a
+  # branch that deploys to development or confluence-test without the owner's
+  # approval; removed in the next rovo-test deploy.
+  # ---------------------------------------------------------------------------
+  rovo:agent:
+    - key: identity-probe
+      name: ScenarioForge identity probe
+      description: Test-only agent. Checks whether ScenarioForge actions run as the signed-in user and whether app storage works. Returns no Jira data.
+      prompt: >
+        You are a test agent. When the user says "run the identity probe", call the
+        whoami-probe action once and reply with its JSON result exactly. When the user
+        says "run the storage probe", call the storage-probe action once and reply with
+        its JSON result exactly. Do not call any action for any other message and do
+        not call any other tool.
+      conversationStarters:
+        - Run the identity probe
+        - Run the storage probe
+      actions:
+        - whoami-probe
+        - storage-probe
+  action:
+    - key: whoami-probe
+      name: Identity probe
+      function: action-whoami-probe
+      actionVerb: GET
+      description: Test-only. Call when the user says "run the identity probe". Returns whether the request ran as the signed-in user, and an HTTP status.
+    - key: storage-probe
+      name: Storage probe
+      function: action-storage-probe
+      actionVerb: GET
+      description: Test-only. Call when the user says "run the storage probe". Checks app storage with temporary probe records it deletes again. Returns step results only.
   function:
     - key: resolver
       handler: index.handler
+    - key: action-whoami-probe
+      handler: index.whoamiProbe
+    - key: action-storage-probe
+      handler: index.storageProbe
 resources:
   - key: main
     path: static/app/build
@@ -26,9 +63,10 @@ permissions:
     # Read one recovery page body: GET /wiki/api/v2/pages/{id}. v2 lists only
     # this granular scope; no classic scope covers the v2 page endpoint.
     - read:page:confluence
-    # AI usage governance ledger and response cache in the Custom Entity Store
-    # (@forge/kvs, src/ai/forgeStorage.ts). Required by @forge/kvs. Branch only:
-    # not deployed until the owner approves (D17).
+    # Custom Entity Store (@forge/kvs, src/ai/forgeStorage.ts): AI usage
+    # governance ledger, settings, response cache and rehearsal history.
+    # Required by @forge/kvs. rovo-test build only (D17,
+    # docs/M6_ROVO_TEST_RUNBOOK.md).
     - storage:app
   content:
     styles:
@@ -37,9 +75,18 @@ permissions:
 app:
   storage:
     entities:
-      # One record per governance or cache key; `version` backs conditional
-      # writes, `payload` is JSON text. No custom indexes: lookups are by key.
+      # Final schema review: docs/M6_DEPLOYMENT_READINESS.md §2. One record per
+      # key; `version` backs conditional writes, `payload` is JSON text. No
+      # custom indexes: every lookup is by key.
       - name: ai-governance
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+      # Rehearsal history (shared/history HistoryStore); same shape, per-user
+      # index lives inside the payload (D19). Names and attributes are permanent.
+      - name: rehearsal-history
         attributes:
           version:
             type: integer

@@ -130,3 +130,11 @@ resolver.define('getReadinessGraph', ({ payload }) =>
 );
 
 export const handler = resolver.getDefinitions();
+
+/*
+ * TEST-ONLY action handlers for the `identity-probe` agent. Branch
+ * `rovo-test/build` only (docs/M6_ROVO_TEST_RUNBOOK.md); never merged into a
+ * branch that deploys to development or confluence-test without the owner's
+ * approval, and removed in the next rovo-test deploy.
+ */
+export { storageProbe, whoamiProbe } from './probes/forge';
