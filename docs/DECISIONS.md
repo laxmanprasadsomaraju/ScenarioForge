@@ -67,3 +67,11 @@ Proposed by lanes, not yet applied to `shared/domain/types.ts`: `remediatedFrom`
 ## D18. "Not assessed" when a change names nothing to check (2026-11-10)
 
 A change with no recognised retirement, replacement, migration, rename, disable or upgrade is `not-assessed`, not `no-findings`. `no-findings` only follows a real search and read of runbooks. Confirmed live on MC-63 and MC-42. Also accepted: runbooks read without numbered steps give `not-assessed`. M3 contract additions: `ChangeAnalysis.change`, `AnalysisCoverage.pagesChecked`, `ChangeRecoveryFinding.pageWebuiPath`. Deferred: a partial-scope flag on subjects and coded not-assessed reasons.
+
+## D19. M6/M8 foundations as built (2026-11-10)
+
+- Action identity: a missing or unusable user identity returns `IDENTITY_UNAVAILABLE`; there is no app-level gateway (supersedes M6_PLAN §3.1 "INVALID_INPUT"). Whether Rovo actions can call Jira as the user is unverified until the `whoami-probe` spike (docs/M6_DEPLOYMENT_READINESS.md §1.4); if it fails, M6 actions ship disabled.
+- Budget refusals return `USAGE_LIMITED` (never "not assessed"), with `retryAfterSeconds` only from the governor's own calculation (rate window or monthly reset); a governor that cannot be reached returns `GOVERNANCE_UNAVAILABLE` and fails closed (supersedes M6_PLAN §3.1). Every result states that Rovo chat credits are charged outside ScenarioForge's guard.
+- Rehearsal history: one entity with `version` + `payload` only, per-user index inside the payload, no separate `rehearsal-fix` entity; records are recomputed on save and re-verified on every read. Tamper detection proves consistency, not authenticity (an HMAC secret would need approval).
+- M8 idempotency label is `sf-rem-<16 hex>` from change + finding + fix (stable across summary edits), with the fixed label `scenarioforge-remediation` (supersedes M8_PLAN §2–3 `sf-<draftHash>`). Approval is a SHA-256 over the exact draft; `checkApproval` order is missing → wrong-approver → stale → valid.
+- Still before any real write: ADF description hashed as sent, absolute links built server-side, server-side approval re-check and storage (needs `storage:app`), `write:jira-work` approval.
