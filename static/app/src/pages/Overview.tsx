@@ -98,8 +98,9 @@ export function OverviewPage() {
             </h2>
             <p className="state-unknown">Not assessed</p>
             <p className="region-body">
-              No recovery plans are connected yet, so nothing is marked ready. ScenarioForge never
-              reports a check as passed without evidence. Confluence runbooks connect in M2.
+              Nothing is marked ready. A readiness check looks for conflicts between one change and
+              the runbooks it can read; finding none is not a pass. ScenarioForge never reports a
+              check as passed without evidence.
             </p>
           </section>
 
