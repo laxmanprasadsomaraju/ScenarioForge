@@ -30,11 +30,15 @@ Status values: **Done** (acceptance criteria verified), **Partly done** (named c
 - [ ] Demo rehearsal played to the debrief inside Jira (verified in local preview and unit tests; owner to confirm in Jira)
 - [ ] Permission-denied path observed live (verified in unit tests and preview only)
 
-## M2: Jira, Confluence and JSM context, Partly done (code only, not deployed)
+## M2: Jira, Confluence and JSM context, Done for Confluence (JSM pending)
 
-Confluence search and page-step extraction implemented and unit-tested on `integration/lanes-1` (Lane A). Not deployed: adds `search:confluence` and `read:page:confluence` (major version, admin and user consent) and probably `compatibility.confluence.required: false`. Awaiting owner approval and confirmation that the demo site has Confluence.
-
-Read Confluence recovery pages and JSM services with user permissions; evidence references with source URLs and retrieval time. Acceptance: real runbook page shown with a link back; permission-denied page excluded, not leaked.
+- [x] Confluence recovery-page search and page read as the user (`search:confluence`, `read:page:confluence`), live-verified on `confluence-test` 2026-11-10
+- [x] Ordered-step extraction; no guessing when a page has no numbered list (live)
+- [x] Evidence with source link, page updated and read-at times (live)
+- [x] Space filtering and input validation (live and automated)
+- [x] Permission-denied handling (automated only; live revocation deferred, see docs/M2_CONFLUENCE_TEST.md)
+- [ ] JSM services and owners
+- [ ] Confluence scopes on the `development` install (needs owner approval: major version, consent)
 
 ## M3: Change-to-recovery intelligence
 
