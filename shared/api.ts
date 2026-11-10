@@ -5,6 +5,13 @@
  */
 
 import type { EvidenceReference, RecoveryStep } from './domain/types';
+import type {
+  ApprovalCheck,
+  DraftApproval,
+  DuplicateCheck,
+  RemediationRequest,
+  WorkItemDraft,
+} from './remediation';
 
 export type ApiErrorCode =
   | 'INVALID_REQUEST'
@@ -128,3 +135,48 @@ export type {
   GetReadinessGraphResponse,
   ReadinessGraph,
 } from './graph/types';
+
+/*
+ * M8 remediation preparation (read-only). The browser names the finding, fix,
+ * project and issue type; the server rebuilds everything else, including
+ * every absolute URL, from Jira and Confluence as the user. Nothing is created.
+ */
+
+export interface PrepareRemediationRequest {
+  changeKey: string;
+  findingId: string;
+  /** `rem-step`, `rem-change-check` or `review-step`. */
+  fixId: string;
+  projectKey: string;
+  issueTypeName: string;
+  /** User-edited summary; the deterministic template when omitted. */
+  summary?: string;
+}
+
+export interface PrepareRemediationResponse {
+  draft: WorkItemDraft;
+  /** The exact calls creating the work item would make. Not sent. */
+  request: RemediationRequest;
+  draftHash: string;
+  requestHash: string;
+  /** Result of `labels = "<idempotency label>"`, read as the user. */
+  duplicate: DuplicateCheck;
+  /** Site origin from `GET /rest/api/3/serverInfo`, used for every link. */
+  siteUrl: string;
+  preparedAt: string;
+}
+
+export interface CheckRemediationApprovalRequest extends PrepareRemediationRequest {
+  /** The request hash the person saw. */
+  requestHash: string;
+  approval: DraftApproval;
+}
+
+export interface CheckRemediationApprovalResponse {
+  /** `stale` when the fresh request differs from what was seen or approved. */
+  check: ApprovalCheck;
+  /** Hash of the request rebuilt now. */
+  requestHash: string;
+  duplicate: DuplicateCheck;
+  checkedAt: string;
+}
