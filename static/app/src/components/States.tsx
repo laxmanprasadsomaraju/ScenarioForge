@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from './Button';
 import SectionMessage, { SectionMessageAction } from '@atlaskit/section-message';
 import type { ApiError } from '@shared/api';
 
@@ -132,7 +132,7 @@ export function EmptyState({
       <h3 className="empty-title">{title}</h3>
       <p className="empty-body">{children}</p>
       {action ? (
-        <Button appearance="default" onClick={action.onClick}>
+        <Button variant="secondary" onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}

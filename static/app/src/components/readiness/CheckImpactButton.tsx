@@ -1,4 +1,4 @@
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { JiraIssueSummary } from '@shared/api';
 import { useChangeSelection } from '../../lib/changeSelection';
 

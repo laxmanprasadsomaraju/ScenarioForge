@@ -3,14 +3,15 @@ import type { ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import { applyDecision, evaluateSession, startSession } from '@shared/simulation/engine';
 import { buildRetest, compareRetest } from '@shared/simulation/retest';
 import { buildDeepLink } from '@shared/links/deepLink';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import { useRehearsalSource } from '../lib/rehearsalSource';
 import { useRouter } from '../lib/router';
 import { LinkedRehearsal } from '../components/readiness/LinkedRehearsal';
 import { RejectedLinkNotice } from '../components/readiness/LinkNotice';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
+import { OriginBadge } from '../components/Badge';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
+import { PageHeader } from '../components/PageHeader';
 import { Briefing } from '../components/simulation/Briefing';
 import { Debrief } from '../components/simulation/Debrief';
 import { Rehearsal } from '../components/simulation/Rehearsal';
@@ -148,7 +149,7 @@ function RehearsalScreen() {
         }
         aside={
           provenance ? (
-            <span className="origin origin-modelled">Modelled from {provenance.changeKey}</span>
+            <OriginBadge origin="modelled">{`Modelled from ${provenance.changeKey}`}</OriginBadge>
           ) : (
             <OriginTag origin="demo" />
           )
@@ -162,9 +163,7 @@ function RehearsalScreen() {
             and Confluence; every outcome is modelled by fixed rules, not observed.
           </p>
           {phase.kind === 'briefing' ? (
-            <Button appearance="subtle" onClick={selectDemo}>
-              Use the synthetic demo scenario instead
-            </Button>
+            <Button onClick={selectDemo}>Use the synthetic demo scenario instead</Button>
           ) : null}
         </div>
       ) : (

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import type { JiraIssueSummary, UpdatedWindow } from '@shared/api';
 import { UPDATED_WINDOWS } from '@shared/api';
 import {
@@ -14,8 +14,9 @@ import { useApi } from '../lib/useApi';
 import { IssueTable } from '../components/IssueTable';
 import { CheckImpactButton } from '../components/readiness/CheckImpactButton';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
-import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
+import { DataRegion } from '../components/DataRegion';
+import { PageHeader } from '../components/PageHeader';
+import { EmptyState } from '../components/States';
 
 const WINDOW_LABELS: Record<UpdatedWindow, string> = {
   '7d': 'Last 7 days',
@@ -137,20 +138,20 @@ export function ChangesPage() {
         </div>
       </div>
 
-      <section
-        className="region"
-        aria-labelledby="changes-results"
-        aria-busy={state.status === 'loading'}
-      >
-        <h2 id="changes-results" className="visually-hidden">
-          Results
-        </h2>
-        <p className="visually-hidden" role="status">
-          {announcement}
-        </p>
-        {state.status === 'loading' ? <SkeletonRows rows={8} label="Loading Jira issues" /> : null}
-        {state.status === 'error' ? <ErrorPanel error={state.error} onRetry={retry} /> : null}
-        {state.status === 'ready' && issues.length === 0 ? (
+      <DataRegion
+        id="changes-results"
+        title="Results"
+        hideTitle
+        intro={
+          <p className="visually-hidden" role="status">
+            {announcement}
+          </p>
+        }
+        state={state}
+        loading={{ label: 'Loading Jira issues', rows: 8 }}
+        onRetry={retry}
+        isEmpty={(data) => data.issues.length === 0}
+        empty={(data) => (
           <EmptyState
             title="No issues you can see were updated in this window"
             action={
@@ -159,34 +160,36 @@ export function ChangesPage() {
                 : undefined
             }
           >
-            Jira returned no results for <code>{state.data.jql}</code>. Results are limited to
-            projects you can browse.
+            Jira returned no results for <code>{data.jql}</code>. Results are limited to projects
+            you can browse.
           </EmptyState>
-        ) : null}
-        {state.status === 'ready' && issues.length > 0 && visible.length === 0 ? (
-          <EmptyState
-            title="No issues match these filters"
-            action={{ label: 'Clear filters', onClick: () => setFilter(EMPTY_FILTER) }}
-          >
-            {issues.length} issues were loaded from Jira; none match the current search, status and
-            type.
-          </EmptyState>
-        ) : null}
-        {state.status === 'ready' && visible.length > 0 ? (
-          <>
-            <p className="results-meta">
-              Showing {visible.length} of {issues.length}
-              {state.data.truncated ? ' (Jira has more; narrow the window to see older ones)' : ''}.
-              Fetched {formatAbsolute(state.data.fetchedAt)} with <code>{state.data.jql}</code>
-            </p>
-            <IssueTable
-              issues={visible}
-              caption="Jira issues updated recently"
-              rowAction={(issue) => <CheckImpactButton issue={issue} />}
-            />
-          </>
-        ) : null}
-      </section>
+        )}
+      >
+        {(data) =>
+          visible.length === 0 ? (
+            <EmptyState
+              title="No issues match these filters"
+              action={{ label: 'Clear filters', onClick: () => setFilter(EMPTY_FILTER) }}
+            >
+              {issues.length} issues were loaded from Jira; none match the current search, status
+              and type.
+            </EmptyState>
+          ) : (
+            <>
+              <p className="results-meta">
+                Showing {visible.length} of {issues.length}
+                {data.truncated ? ' (Jira has more; narrow the window to see older ones)' : ''}.
+                Fetched {formatAbsolute(data.fetchedAt)} with <code>{data.jql}</code>
+              </p>
+              <IssueTable
+                issues={visible}
+                caption="Jira issues updated recently"
+                rowAction={(issue) => <CheckImpactButton issue={issue} />}
+              />
+            </>
+          )
+        }
+      </DataRegion>
     </>
   );
 }

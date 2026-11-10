@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import { MAX_RUNBOOKS_READ } from '@shared/analysis/types';
 import { api } from '../lib/api';
 import { useChangeSelection, type SelectedChange } from '../lib/changeSelection';
@@ -10,7 +10,8 @@ import { useApi } from '../lib/useApi';
 import { useReadinessCheck } from '../lib/useReadinessCheck';
 import { IssueTable } from '../components/IssueTable';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
+import { DataRegion } from '../components/DataRegion';
+import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
 import { CheckImpactButton } from '../components/readiness/CheckImpactButton';
 import {
@@ -51,25 +52,20 @@ function ChangePicker() {
         lead="Pick a Jira change to see which recovery steps in Confluence may depend on what it changes."
         aside={<OriginTag origin="live" product="Jira and Confluence" />}
       />
-      <section
-        className="region"
-        aria-labelledby="picker-title"
-        aria-busy={state.status === 'loading'}
-      >
-        <div className="region-head">
-          <h2 id="picker-title" className="section-title">
-            Recent changes
-          </h2>
-        </div>
-        <p className="region-body">
-          A check reads the change and up to {MAX_RUNBOOKS_READ} recovery runbooks, then quotes the
-          text behind every finding. Nothing is checked until you ask.
-        </p>
-        {state.status === 'loading' ? (
-          <SkeletonRows rows={6} label="Loading recent Jira changes" />
-        ) : null}
-        {state.status === 'error' ? <ErrorPanel error={state.error} onRetry={retry} /> : null}
-        {state.status === 'ready' && state.data.issues.length === 0 ? (
+      <DataRegion
+        id="picker-title"
+        title="Recent changes"
+        intro={
+          <p className="region-body">
+            A check reads the change and up to {MAX_RUNBOOKS_READ} recovery runbooks, then quotes
+            the text behind every finding. Nothing is checked until you ask.
+          </p>
+        }
+        state={state}
+        loading={{ label: 'Loading recent Jira changes', rows: 6 }}
+        onRetry={retry}
+        isEmpty={(data) => data.issues.length === 0}
+        empty={
           <EmptyState
             title="No Jira issues updated in the last 30 days"
             action={{ label: 'Browse all changes', onClick: () => navigate('changes') }}
@@ -77,22 +73,23 @@ function ChangePicker() {
             Issues you can browse in Jira appear here as they change. Older ones are on the Changes
             screen.
           </EmptyState>
-        ) : null}
-        {state.status === 'ready' && state.data.issues.length > 0 ? (
+        }
+      >
+        {(data) => (
           <>
             <p className="results-meta">
-              {state.data.issues.length} updated in the last 30 days
-              {state.data.truncated ? ' (Jira has more; find older ones under Changes)' : ''}.
-              Fetched {formatAbsolute(state.data.fetchedAt)}
+              {data.issues.length} updated in the last 30 days
+              {data.truncated ? ' (Jira has more; find older ones under Changes)' : ''}. Fetched{' '}
+              {formatAbsolute(data.fetchedAt)}
             </p>
             <IssueTable
-              issues={state.data.issues}
+              issues={data.issues}
               caption="Recent Jira changes to check"
               rowAction={(issue) => <CheckImpactButton issue={issue} />}
             />
           </>
-        ) : null}
-      </section>
+        )}
+      </DataRegion>
     </>
   );
 }
@@ -139,9 +136,7 @@ function AnalysisView({ change }: { change: SelectedChange }) {
       />
       <div className="procedure-actions analysis-actions">
         <Button onClick={clear}>Back to recent changes</Button>
-        <Button appearance="subtle" onClick={() => openInJira(shown.browsePath)}>
-          Open {shown.key} in Jira
-        </Button>
+        <Button onClick={() => openInJira(shown.browsePath)}>Open {shown.key} in Jira</Button>
       </div>
 
       <section

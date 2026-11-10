@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { SimulationScenario } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
@@ -162,7 +162,7 @@ export function Debrief({
           <div className="debrief-actions">
             {canRetest ? (
               <Button
-                appearance="primary"
+                variant="primary"
                 isDisabled={approved.length === 0}
                 onClick={() => onRetest?.(approved)}
               >
@@ -170,7 +170,7 @@ export function Debrief({
               </Button>
             ) : null}
             {onRunAgain ? (
-              <Button appearance={canRetest ? 'default' : 'primary'} onClick={onRunAgain}>
+              <Button variant={canRetest ? 'secondary' : 'primary'} onClick={onRunAgain}>
                 Rehearse again
               </Button>
             ) : null}

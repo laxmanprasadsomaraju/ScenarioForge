@@ -1,5 +1,7 @@
 import type { Ref } from 'react';
-import Button from '@atlaskit/button/new';
+import QuestionCircleIcon from '@atlaskit/icon/core/question-circle';
+import { StatusBadge } from '../Badge';
+import { Button } from '../Button';
 import type {
   AnalysisCoverage,
   CheckedPage,
@@ -118,6 +120,7 @@ export function AnalysisStatement({
         ref={headingRef}
         tabIndex={-1}
       >
+        <QuestionCircleIcon label="" />
         Not assessed
       </h2>
       <p className="analysis-sub">
@@ -245,7 +248,7 @@ function SourceQuote({
       )}
       {link ? (
         <div>
-          <Button appearance="subtle" spacing="compact" onClick={link.onClick}>
+          <Button spacing="compact" onClick={link.onClick}>
             {link.label}
           </Button>
         </div>
@@ -295,9 +298,9 @@ export function FindingItem({
       {...(linked ? { tabIndex: -1, 'aria-current': true } : {})}
     >
       <div className="finding-head">
-        <span className={`confidence confidence-${finding.confidence}`}>
+        <StatusBadge tone={finding.confidence === 'confirmed' ? 'warning' : 'suspected'}>
           {CONFIDENCE_LABELS[finding.confidence]}
-        </span>
+        </StatusBadge>
         <h3 id={titleId} className="finding-title">
           Step {finding.stepOrder} of {finding.pageTitle}
         </h3>

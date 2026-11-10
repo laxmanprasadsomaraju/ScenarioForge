@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import { api } from '../lib/api';
 import { useExercises } from '../lib/exercises';
 import { formatRelative } from '../lib/format';
@@ -8,8 +8,10 @@ import { useApi } from '../lib/useApi';
 import { ConnectionStatusLine } from '../components/Connection';
 import { IssueTable } from '../components/IssueTable';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
-import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
+import { PageHeader } from '../components/PageHeader';
+import QuestionCircleIcon from '@atlaskit/icon/core/question-circle';
+import { DataRegion } from '../components/DataRegion';
+import { EmptyState } from '../components/States';
 import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';
 
 type StageState = 'live' | 'demo' | 'planned';
@@ -56,47 +58,47 @@ export function OverviewPage() {
       </section>
 
       <div className="overview-grid">
-        <section className="region region-changes" aria-labelledby="recent-title">
-          <div className="region-head">
-            <h2 id="recent-title" className="section-title">
-              Recent changes
-            </h2>
-            <OriginTag origin="live" />
-          </div>
-          {state.status === 'loading' ? (
-            <SkeletonRows rows={5} label="Loading recent Jira changes" />
-          ) : null}
-          {state.status === 'error' ? <ErrorPanel error={state.error} onRetry={retry} /> : null}
-          {state.status === 'ready' && state.data.issues.length === 0 ? (
+        <DataRegion
+          id="recent-title"
+          title="Recent changes"
+          className="region-changes"
+          origin={<OriginTag origin="live" />}
+          state={state}
+          loading={{ label: 'Loading recent Jira changes', rows: 5 }}
+          onRetry={retry}
+          isEmpty={(data) => data.issues.length === 0}
+          empty={
             <EmptyState
               title="No Jira issues updated in the last 30 days"
               action={{ label: 'Browse all changes', onClick: () => navigate('changes') }}
             >
               Issues you can browse in Jira appear here as they change.
             </EmptyState>
-          ) : null}
-          {state.status === 'ready' && state.data.issues.length > 0 ? (
+          }
+        >
+          {(data) => (
             <>
               <IssueTable
-                issues={state.data.issues.slice(0, 6)}
+                issues={data.issues.slice(0, 6)}
                 caption="Recently updated Jira issues"
                 compact
               />
               <div className="region-foot">
-                <Button appearance="subtle" onClick={() => navigate('changes')}>
-                  Filter and sort all changes
-                </Button>
+                <Button onClick={() => navigate('changes')}>Filter and sort all changes</Button>
               </div>
             </>
-          ) : null}
-        </section>
+          )}
+        </DataRegion>
 
         <div className="overview-side">
           <section className="region" aria-labelledby="readiness-title">
             <h2 id="readiness-title" className="section-title">
               Readiness
             </h2>
-            <p className="state-unknown">Not assessed</p>
+            <p className="state-unknown">
+              <QuestionCircleIcon label="" />
+              Not assessed
+            </p>
             <p className="region-body">
               Nothing is marked ready. A readiness check looks for conflicts between one change and
               the runbooks it can read; finding none is not a pass. ScenarioForge never reports a
@@ -113,9 +115,7 @@ export function OverviewPage() {
               Readiness checks to see which runbook steps it may affect.
             </p>
             <div className="region-foot">
-              <Button appearance="subtle" onClick={() => navigate('readiness')}>
-                Open readiness checks
-              </Button>
+              <Button onClick={() => navigate('readiness')}>Open readiness checks</Button>
             </div>
           </section>
 

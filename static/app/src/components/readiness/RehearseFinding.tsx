@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import { DEFAULT_NOTIFY_TARGET_MINUTES, generateRehearsal } from '@shared/rehearsal/generate';
 import { useRehearsalSource } from '../../lib/rehearsalSource';
@@ -129,7 +129,7 @@ export function RehearseFinding({
           </span>
         </label>
         <div className="toolbar-action">
-          <Button type="submit" appearance="primary" isDisabled={!targetValid || !notifyValid}>
+          <Button type="submit" variant="primary" isDisabled={!targetValid || !notifyValid}>
             Rehearse this finding
           </Button>
         </div>

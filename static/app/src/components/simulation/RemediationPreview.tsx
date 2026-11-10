@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { RemediationAction } from '@shared/domain/types';
 import {
@@ -275,10 +275,10 @@ export function RemediationPreview({
           <span>I have reviewed this exact draft</span>
         </label>
         <div className="debrief-actions">
-          <Button appearance="default" isDisabled={!canApprove} onClick={approve}>
+          <Button variant="secondary" isDisabled={!canApprove} onClick={approve}>
             Approve this exact draft
           </Button>
-          <Button appearance="primary" isDisabled aria-describedby={`${ids}-create-reason`}>
+          <Button variant="primary" isDisabled aria-describedby={`${ids}-create-reason`}>
             Create in Jira
           </Button>
           <span id={`${ids}-create-reason`} className="region-body">

@@ -1,4 +1,4 @@
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type { HistoryListItem, ListRehearsalHistoryResponse } from '@shared/api';
 import { api } from '../lib/api';
@@ -6,7 +6,7 @@ import { useExercises, type CompletedExercise } from '../lib/exercises';
 import { formatAbsolute } from '../lib/format';
 import { useRouter } from '../lib/router';
 import { useApi } from '../lib/useApi';
-import { PageHeader } from '../components/Shell';
+import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
 import { Debrief } from '../components/simulation/Debrief';
 import { HistoryDetail, type HistoryTarget } from '../components/history/HistoryDetail';
@@ -198,7 +198,6 @@ function SavedTable({
                           {checked[r.id] ? ` (${CHECKED_TEXT[checked[r.id]!]})` : ''}
                         </span>
                         <Button
-                          appearance="subtle"
                           ref={refFor(`saved:${r.id}`)}
                           aria-label={`Open retest ${i + 1} of ${title}`}
                           onClick={() => onOpen({ kind: 'retest', id: r.id })}
@@ -213,7 +212,6 @@ function SavedTable({
               <td data-label="Status">
                 <span className="history-status">{statusText(checked[run.id])}</span>
                 <Button
-                  appearance="subtle"
                   ref={refFor(`saved:${run.id}`)}
                   aria-label={`Open report: ${title}, ${formatAbsolute(run.completedAt)}`}
                   onClick={() => onOpen({ kind: 'run', id: run.id })}
@@ -296,7 +294,6 @@ function InTabReports({
                 </td>
                 <td>
                   <Button
-                    appearance="subtle"
                     ref={refFor(`tab:${ex.session.id}`)}
                     aria-label={`Open report from ${formatAbsolute(ex.completedAt)}`}
                     onClick={() => onOpen(ex)}

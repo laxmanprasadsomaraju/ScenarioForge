@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import { currentStep, decisionTrail } from '@shared/simulation/engine';
 import { EvidenceList } from './Evidence';
@@ -32,7 +32,8 @@ export function Rehearsal({ scenario, session, onDecide, onLeave }: Props) {
   return (
     <div className="rehearsal">
       <div className="rehearsal-bar">
-        <span className="clock" aria-live="polite">
+        {/* Not a live region: each decision is announced once, by the consequence status below. */}
+        <span className="clock">
           <span className="clock-label">Simulated time</span>
           <span className="clock-value num">T+{session.elapsedMinutes} min</span>
         </span>
@@ -41,17 +42,15 @@ export function Rehearsal({ scenario, session, onDecide, onLeave }: Props) {
           {confirmLeave ? (
             <>
               <span>Discard this rehearsal?</span>
-              <Button appearance="danger" onClick={onLeave}>
+              <Button variant="danger" onClick={onLeave}>
                 Discard
               </Button>
-              <Button appearance="subtle" onClick={() => setConfirmLeave(false)}>
+              <Button variant="subtle" onClick={() => setConfirmLeave(false)}>
                 Keep going
               </Button>
             </>
           ) : (
-            <Button appearance="subtle" onClick={() => setConfirmLeave(true)}>
-              Leave rehearsal
-            </Button>
+            <Button onClick={() => setConfirmLeave(true)}>Leave rehearsal</Button>
           )}
         </span>
       </div>

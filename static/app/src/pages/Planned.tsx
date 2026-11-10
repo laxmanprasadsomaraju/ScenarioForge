@@ -1,7 +1,8 @@
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import type { RouteId } from '../lib/routes';
 import { useRouter } from '../lib/router';
-import { PageHeader } from '../components/Shell';
+import { StatusBadge } from '../components/Badge';
+import { PageHeader } from '../components/PageHeader';
 
 interface PlannedScreen {
   title: string;
@@ -35,7 +36,7 @@ export function PlannedPage({ id }: { id: PlannedId }) {
       <PageHeader
         title={screen.title}
         lead={screen.lead}
-        aside={<span className="planned-tag">Planned for {screen.milestone}</span>}
+        aside={<StatusBadge tone="unknown">{`Planned for ${screen.milestone}`}</StatusBadge>}
       />
       <section className="region planned" aria-labelledby="planned-title">
         <h2 id="planned-title" className="section-title">
@@ -49,7 +50,7 @@ export function PlannedPage({ id }: { id: PlannedId }) {
             <li key={item}>{item}</li>
           ))}
         </ul>
-        <Button appearance="default" onClick={() => navigate(screen.meanwhile.route)}>
+        <Button variant="secondary" onClick={() => navigate(screen.meanwhile.route)}>
           {screen.meanwhile.label}
         </Button>
       </section>

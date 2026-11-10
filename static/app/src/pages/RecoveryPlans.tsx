@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import type { ConfluencePageSummary } from '@shared/api';
 import { RECOVERY_TERMS } from '@shared/api';
 import { api } from '../lib/api';
@@ -7,7 +7,8 @@ import { formatAbsolute, formatRelative } from '../lib/format';
 import { useSite } from '../lib/site';
 import { useApi } from '../lib/useApi';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
+import { DataRegion } from '../components/DataRegion';
+import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
 
 // Mirrors the server-side check so the user gets feedback before a round trip;
@@ -70,29 +71,27 @@ export function RecoveryPlansPage() {
         </div>
       </form>
 
-      <section
-        className="region"
-        aria-labelledby="plans-results"
-        aria-busy={state.status === 'loading'}
-      >
-        <h2 id="plans-results" className="visually-hidden">
-          Recovery pages
-        </h2>
-        {state.status === 'loading' ? <SkeletonRows rows={5} label="Searching Confluence" /> : null}
-        {state.status === 'error' ? (
-          <ErrorPanel error={state.error} onRetry={retry} product="Confluence" />
-        ) : null}
-        {state.status === 'ready' && state.data.pages.length === 0 ? (
+      <DataRegion
+        id="plans-results"
+        title="Recovery pages"
+        hideTitle
+        state={state}
+        loading={{ label: 'Searching Confluence', rows: 5 }}
+        onRetry={retry}
+        product="Confluence"
+        isEmpty={(data) => data.pages.length === 0}
+        empty={(data) => (
           <EmptyState title="No recovery pages found">
-            Confluence returned no pages you can view for <code>{state.data.cql}</code>.
+            Confluence returned no pages you can view for <code>{data.cql}</code>.
           </EmptyState>
-        ) : null}
-        {state.status === 'ready' && state.data.pages.length > 0 ? (
+        )}
+      >
+        {(data) => (
           <>
             <p className="results-meta">
-              {state.data.pages.length} pages
-              {state.data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
-              {formatAbsolute(state.data.fetchedAt)} with <code>{state.data.cql}</code>
+              {data.pages.length} pages
+              {data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
+              {formatAbsolute(data.fetchedAt)} with <code>{data.cql}</code>
             </p>
             <table className="issues">
               <caption className="visually-hidden">Recovery pages in Confluence</caption>
@@ -106,7 +105,7 @@ export function RecoveryPlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {state.data.pages.map((page) => (
+                {data.pages.map((page) => (
                   <tr key={page.id}>
                     <th scope="row" data-label="Page">
                       <button
@@ -131,8 +130,8 @@ export function RecoveryPlansPage() {
               </tbody>
             </table>
           </>
-        ) : null}
-      </section>
+        )}
+      </DataRegion>
     </>
   );
 }
@@ -159,9 +158,7 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
       <div className="procedure-actions">
         <Button onClick={onBack}>Back to recovery pages</Button>
         {webuiPath ? (
-          <Button appearance="subtle" onClick={() => openInJira(`/wiki${webuiPath}`)}>
-            Open in Confluence
-          </Button>
+          <Button onClick={() => openInJira(`/wiki${webuiPath}`)}>Open in Confluence</Button>
         ) : null}
       </div>
 

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ApiResult, GetRehearsalRunResponse, GetRetestComparisonResponse } from '@shared/api';
 import { api } from '../../lib/api';
 import { formatAbsolute } from '../../lib/format';
 import { useApi } from '../../lib/useApi';
-import { PageHeader } from '../Shell';
+import { OriginBadge } from '../Badge';
+import { PageHeader } from '../PageHeader';
 import { ErrorPanel, SkeletonRows } from '../States';
 import { Debrief } from '../simulation/Debrief';
 import {
@@ -148,9 +149,9 @@ export function HistoryDetail({
         lead={exercise.scenario.title}
         aside={
           <>
-            <span className={`origin ${provenance ? 'origin-modelled' : 'origin-demo'}`}>
+            <OriginBadge origin={provenance ? 'modelled' : 'synthetic'}>
               {provenance ? `Modelled from ${provenance.changeKey}` : 'Synthetic demo'}
-            </span>
+            </OriginBadge>
             {back}
           </>
         }

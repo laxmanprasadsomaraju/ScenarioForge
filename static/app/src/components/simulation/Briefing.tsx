@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { SimulationScenario } from '@shared/domain/types';
 import { EvidenceItem } from './Evidence';
 
@@ -39,7 +39,7 @@ export function Briefing({
           <dd>Decided by fixed scenario rules, the same every time you make the same choices</dd>
         </dl>
         <div className="briefing-action">
-          <Button appearance="primary" onClick={onStart}>
+          <Button variant="primary" onClick={onStart}>
             Start rehearsal
           </Button>
         </div>

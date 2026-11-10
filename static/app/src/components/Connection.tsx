@@ -1,5 +1,5 @@
 import Spinner from '@atlaskit/spinner';
-import Button from '@atlaskit/button/new';
+import { Button } from './Button';
 import { useCallback } from 'react';
 import { api } from '../lib/api';
 import { useApi } from '../lib/useApi';
@@ -28,12 +28,7 @@ export function ConnectionStatusLine() {
           : null}
       </span>
       {state.status === 'error' ? (
-        <Button
-          appearance="subtle"
-          spacing="compact"
-          onClick={retry}
-          aria-label="Retry Jira connection"
-        >
+        <Button spacing="compact" onClick={retry} aria-label="Retry Jira connection">
           Retry
         </Button>
       ) : null}
