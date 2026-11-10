@@ -4,6 +4,21 @@ Goal: prove, on real Jira and Confluence data, that ScenarioForge links a change
 
 Runs in the isolated `confluence-test` environment after the M3 build is integrated and deployed there. The `development` install is not changed.
 
+## Deployment
+
+- 2026-11-10: `m3/change-to-recovery` @ `1f53f77` deployed to `confluence-test` as app version 2.1.0 (minor: manifest identical to the approved M2 build, no new scopes). `development` unchanged at version 2.
+- Test URL: https://one-atlas-cegq.atlassian.net/apps/full-page/99a01e9b-c4c3-4634-94c4-634f521b7087/scenarioforge
+
+## How to create the issues in Jira
+
+1. In Jira, select **+ Create** in the top bar.
+2. **Space:** any space you can create work in (for example the one holding MC-10).
+3. **Work type:** Task.
+4. **Summary** and **Description:** paste exactly as given below. Paste the description as plain text; two sentences in one paragraph is fine.
+5. Leave the status as **To Do** (a status such as Won't Do is treated as cancelled, by design).
+6. Select **Create**. Repeat for issue B.
+7. In ScenarioForge, open **Readiness checks** and select **Check recovery impact** on each new issue. New issues appear in the list straight away because it shows changes updated in the last 30 days.
+
 ## Synthetic Jira issues (owner creates; the app has read-only scopes)
 
 Create these in any Jira space you can edit. Every summary starts with `[DEMO]`.
