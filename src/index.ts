@@ -6,6 +6,7 @@ import { analyzeChange } from './analysis/analyzeChange';
 import { ruleEngine } from './analysis/ruleEngine';
 import type { ConfluenceGateway } from './confluence/client';
 import { getRecoveryProcedure, searchRecoveryPages } from './confluence/client';
+import type { JiraFieldGateway } from './jira/affectedServices';
 import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
@@ -21,13 +22,15 @@ import {
  * All Jira calls run asUser so results are limited to what the signed-in user
  * can already see in Jira. No app-level credentials ever reach the browser.
  */
-const forgeJira: JiraGateway & JiraIssueGateway = {
+const forgeJira: JiraGateway & JiraIssueGateway & JiraFieldGateway = {
   searchIssues: (params) => api.asUser().requestJira(route`/rest/api/3/search/jql?${params}`),
   myself: () => api.asUser().requestJira(route`/rest/api/3/myself`),
   getIssue: (issueKey, params) =>
     api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}?${params}`),
   getRemoteLinks: (issueKey) =>
     api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}/remotelink`),
+  // Field list for the JSM Affected services probe (read:jira-work, no new scope).
+  listFields: () => api.asUser().requestJira(route`/rest/api/3/field`),
 };
 
 /**
