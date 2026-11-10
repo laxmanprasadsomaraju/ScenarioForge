@@ -89,6 +89,12 @@ export interface ActionOutputBase {
    * outputs stay valid; M6 handlers always set it (possibly empty).
    */
   sourceWarnings?: { evidenceId: string; pattern: string }[];
+  /**
+   * Fixed text saying what the usage governor covers: ScenarioForge's own
+   * work is limited, but Rovo charges the user's chat message separately.
+   * Optional so earlier outputs stay valid; M6 handlers always set it.
+   */
+  usageNote?: string;
 }
 
 /** Failure result: returned (not thrown) so the agent can say what went wrong. */
@@ -100,6 +106,12 @@ export interface ActionFailure {
    * was assessed; the agent repeats `message` and does not guess an answer.
    * `SOURCE_FLAGGED` is never used as a code: flagged source text is reported
    * in `ActionOutputBase.sourceWarnings` instead, so findings still return.
+   * `IDENTITY_UNAVAILABLE`: no user accountId in the invocation context, or no
+   * user-scoped (asUser) client could be made. Actions never fall back to
+   * app-level access, so nothing was read.
+   * `GOVERNANCE_UNAVAILABLE`: the usage ledger could not be checked, so the
+   * action did not run (fail closed). Distinct from `USAGE_LIMITED`: no limit
+   * was reached, and no retry time is known.
    */
   code:
     | 'INVALID_INPUT'
@@ -107,10 +119,14 @@ export interface ActionFailure {
     | 'FORBIDDEN'
     | 'NOT_ASSESSED'
     | 'UPSTREAM_ERROR'
-    | 'USAGE_LIMITED';
+    | 'USAGE_LIMITED'
+    | 'IDENTITY_UNAVAILABLE'
+    | 'GOVERNANCE_UNAVAILABLE';
   message: string;
   /** Present with `USAGE_LIMITED` when the governor knows when to retry. */
   retryAfterSeconds?: number;
+  /** Same fixed text as `ActionOutputBase.usageNote`; M6 handlers always set it. */
+  usageNote?: string;
 }
 
 export type ActionResult<T extends ActionOutputBase> = ({ ok: true } & T) | ActionFailure;
