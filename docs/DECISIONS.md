@@ -75,3 +75,7 @@ A change with no recognised retirement, replacement, migration, rename, disable 
 - Rehearsal history: one entity with `version` + `payload` only, per-user index inside the payload, no separate `rehearsal-fix` entity; records are recomputed on save and re-verified on every read. Tamper detection proves consistency, not authenticity (an HMAC secret would need approval).
 - M8 idempotency label is `sf-rem-<16 hex>` from change + finding + fix (stable across summary edits), with the fixed label `scenarioforge-remediation` (supersedes M8_PLAN §2–3 `sf-<draftHash>`). Approval is a SHA-256 over the exact draft; `checkApproval` order is missing → wrong-approver → stale → valid.
 - Still before any real write: ADF description hashed as sent, absolute links built server-side, server-side approval re-check and storage (needs `storage:app`), `write:jira-work` approval.
+
+## D20. Saved generated rehearsals compare content, not retrieval time (2026-11-10)
+
+The server rebuilds a generated rehearsal as the user before saving it. Its exact fingerprint includes each evidence `retrievedAt`, which always differs from the browser's copy, so browser and server compare `rehearsalContentFingerprint` (the scenario without `retrievedAt`). If the content matches, the server stores its own rebuilt scenario with its exact fingerprint; any change to the change text or runbook step is rejected (SCENARIO_MISMATCH). Reads re-check, as the user, that the change is still visible; a 403/404 hides the record.

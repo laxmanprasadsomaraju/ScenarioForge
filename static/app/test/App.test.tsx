@@ -8,6 +8,9 @@ import { changes, issue, renderInApp } from './helpers';
 const api = vi.hoisted(() => ({
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
+  listRehearsalHistory: vi.fn(),
+  saveRehearsalRun: vi.fn(),
+  saveRetest: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ api }));
 
@@ -17,6 +20,16 @@ beforeEach(() => {
     data: { connected: true, userDisplayName: 'Test user', checkedAt: new Date().toISOString() },
   });
   api.listRecentChanges.mockResolvedValue(changes([issue()]));
+  const notEnabled = {
+    ok: true,
+    data: {
+      status: 'UNAVAILABLE',
+      detail: 'Rehearsal history is not enabled in this environment.',
+    },
+  };
+  api.listRehearsalHistory.mockResolvedValue(notEnabled);
+  api.saveRehearsalRun.mockResolvedValue(notEnabled);
+  api.saveRetest.mockResolvedValue(notEnabled);
 });
 
 const nav = () => within(screen.getByRole('navigation', { name: 'ScenarioForge' }));
@@ -101,12 +114,24 @@ describe('Origin labels', () => {
     await screen.findByRole('table', { name: 'Recently updated Jira issues' });
   });
 
-  it('marks reports as synthetic demo data', async () => {
+  it('marks in-tab reports as synthetic demo data when history is unavailable', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(nav().getByRole('link', { name: 'Reports' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Reports' })).toBeInTheDocument();
-    expect(screen.getByText('Synthetic demo data')).toBeInTheDocument();
+    await user.click(nav().getByRole('link', { name: 'Simulations' }));
+    await user.click(await screen.findByRole('button', { name: 'Start rehearsal' }));
+    for (const label of [
+      'Follow RB-AUTH-01 step 3',
+      'Check the change history',
+      'Post a status update',
+      'Promote NimbusID',
+    ]) {
+      const options = within(screen.getByRole('list', { name: 'Your options' }));
+      await user.click(options.getByRole('button', { name: new RegExp(`^${label}`) }));
+    }
+    await user.click(nav().getByRole('link', { name: 'History' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'History' })).toBeInTheDocument();
+    const tab = await screen.findByRole('region', { name: 'This tab only' });
+    expect(within(tab).getByText('Synthetic demo')).toBeInTheDocument();
   });
 });
 
