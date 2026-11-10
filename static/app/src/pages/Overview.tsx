@@ -16,7 +16,7 @@ type StageState = 'live' | 'demo' | 'planned';
 
 const LOOP: { name: string; state: StageState; note: string }[] = [
   { name: 'Change', state: 'live', note: 'Live from Jira' },
-  { name: 'Recovery risk', state: 'planned', note: 'Planned for M3' },
+  { name: 'Recovery risk', state: 'live', note: 'Checked per change' },
   { name: 'Rehearsal', state: 'demo', note: 'Demo scenario' },
   { name: 'Evaluation', state: 'demo', note: 'Rule-based, demo' },
   { name: 'Remediation', state: 'planned', note: 'Planned for M8' },
@@ -108,9 +108,14 @@ export function OverviewPage() {
               Findings
             </h2>
             <p className="region-body">
-              No findings. Change-to-runbook analysis arrives in M3; until then this list stays
-              empty rather than guessing.
+              Nothing is checked automatically, so no findings are shown here. Pick a change under
+              Readiness checks to see which runbook steps it may affect.
             </p>
+            <div className="region-foot">
+              <Button appearance="subtle" onClick={() => navigate('readiness')}>
+                Open readiness checks
+              </Button>
+            </div>
           </section>
 
           <section className="region" aria-labelledby="activity-title">
