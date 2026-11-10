@@ -63,3 +63,7 @@ A gap is `resolved` only if the retest actually followed the procedure that had 
 ## D16. Contract-change proposals pending (2026-11-09)
 
 Proposed by lanes, not yet applied to `shared/domain/types.ts`: `remediatedFrom` on scenarios and `scenarioFingerprint` / `appliedRemediationIds` on sessions (Lane C, needed for M5 persistence); an optional `path` on `EvidenceReference` and confidence on `RecoveryStep.dependsOn` (Lane A); `'teamwork-graph'` as an evidence kind (Lane D). To be decided when M5 persistence starts, with tests.
+
+## D17. `storage:app` scope added on branch; not deployed until owner approval (2026-11-10)
+
+Lane A2 added `@forge/kvs` 2.1.2, the `ai-governance` custom entity and the `storage:app` scope so the usage governor and response cache have a Forge-backed `StorageAdapter` (`src/ai/forgeStorage.ts`). `forge lint` reports that the scope change triggers a major version upgrade, which needs admin re-approval. The owner has not approved it, so the change stays on the branch: no `forge deploy` or `forge install`, and no resolver uses the governor yet. Deploying it also creates an entity whose attributes cannot be deleted later. Before AI actions ship, check on a development deploy the undocumented failed-condition error and that `notExists()` permits create-only writes (AI_USAGE_GOVERNANCE.md §8).

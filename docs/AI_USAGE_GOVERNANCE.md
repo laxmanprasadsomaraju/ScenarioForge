@@ -1,6 +1,6 @@
 # AI usage governance (Lane D)
 
-Date: 2026-11-09. Code: `shared/agents/budget.ts`, `shared/agents/cache.ts`, `shared/agents/storage.ts`. Tests: `test/budget.test.ts`. Nothing here is wired into `manifest.yml` or `src/index.ts` yet.
+Date: 2026-11-09. Code: `shared/agents/budget.ts`, `shared/agents/cache.ts`, `shared/agents/storage.ts`. Tests: `test/budget.test.ts`. Forge adapter (2026-11-10, Lane A2): `src/ai/forgeStorage.ts`, `test/forgeStorage.test.ts`. Nothing is wired into `src/index.ts` yet, and the `storage:app` scope is on the branch only (D17).
 
 **Owner requirement:** Rovo agent actions, MCP tools and enriched Teamwork Graph calls must never use credits unexpectedly. Paid extra usage is off on the demo org (195,000 credits/month, resets 5 Dec 2026). No allowance is assumed for any other org, and the app never turns on paid usage.
 
@@ -133,63 +133,32 @@ Notes for Lane A:
 
 `contracts.ts` `ActionFailure.code` has no budget code. Proposed mapping, without changing the contract: `DISABLED` / `BUDGET_EXHAUSTED` / `RATE_LIMITED` / `UNAVAILABLE` become `NOT_ASSESSED`, with the governor's `message` (and retry time, if any) as `message`. `INVALID` becomes `INVALID_INPUT`. A dedicated `USAGE_LIMITED` code is a contract-change proposal for the lead (D16-style), not done here.
 
-## 6. Forge storage adapter (described, not implemented)
+## 6. Forge storage adapter (implemented, not deployed)
 
-`@forge/kvs` is not a dependency, and package files belong to Lane A, so the adapter is not in this branch.
+Code: `src/ai/forgeStorage.ts` (`ForgeEntityStorage implements StorageAdapter`). Tests: `test/forgeStorage.test.ts`. Dependency: `@forge/kvs` 2.1.2 (exact), which itself depends on `@forge/api` ^8.5.0, so it dedupes with ours (`npm ls`). The manifest declares the entity and `storage:app` on this branch only; it is **not deployed** (D17). No resolver uses the governor yet.
 
-**Verified API facts:**
+**Verified API facts** (official pages read 2026-11-10, plus the installed package's TypeScript types):
 
-- `import { kvs } from '@forge/kvs'`, scope `storage:app` ([Storage API basic](https://developer.atlassian.com/platform/forge/runtime-reference/storage-api-basic/)). `kvs.get` is "strictly consistent"; `get` returns `undefined` for a missing key; by default `set`/`delete` are **last write wins**; "Writes to individual keys are atomic."
-- `kvs.set(key, value, { ttl?, keyPolicy?: 'OVERRIDE' | 'FAIL_IF_EXISTS', returnValue?, returnMetadataFields? })`, and TTL up to one year. Expired data can take up to 48 hours to be deleted ([KVS API](https://developer.atlassian.com/platform/forge/storage-reference/kvs-api/)).
-- Plain KVS `kvs.transact().set/.delete(...).execute()` is all-or-nothing, but **has no conditions** ([KVS transactions](https://developer.atlassian.com/platform/forge/storage-reference/kvs-transactions/)).
-- **Conditional writes exist only in the Custom Entity Store**: `kvs.transact().set(key, value, { entityName, conditions })`, `.check(key, { entityName, conditions })`, with `conditions: new Filter().and(attr, FilterConditions.…)`; "if any condition is not met, the entire transaction will fail." At most 25 operations per transaction, and each key once ([Entity transactions](https://developer.atlassian.com/platform/forge/storage-reference/transactions-entities/)). `FilterConditions` include `equalTo`, `notExists`, and others ([Entities query](https://developer.atlassian.com/platform/forge/storage-reference/entities-api-query/)).
+- Scope: "Using the `@forge/kvs` package requires the `storage:app` scope" ([Custom entities API](https://developer.atlassian.com/platform/forge/storage-reference/storage-api-custom-entities/)). `entity().get` "will always return current data"; `entity().query` "is eventually consistent" (same page). The adapter only uses `get` by key.
+- Manifest: `app.storage.entities[]` with `name`, `attributes.<name>.type` (`string`, `integer`, `float`, `boolean`, `any`) and optional `indexes`. The key index is automatic. Entity names allow only `a-z 0-9 : - _ .` (so `ai-governance`, not camelCase). Entities and attributes "can't be deleted" once deployed, and `forge deploy --major-version` ignores the `storage` section ([Defining entities](https://developer.atlassian.com/platform/forge/storage-reference/entities-manifest/)). The store "strictly enforces attribute types"; `integer` is "a 32-bit signed integer"; strings "Must not be empty."
+- Conditional writes: `kvs.transact().set(key, value, { entityName, conditions }).execute()`; "if any condition is not met, the entire transaction will fail"; "maximum of 25 operations"; "payload size of 4MB"; a transaction counts as one write ([Entity transactions](https://developer.atlassian.com/platform/forge/storage-reference/transactions-entities/)).
+- Condition names: the docs table lists `equalTo` and `exists, notExists`, while its examples use `equalsTo` ([Entities query](https://developer.atlassian.com/platform/forge/storage-reference/entities-api-query/)). **Resolved from `node_modules/@forge/kvs/out/conditions.d.ts`:** `FilterConditions.equalTo(value)` and `FilterConditions.notExists()`; there is no `equalsTo`. They serialise as `EQUAL_TO` and `NOT_EXISTS`.
+- Errors: non-2xx responses carry `code` and `message` ([KVS error handling](https://developer.atlassian.com/platform/forge/storage-reference/kvs-errorhandling/)). The package throws `ForgeKvsAPIError` with `code` and `responseDetails.status`. The transaction REST endpoint lists only 204 and an undescribed 400 ([Transaction REST API](https://developer.atlassian.com/platform/forge/rest/v1/api-group-transaction/)). **No page names the code for a failed condition.**
+- Limits: "maximum of 500 characters" per key, pattern `/^(?!\s+$)[a-zA-Z0-9:._\s-#]+$/`, "240KiB (RAW) per object", at most 20 entities per app ([KVS and Custom Entity Store limits](https://developer.atlassian.com/platform/forge/limits-kvs-ce/)).
 
-So **plain `kvs.set` cannot implement `expectedVersion`**. The adapter uses a custom entity:
+**Design:**
 
-```yaml
-# manifest.yml (Lane A): verify syntax on the "Defining entities" page before use
-app:
-  storage:
-    entities:
-      - name: governance
-        attributes:
-          version: { type: integer }
-          payload: { type: any }
-permissions:
-  scopes: [storage:app]
-```
+| `StorageAdapter` call | Forge call                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `get(key)`            | `kvs.entity('ai-governance').get(key)`; record `{ version: integer, payload: JSON string }`       |
+| `set(key, v, null)`   | transaction `set` with `Filter().and('version', FilterConditions.notExists())`, writes version 1  |
+| `set(key, v, n)`      | transaction `set` with `Filter().and('version', FilterConditions.equalTo(n))`, writes version n+1 |
+| `delete(key)`         | `kvs.entity('ai-governance').delete(key)` (missing key is not an error in the SDK)                |
 
-```ts
-// src/ai/forgeStorage.ts (sketch)
-import { kvs, Filter, FilterConditions } from '@forge/kvs';
-const E = 'governance';
-export const forgeGovernanceStorage: StorageAdapter = {
-  async get(key) {
-    const row = await kvs.entity<{ version: number; payload: unknown }>(E).get(key);
-    return row ? { value: row.payload as never, version: row.version } : undefined;
-  },
-  async set(key, value, expected) {
-    const version = (expected ?? 0) + 1;
-    const conditions =
-      expected === null
-        ? new Filter().and('version', FilterConditions.notExists())
-        : new Filter().and('version', FilterConditions.equalTo(expected));
-    try {
-      await kvs
-        .transact()
-        .set(key, { version, payload: value }, { entityName: E, conditions })
-        .execute();
-      return { ok: true, version };
-    } catch (error) {
-      if (isConditionFailure(error)) return { ok: false, reason: 'CONFLICT' };
-      throw error; // outage: the governor denies
-    }
-  },
-  delete: (key) => kvs.entity(E).delete(key),
-};
-```
-
-If a condition failure cannot be told apart from an outage, `isConditionFailure` can return `false`. The governor then treats every failed write as `UNAVAILABLE` (deny). That is still safe, just less tolerant of concurrent use. Cache entries should also get a KVS `ttl` equal to the cache TTL, so orphaned entries clean themselves up.
+- **Conflict detection without a documented code.** A rejected write is a conflict candidate only if it is a 400/409/412 response whose `code` is not a documented non-condition code (`INVALID_KEY`, `MAX_SIZE`, rate limits, and so on). The adapter then re-reads the key: if the stored version no longer equals `expectedVersion`, it returns `CONFLICT`; otherwise it rethrows. Network errors, 429 and 5xx always throw, so the governor answers `UNAVAILABLE` (deny). A write that may have been applied is never reported as a conflict, which would risk a double charge.
+- **Guards before any call** (throw `ForgeStorageError`): key 2 to 500 characters matching the documented pattern; value must be JSON-serialisable; the whole record must be at most 240 KiB in UTF-8; version must fit a 32-bit signed integer. Malformed stored records throw on read.
+- **Testability:** the adapter talks to a three-method `GovernanceKvsClient`. `forgeKvsClient()` is the real one; tests use an in-memory fake, and separately check (with `@forge/kvs` mocked) that the real client builds `NOT_EXISTS` and `EQUAL_TO` conditions on `version` for entity `ai-governance`.
+- **No TTL on cache entries.** `StorageAdapter.set` has no TTL parameter, and the cache already bounds itself through `ai-cache:index` (200 entries). Adding entity TTLs is optional later work.
 
 ## 7. Admin visibility (described only)
 
@@ -206,7 +175,7 @@ An admin-only **Settings → AI usage** panel (Lane B UI, Lane A resolver):
 - **Whether a Forge `action` invocation, or each tool call within one chat message, is billed separately.** The credits page prices chat messages and agent invocations, not Forge actions. We cost each action as one agent event.
 - **Exact cost of a given enriched Teamwork Graph query.** Only the "1 to 10" range is published, so we charge 10. The actual cost is not returned to the app, so `commit(id, actual)` gets the estimate.
 - **The demo org's allowance (195,000) and reset date (5 Dec 2026)** are owner-reported, not checked by this lane.
-- **Custom Entity Store details:** the exact `notExists()` / `equalTo()` names (the docs' tables and examples disagree: `equalTo` vs `equalsTo`), whether a `notExists` condition works for create-only on a missing key, the error shape of a failed condition, and the `storage.entities` manifest syntax. All need a Lane A spike before use.
-- **Whether `kvs.entity().get` is strongly consistent** like `kvs.get`. If it is eventually consistent, conflicts are still caught by the conditional write, but reads may retry more.
+- **The error code for a failed transaction condition.** Undocumented; the adapter confirms conflicts by re-reading the version instead (§6). Check the real code on a development deploy and, if it is distinctive, match it directly.
+- **Whether `notExists()` on `version` matches a key that has no record at all** (create-only). The SDK accepts it and the semantics read that way, but no page says so. If it does not, the first write of each key fails, the re-read finds no record, and the adapter throws, so the governor denies. That fails closed, but it must be checked on a development deploy before AI actions ship.
+- **Live behaviour of the whole adapter.** Everything is unit-tested against a fake; nothing has run against a real Custom Entity Store because the scope is not deployed (D17). Also unchecked live: index provisioning time for an entity with no custom indexes, and Node 24 runtime compatibility of `@forge/kvs` 2.1.2 (it loads and builds filters under Node 24 locally).
 - **Whether `context.accountId` is always present** for actions invoked from chat, Automation or MCP (BONUS_FEASIBILITY.md §2). If it is missing, the request is `INVALID` and denied.
-- **Whether `@forge/kvs` works with our `@forge/api` 8.x** and the Node 24 runtime. Not installed here.

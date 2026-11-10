@@ -26,11 +26,25 @@ permissions:
     # Read one recovery page body: GET /wiki/api/v2/pages/{id}. v2 lists only
     # this granular scope; no classic scope covers the v2 page endpoint.
     - read:page:confluence
+    # AI usage governance ledger and response cache in the Custom Entity Store
+    # (@forge/kvs, src/ai/forgeStorage.ts). Required by @forge/kvs. Branch only:
+    # not deployed until the owner approves (D17).
+    - storage:app
   content:
     styles:
       # Atlaskit components inject runtime style tags.
       - unsafe-inline
 app:
+  storage:
+    entities:
+      # One record per governance or cache key; `version` backs conditional
+      # writes, `payload` is JSON text. No custom indexes: lookups are by key.
+      - name: ai-governance
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
   runtime:
     name: nodejs24.x
     memoryMB: 256
