@@ -136,9 +136,7 @@ function subjectEvidence(
  * | search ran, no page mentions a subject                | `used`          |
  * | "not authorised" / "do not have permission"           | `not-permitted` |
  * | any other "Runbooks were not checked/searched" reason | `error`         |
- * | Confluence never queried (no subject, cancelled)      | `not-connected` |
- *
- * The last row is "not queried for this change"; the detail says so.
+ * | Confluence never queried (no subject, cancelled)      | `not-queried`   |
  */
 export function confluenceSourceStatus(analysis: ChangeAnalysis): SourceStatus {
   const { coverage } = analysis;
@@ -162,7 +160,7 @@ export function confluenceSourceStatus(analysis: ChangeAnalysis): SourceStatus {
   }
   return {
     source: 'confluence',
-    status: 'not-connected',
+    status: 'not-queried',
     detail: `Not queried for this change: ${reason || 'the analysis did not search runbooks.'}`,
   };
 }

@@ -282,7 +282,7 @@ describe('confluenceSourceStatus', () => {
       'error',
     ],
     ['Runbooks were not searched: No search terms were derived from the change.', 'error'],
-    ['No retirement, replacement or migration was recognised in this change.', 'not-connected'],
+    ['No retirement, replacement or migration was recognised in this change.', 'not-queried'],
   ])('maps "%s" to %s', (reason, status) => {
     expect(confluenceSourceStatus(withReason(reason)).status).toBe(status);
   });

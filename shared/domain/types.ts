@@ -18,7 +18,13 @@ export type IsoDateTime = string;
 export interface EvidenceReference {
   id: string;
   origin: DataOrigin;
-  kind: 'jira-issue' | 'confluence-page' | 'jsm-service' | 'runbook-step' | 'scenario-rule';
+  kind:
+    | 'jira-issue'
+    | 'confluence-page'
+    | 'jsm-service'
+    | 'teamwork-graph'
+    | 'runbook-step'
+    | 'scenario-rule';
   title: string;
   /** Verbatim excerpt from the source; never paraphrased by AI. */
   excerpt?: string;

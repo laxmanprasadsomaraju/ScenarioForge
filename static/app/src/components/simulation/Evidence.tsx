@@ -4,6 +4,7 @@ const KIND_LABELS: Record<EvidenceReference['kind'], string> = {
   'jira-issue': 'Change record',
   'confluence-page': 'Runbook page',
   'jsm-service': 'Service record',
+  'teamwork-graph': 'Teamwork Graph',
   'runbook-step': 'Runbook',
   'scenario-rule': 'Scenario rule',
 };

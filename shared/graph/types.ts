@@ -31,20 +31,21 @@ export interface GraphNode {
   path?: string;
 }
 
+/** Edge direction is fixed per kind and given as `from → to`. */
 export type GraphEdgeKind =
-  /** Change names a subject it retires, replaces, migrates… (M3 subject). */
+  /** change → subject: the change retires, replaces, migrates… it (M3 subject). */
   | 'change-names-subject'
-  /** Subject is replaced by another named system (from the change text). */
+  /** subject → replacement subject, as named in the change text. */
   | 'subject-replaced-by'
-  /** A runbook step depends on the subject (M3 finding). */
+  /** step → subject: the runbook step depends on the subject (M3 finding). */
   | 'step-depends-on-subject'
-  /** The step belongs to a runbook page. */
+  /** step → page: the step belongs to the runbook page. */
   | 'step-in-page'
-  /** The runbook page recovers a service (explicit reference only). */
+  /** page → service: the runbook recovers the service (explicit reference only). */
   | 'page-recovers-service'
-  /** The change impacts a service (source relation only). */
+  /** change → service: the change impacts the service (source relation only). */
   | 'change-impacts-service'
-  /** A team owns the service (source relation only). */
+  /** team → service: the team owns the service (source relation only). */
   | 'team-owns-service';
 
 export interface GraphEdge {
@@ -62,7 +63,10 @@ export interface GraphEdge {
 
 /** A link that would complete the path but could not be checked. */
 export interface UnassessedLink {
-  /** Node the missing link would start from (e.g. a runbook page). */
+  /**
+   * Node the missing link would attach to: the runbook page for a missing
+   * service, the service (or the page when no service is known) for a team.
+   */
   from: string;
   expected: 'service' | 'team';
   /** Which source would have to answer, and why it did not. */
@@ -72,7 +76,11 @@ export interface UnassessedLink {
 
 export interface SourceStatus {
   source: GraphSource;
-  status: 'used' | 'not-connected' | 'not-permitted' | 'error';
+  /**
+   * `not-queried`: the source is available but this change gave nothing to
+   * ask it (no subject, or a cancelled change). Not a connection problem.
+   */
+  status: 'used' | 'not-queried' | 'not-connected' | 'not-permitted' | 'error';
   detail: string;
 }
 

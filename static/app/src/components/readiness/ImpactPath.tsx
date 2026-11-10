@@ -22,6 +22,7 @@ export const SOURCE_LABELS: Record<GraphSource | 'm3-analysis', string> = {
 
 const STATUS_LABELS: Record<SourceStatus['status'], string> = {
   used: 'Used',
+  'not-queried': 'Not queried',
   'not-connected': 'Not connected',
   'not-permitted': 'Not permitted',
   error: 'Error',

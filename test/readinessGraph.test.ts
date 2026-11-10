@@ -147,7 +147,7 @@ describe('getReadinessGraph resolver (fake gateways, real rule engine)', () => {
     if (!result.ok) throw new Error(result.error.message);
     expect(result.data.nodes.map((n) => n.id)).toEqual(['change:MC-62']);
     expect(result.data.edges).toEqual([]);
-    expect(result.data.sources[1]).toMatchObject({ source: 'confluence', status: 'not-connected' });
+    expect(result.data.sources[1]).toMatchObject({ source: 'confluence', status: 'not-queried' });
     expect(confluence.searchContent).not.toHaveBeenCalled();
   });
 

@@ -123,7 +123,7 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
           pageId: '1003',
           pageTitle: '[DEMO] RB-SSO-04 Partner single sign-on outage',
           stepOrder: 2,
-          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
+          pageWebuiPath: '/spaces/SFDEMO/pages/1003',
           subject: LEGACY_AUTH,
           confidence: 'suspected',
           basis: ['term-match'],
