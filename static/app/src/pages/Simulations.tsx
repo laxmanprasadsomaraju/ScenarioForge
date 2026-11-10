@@ -2,14 +2,20 @@ import { useState } from 'react';
 import type { ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import { applyDecision, evaluateSession, startSession } from '@shared/simulation/engine';
 import { buildRetest, compareRetest } from '@shared/simulation/retest';
+import { buildDeepLink } from '@shared/links/deepLink';
 import Button from '@atlaskit/button/new';
 import { useRehearsalSource } from '../lib/rehearsalSource';
+import { useRouter } from '../lib/router';
+import { LinkedRehearsal } from '../components/readiness/LinkedRehearsal';
+import { RejectedLinkNotice } from '../components/readiness/LinkNotice';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
 import { Briefing } from '../components/simulation/Briefing';
 import { Debrief } from '../components/simulation/Debrief';
 import { Rehearsal } from '../components/simulation/Rehearsal';
+import { SaveNote } from '../components/history/SaveNote';
+import { saveCompleted, type SaveOutcome } from '../components/history/save';
 
 /** The run a retest is compared against, plus the fixes approved for it. */
 interface RetestOf {
@@ -33,9 +39,31 @@ function newId(prefix: string): string {
     : `${prefix}-${Date.now().toString(36)}`;
 }
 
+/**
+ * A valid rehearsal link opens the linked check first; a rejected link shows
+ * its notice above the default screen and applies nothing.
+ */
 export function SimulationsPage() {
+  const { link } = useRouter();
+  if (link.kind === 'link' && link.link.route === 'simulations') {
+    // Keyed by the canonical link so back/forward between links starts each one afresh.
+    return <LinkedRehearsal key={buildDeepLink(link.link)} link={link.link} />;
+  }
+  return (
+    <>
+      {link.kind === 'rejected' && link.route === 'simulations' ? (
+        <RejectedLinkNotice link={link} />
+      ) : null}
+      <RehearsalScreen />
+    </>
+  );
+}
+
+function RehearsalScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'briefing' });
   const { record } = useExercises();
+  // History save of the latest completed run, keyed by its session id.
+  const [saved, setSaved] = useState<{ id: string; outcome: SaveOutcome } | null>(null);
   const { source, selectDemo } = useRehearsalSource();
   const { scenario: baseScenario, remediation: remediationModel, provenance, analysis } = source;
   const workItemSource =
@@ -91,6 +119,11 @@ export function SimulationsPage() {
       };
     }
     record(exercise);
+    const id = next.id;
+    setSaved({ id, outcome: { kind: 'saving' } });
+    void saveCompleted(exercise, source).then((outcome) =>
+      setSaved((current) => (current?.id === id ? { id, outcome } : current)),
+    );
     setPhase({ kind: 'debrief', exercise });
   };
 
@@ -159,6 +192,9 @@ export function SimulationsPage() {
             onLeave={() => setPhase({ kind: 'briefing', returned: true })}
           />
         </>
+      ) : null}
+      {phase.kind === 'debrief' ? (
+        <SaveNote outcome={saved?.id === phase.exercise.session.id ? saved.outcome : null} />
       ) : null}
       {phase.kind === 'debrief' ? (
         <Debrief

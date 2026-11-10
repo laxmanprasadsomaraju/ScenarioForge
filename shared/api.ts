@@ -4,7 +4,28 @@
  * show an explicit error state instead of stale or fabricated data.
  */
 
-import type { EvidenceReference, RecoveryStep } from './domain/types';
+import type {
+  EvidenceReference,
+  ExerciseEvaluation,
+  RecoveryStep,
+  SimulationScenario,
+} from './domain/types';
+import type {
+  HistoryListItem,
+  PrunedEntry,
+  RejectReason,
+  VerifiedRetest,
+  VerifiedRun,
+} from './history/types';
+import { scenarioFingerprint } from './simulation/replay';
+import type { RetestComparison } from './simulation/types';
+import type {
+  ApprovalCheck,
+  DraftApproval,
+  DuplicateCheck,
+  RemediationRequest,
+  WorkItemDraft,
+} from './remediation';
 
 export type ApiErrorCode =
   | 'INVALID_REQUEST'
@@ -128,3 +149,170 @@ export type {
   GetReadinessGraphResponse,
   ReadinessGraph,
 } from './graph/types';
+
+/*
+ * M8 remediation preparation (read-only). The browser names the finding, fix,
+ * project and issue type; the server rebuilds everything else, including
+ * every absolute URL, from Jira and Confluence as the user. Nothing is created.
+ */
+
+export interface PrepareRemediationRequest {
+  changeKey: string;
+  findingId: string;
+  /** `rem-step`, `rem-change-check` or `review-step`. */
+  fixId: string;
+  projectKey: string;
+  issueTypeName: string;
+  /** User-edited summary; the deterministic template when omitted. */
+  summary?: string;
+}
+
+export interface PrepareRemediationResponse {
+  draft: WorkItemDraft;
+  /** The exact calls creating the work item would make. Not sent. */
+  request: RemediationRequest;
+  draftHash: string;
+  requestHash: string;
+  /** Result of `labels = "<idempotency label>"`, read as the user. */
+  duplicate: DuplicateCheck;
+  /** Site origin from `GET /rest/api/3/serverInfo`, used for every link. */
+  siteUrl: string;
+  preparedAt: string;
+}
+
+export interface CheckRemediationApprovalRequest extends PrepareRemediationRequest {
+  /** The request hash the person saw. */
+  requestHash: string;
+  approval: DraftApproval;
+}
+
+export interface CheckRemediationApprovalResponse {
+  /** `stale` when the fresh request differs from what was seen or approved. */
+  check: ApprovalCheck;
+  /** Hash of the request rebuilt now. */
+  requestHash: string;
+  duplicate: DuplicateCheck;
+  checkedAt: string;
+}
+
+/*
+ * Rehearsal history (M6 §6). The browser never sends an accountId or a
+ * scenario: the server takes the user from the Forge context and rebuilds the
+ * scenario itself (regenerated asUser, or a fixed authored demo id).
+ */
+
+/** Detail of every history result while storage is not wired up. */
+export const HISTORY_NOT_ENABLED = 'Rehearsal history is not enabled in this environment.';
+
+/** Where a rehearsal came from, as the server needs it to rebuild the scenario. */
+export type RehearsalSourceRef =
+  | { kind: 'demo'; scenarioId: string }
+  | {
+      kind: 'generated';
+      changeKey: string;
+      findingId: string;
+      restoreTargetMinutes: number;
+      notifyTargetMinutes: number;
+    };
+
+/** What the browser reports after a run; the server replays and recomputes it. */
+export interface RehearsalSubmission {
+  sessionId: string;
+  startedAt: string;
+  decisionIds: string[];
+  /** `rehearsalContentFingerprint` of the scenario the browser played. */
+  contentFingerprint: string;
+  evaluation: ExerciseEvaluation;
+  flags: Record<string, number>;
+}
+
+export interface SaveRehearsalRunRequest {
+  source: RehearsalSourceRef;
+  submission: RehearsalSubmission;
+}
+
+export interface SaveRetestRequest {
+  /** Session id of the stored original run. */
+  originalRunId: string;
+  remediationIds: string[];
+  submission: RehearsalSubmission;
+}
+
+export interface GetRehearsalRunRequest {
+  runId: string;
+}
+
+export interface GetRetestComparisonRequest {
+  retestId: string;
+}
+
+/** Storage is not configured, or could not be reached. `detail` is shown to the user. */
+export interface HistoryUnavailable {
+  status: 'UNAVAILABLE';
+  detail: string;
+}
+
+/** The Forge context had no usable user; history is never read or written anonymously. */
+export interface HistoryIdentityUnavailable {
+  status: 'IDENTITY_UNAVAILABLE';
+  detail: string;
+}
+
+export type HistoryGate = HistoryUnavailable | HistoryIdentityUnavailable;
+
+/** Verification failures carry no record content and no problem list. */
+export type HistoryVerificationFailure = { status: 'TAMPERED' } | { status: 'UNVERIFIABLE' };
+
+export type ListRehearsalHistoryResponse =
+  | { status: 'OK'; items: HistoryListItem[]; pruned: PrunedEntry[] }
+  | { status: 'CONFLICT' }
+  | HistoryGate;
+
+export type GetRehearsalRunResponse =
+  | { status: 'OK'; run: VerifiedRun }
+  | { status: 'NOT_FOUND' }
+  | HistoryVerificationFailure
+  | HistoryGate;
+
+export type GetRetestComparisonResponse =
+  | { status: 'OK'; original: VerifiedRun; retest: VerifiedRetest; comparison: RetestComparison }
+  | { status: 'NOT_FOUND' }
+  | HistoryVerificationFailure
+  | HistoryGate;
+
+export type SaveRehearsalResponse =
+  | { status: 'SAVED'; id: string; pruned: PrunedEntry[] }
+  | { status: 'REJECTED'; reason: RejectReason; message: string }
+  | { status: 'TOO_LARGE'; bytes: number; limit: number }
+  | { status: 'CONFLICT' }
+  | HistoryGate;
+
+export type {
+  HistoryIndexEntry,
+  HistoryListItem,
+  PrunedEntry,
+  RejectReason,
+  VerifiedRetest,
+  VerifiedRun,
+} from './history/types';
+
+/**
+ * Scenario fingerprint with evidence retrieval times left out. A scenario the
+ * server regenerates from unchanged Jira and Confluence content differs from
+ * the browser's copy only in `retrievedAt`, so this is what both sides compare.
+ */
+export function rehearsalContentFingerprint(scenario: SimulationScenario): string {
+  return scenarioFingerprint(withoutRetrievalTimes(scenario) as SimulationScenario);
+}
+
+function withoutRetrievalTimes(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutRetrievalTimes);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => key !== 'retrievedAt')
+        .map(([key, v]) => [key, withoutRetrievalTimes(v)]),
+    );
+  }
+  return value;
+}

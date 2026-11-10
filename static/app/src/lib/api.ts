@@ -4,6 +4,14 @@ import type {
   ApiResult,
   ConnectionStatus,
   GetRecoveryProcedureRequest,
+  GetRehearsalRunRequest,
+  GetRehearsalRunResponse,
+  GetRetestComparisonRequest,
+  GetRetestComparisonResponse,
+  ListRehearsalHistoryResponse,
+  SaveRehearsalResponse,
+  SaveRehearsalRunRequest,
+  SaveRetestRequest,
   ListChangesRequest,
   ListChangesResponse,
   ListRecoveryPagesRequest,
@@ -55,4 +63,13 @@ export const api = {
     call<AnalyzeChangeResponse>('analyzeChange', request),
   getReadinessGraph: (request: GetReadinessGraphRequest) =>
     call<GetReadinessGraphResponse>('getReadinessGraph', request),
+  // Rehearsal history. No accountId is ever sent: the server uses the Forge context.
+  listRehearsalHistory: () => call<ListRehearsalHistoryResponse>('listRehearsalHistory'),
+  getRehearsalRun: (request: GetRehearsalRunRequest) =>
+    call<GetRehearsalRunResponse>('getRehearsalRun', request),
+  getRetestComparison: (request: GetRetestComparisonRequest) =>
+    call<GetRetestComparisonResponse>('getRetestComparison', request),
+  saveRehearsalRun: (request: SaveRehearsalRunRequest) =>
+    call<SaveRehearsalResponse>('saveRehearsalRun', request),
+  saveRetest: (request: SaveRetestRequest) => call<SaveRehearsalResponse>('saveRetest', request),
 };

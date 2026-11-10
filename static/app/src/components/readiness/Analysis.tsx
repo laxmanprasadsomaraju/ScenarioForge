@@ -264,12 +264,20 @@ function pick(evidence: EvidenceReference[], kinds: EvidenceReference['kind'][])
   return undefined;
 }
 
+/** DOM id of a finding's list item, used to scroll to and focus a linked finding. */
+export function findingItemId(findingId: string): string {
+  return `finding-item-${findingId}`;
+}
+
 export function FindingItem({
   finding,
   change,
+  linked = false,
 }: {
   finding: ChangeRecoveryFinding;
   change: { key: string; browsePath: string };
+  /** True when a link named this finding and the user's own result contains it. */
+  linked?: boolean;
 }) {
   const { openInJira } = useSite();
   const changeEvidence = pick(finding.evidence, ['jira-issue']);
@@ -280,7 +288,12 @@ export function FindingItem({
   const titleId = `finding-${finding.id}`;
 
   return (
-    <li className="finding" aria-labelledby={titleId}>
+    <li
+      className="finding"
+      aria-labelledby={titleId}
+      id={findingItemId(finding.id)}
+      {...(linked ? { tabIndex: -1, 'aria-current': true } : {})}
+    >
       <div className="finding-head">
         <span className={`confidence confidence-${finding.confidence}`}>
           {CONFIDENCE_LABELS[finding.confidence]}
@@ -289,6 +302,7 @@ export function FindingItem({
           Step {finding.stepOrder} of {finding.pageTitle}
         </h3>
       </div>
+      {linked ? <p className="finding-explanation">Opened from a link</p> : null}
       <p className="finding-explanation">{finding.explanation}</p>
       <div className="finding-basis">
         <span className="finding-basis-label">Why it is linked</span>

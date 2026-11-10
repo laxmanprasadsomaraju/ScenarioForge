@@ -10,6 +10,15 @@ import type { JiraFieldGateway } from './jira/affectedServices';
 import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
+import { forgeRemediationJira } from './remediation/forge';
+import { checkRemediationApproval, prepareRemediationRequest } from './remediation/prepare';
+import {
+  parseCheckRemediationApprovalRequest,
+  parsePrepareRemediationRequest,
+} from './remediation/validation';
+
+import type { StorageAdapter } from '../shared/agents/storage';
+import { createHistoryResolvers } from './history/resolvers';
 import {
   parseAnalyzeChangeRequest,
   parseGetReadinessGraphRequest,
@@ -128,6 +137,66 @@ resolver.define('getReadinessGraph', ({ payload }) =>
     );
   }),
 );
+
+// M8 preparation only: read-only (GETs as the user). There is no create resolver.
+const remediationDeps = {
+  jira: forgeRemediationJira,
+  confluence: forgeConfluence,
+  engine: analysisEngine,
+};
+
+resolver.define('prepareRemediationRequest', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parsePrepareRemediationRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return prepareRemediationRequest(remediationDeps, parsed.value);
+  }),
+);
+
+resolver.define('checkRemediationApproval', ({ payload, context }) =>
+  guarded(async () => {
+    const parsed = parseCheckRemediationApprovalRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    const accountId: unknown = context?.accountId;
+    if (typeof accountId !== 'string' || accountId === '') {
+      return {
+        ok: false,
+        error: { code: 'UNAUTHENTICATED', message: 'Sign in to Jira to check an approval.' },
+      };
+    }
+    return checkRemediationApproval(remediationDeps, parsed.value, accountId);
+  }),
+);
+
+/**
+ * Storage for rehearsal history. `storage:app` is not granted in this build,
+ * so there is none and every history resolver answers UNAVAILABLE ("not
+ * enabled in this environment"). The rovo-test build supplies the Forge
+ * adapter here.
+ */
+const historyStorage = (): StorageAdapter | null => null;
+
+const history = createHistoryResolvers({
+  historyStorage,
+  jira: forgeJira,
+  confluence: forgeConfluence,
+  engine: analysisEngine,
+});
+
+// The user comes from `context` (accountId, installContext), never the payload.
+resolver.define('listRehearsalHistory', (request) =>
+  guarded(() => history.listRehearsalHistory(request)),
+);
+resolver.define('getRehearsalRun', (request) => guarded(() => history.getRehearsalRun(request)));
+resolver.define('getRetestComparison', (request) =>
+  guarded(() => history.getRetestComparison(request)),
+);
+resolver.define('saveRehearsalRun', (request) => guarded(() => history.saveRehearsalRun(request)));
+resolver.define('saveRetest', (request) => guarded(() => history.saveRetest(request)));
 
 export const handler = resolver.getDefinitions();
 

@@ -14,6 +14,7 @@ import type {
 } from '../../shared/agents/contracts';
 import type { DataOrigin, EvidenceReference } from '../../shared/domain/types';
 import type { ReadinessGraph } from '../../shared/graph/types';
+import { readinessLinkPath, rehearsalLinkPath } from '../../shared/links/deepLink';
 
 /**
  * Output builders for the M6 actions (docs/M6_PLAN.md §3, §4.1). Every text
@@ -225,25 +226,22 @@ export function graphUnknowns(graph: ReadinessGraph): string[] {
 
 // In-app paths --------------------------------------------------------------------
 
-/** Readiness check for one change in the ScenarioForge global page. */
+/** Readiness check for one change in the ScenarioForge global page (canonical link). */
 export function readinessAppPath(changeKey: string): string {
-  return `/readiness-checks?${new URLSearchParams({ change: changeKey })}`;
+  return readinessLinkPath(changeKey);
 }
 
-/** Simulations screen with the inputs that regenerate the same rehearsal. */
+/** Simulations screen with the inputs that regenerate the same rehearsal (canonical link). */
 export function rehearsalAppPath(input: {
   changeKey: string;
   findingId: string;
   restoreTargetMinutes: number;
   notifyTargetMinutes?: number;
 }): string {
-  const params = new URLSearchParams({
+  return rehearsalLinkPath({
     change: input.changeKey,
     finding: input.findingId,
-    restore: String(input.restoreTargetMinutes),
+    restore: input.restoreTargetMinutes,
+    ...(input.notifyTargetMinutes !== undefined ? { notify: input.notifyTargetMinutes } : {}),
   });
-  if (input.notifyTargetMinutes !== undefined) {
-    params.set('notify', String(input.notifyTargetMinutes));
-  }
-  return `/simulations?${params}`;
 }

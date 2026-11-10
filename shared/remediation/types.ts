@@ -119,6 +119,11 @@ export interface DraftProblem {
 export interface DraftApproval {
   /** SHA-256 of the canonical JSON of the whole draft. */
   draftHash: string;
+  /**
+   * SHA-256 of the canonical JSON of the exact Jira requests (request.ts).
+   * Set by `approveRequest`; an approval without it never covers a request.
+   */
+  requestHash?: string;
   approverAccountId: string;
   approvedAt: string;
 }
