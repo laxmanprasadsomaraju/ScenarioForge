@@ -6,7 +6,7 @@ export function OriginTag({
   product = 'Jira',
 }: {
   origin: DataOrigin;
-  product?: 'Jira' | 'Confluence';
+  product?: 'Jira' | 'Confluence' | 'Jira and Confluence';
 }) {
   const label = origin === 'live' ? `Live ${product} data` : 'Synthetic demo data';
   return <span className={`origin origin-${origin}`}>{label}</span>;

@@ -10,6 +10,7 @@ import type {
   ListRecoveryPagesResponse,
   RecoveryProcedureExcerpt,
 } from '@shared/api';
+import type { AnalyzeChangeRequest, AnalyzeChangeResponse } from '@shared/analysis/types';
 
 /**
  * Typed wrappers around Forge resolver calls. A bridge failure (network,
@@ -19,7 +20,7 @@ import type {
 async function call<T>(functionKey: string, payload?: object): Promise<ApiResult<T>> {
   if (import.meta.env.DEV && previewMode) {
     const { previewCall } = await import('../dev/previewFixtures');
-    return (await previewCall(functionKey, previewMode)) as ApiResult<T>;
+    return (await previewCall(functionKey, previewMode, payload)) as ApiResult<T>;
   }
   try {
     const result = await bridgeCall(() => invoke<ApiResult<T>>(functionKey, payload));
@@ -49,4 +50,6 @@ export const api = {
     call<ListRecoveryPagesResponse>('listRecoveryPages', request),
   getRecoveryProcedure: (request: GetRecoveryProcedureRequest) =>
     call<RecoveryProcedureExcerpt>('getRecoveryProcedure', request),
+  analyzeChange: (request: AnalyzeChangeRequest) =>
+    call<AnalyzeChangeResponse>('analyzeChange', request),
 };

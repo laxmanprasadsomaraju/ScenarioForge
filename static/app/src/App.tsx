@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { ChangeSelectionProvider } from './lib/changeSelection';
 import { ExerciseProvider } from './lib/exercises';
 import { RouterProvider, useRouter } from './lib/router';
 import { SiteProvider } from './lib/site';
@@ -19,6 +20,9 @@ const SettingsPage = lazy(() =>
 const RecoveryPlansPage = lazy(() =>
   import('./pages/RecoveryPlans').then((m) => ({ default: m.RecoveryPlansPage })),
 );
+const ReadinessPage = lazy(() =>
+  import('./pages/Readiness').then((m) => ({ default: m.ReadinessPage })),
+);
 const PlannedPage = lazy(() => import('./pages/Planned').then((m) => ({ default: m.PlannedPage })));
 
 function Screen() {
@@ -31,6 +35,7 @@ function Screen() {
     case 'plans':
       return <RecoveryPlansPage />;
     case 'readiness':
+      return <ReadinessPage />;
     case 'crisis-room':
       return <PlannedPage id={route.id} />;
     case 'simulations':
@@ -46,11 +51,13 @@ export function App() {
   return (
     <SiteProvider>
       <RouterProvider>
-        <ExerciseProvider>
-          <Shell>
-            <RoutedScreen />
-          </Shell>
-        </ExerciseProvider>
+        <ChangeSelectionProvider>
+          <ExerciseProvider>
+            <Shell>
+              <RoutedScreen />
+            </Shell>
+          </ExerciseProvider>
+        </ChangeSelectionProvider>
       </RouterProvider>
     </SiteProvider>
   );

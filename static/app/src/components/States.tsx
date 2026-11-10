@@ -66,7 +66,8 @@ export function SkeletonRows({ rows = 5, label }: { rows?: number; label: string
   );
 }
 
-export type Product = 'Jira' | 'Confluence';
+/** `Jira or Confluence` for calls that read both, where the failing product is not reported. */
+export type Product = 'Jira' | 'Confluence' | 'Jira or Confluence';
 
 function errorTitle(code: ApiError['code'], product: Product): string {
   switch (code) {

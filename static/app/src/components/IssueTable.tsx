@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { JiraIssueSummary } from '@shared/api';
 import { formatAbsolute, formatRelative } from '../lib/format';
 import { useSite } from '../lib/site';
@@ -7,10 +8,12 @@ interface Props {
   issues: JiraIssueSummary[];
   caption: string;
   compact?: boolean;
+  /** Optional per-row action, rendered in a last column. */
+  rowAction?: (issue: JiraIssueSummary) => ReactNode;
 }
 
 /** Live Jira issues. Rows restack into labelled blocks on narrow screens. */
-export function IssueTable({ issues, caption, compact = false }: Props) {
+export function IssueTable({ issues, caption, compact = false, rowAction }: Props) {
   const { openInJira } = useSite();
   return (
     <table className={`issues${compact ? ' issues-compact' : ''}`}>
@@ -24,6 +27,11 @@ export function IssueTable({ issues, caption, compact = false }: Props) {
           <th scope="col" className="col-updated">
             Updated
           </th>
+          {rowAction ? (
+            <th scope="col" className="col-action">
+              <span className="visually-hidden">Actions</span>
+            </th>
+          ) : null}
         </tr>
       </thead>
       <tbody>
@@ -55,6 +63,11 @@ export function IssueTable({ issues, caption, compact = false }: Props) {
                 {formatRelative(issue.updated)}
               </time>
             </td>
+            {rowAction ? (
+              <td data-label="Actions" className="col-action">
+                {rowAction(issue)}
+              </td>
+            ) : null}
           </tr>
         ))}
       </tbody>
