@@ -475,3 +475,15 @@ A probe failure never fails the graph, and `validateGraph` still guards every bu
    - No team node appears.
    - No runbook page is linked to a service.
    - The Teamwork Graph source stays `not-connected`.
+
+### 6.1 Live result (2026-11-10, owner, `confluence-test` 2.4.0, MC-62)
+
+| Check                                                                    | Result                                                                                |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Affected services field found and read with `read:jira-work` only        | **Passed**: JSM "Used — Affected services field read on MC-62: 0 service(s)."         |
+| Empty field shown honestly                                               | **Passed**: impact path says "Affected services is empty on MC-62."                   |
+| Sources strip                                                            | Jira used; Confluence used (1 of 1 recovery pages read); Teamwork Graph not connected |
+| No invented service or team                                              | **Passed**: owning team not assessed                                                  |
+| Populated field (service node and confirmed change-impacts-service edge) | **Not yet verified live** (MC-62 has no affected service). Covered by tests only      |
+
+Decision: no new JSM scope is needed for the field-read path. Assets scopes are not requested on the basis of an empty field.
