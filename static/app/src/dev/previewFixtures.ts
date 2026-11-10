@@ -3,6 +3,14 @@ import type { ChangeAnalysis, ChangeSubject } from '@shared/analysis/types';
 import type { EvidenceReference } from '@shared/domain/types';
 import type { GraphEdge, ReadinessGraph } from '@shared/graph/types';
 import type { PreviewMode } from '../lib/preview';
+import { HISTORY_NOT_ENABLED } from '@shared/api';
+import type { HistoryIndexEntry, VerifiedRun } from '@shared/api';
+import type { ExerciseSession } from '@shared/domain/types';
+import { applyDecision, evaluateSession, startSession } from '@shared/simulation/engine';
+import { createAuditRecord } from '@shared/simulation/replay';
+import { buildRetest, compareRetest } from '@shared/simulation/retest';
+import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';
+import { authBackupRetiredRemediation } from '@shared/simulation/scenarios/authBackupRetiredRemediation';
 
 // DEV PREVIEW FIXTURES: used only by the local Vite dev server for visual
 // review. Never bundled into the Forge deployment and never shown as Jira data
@@ -472,6 +480,101 @@ function previewGraph(issueKey: string): ReadinessGraph {
   };
 }
 
+// History preview: a verified demo run with a resolved retest, plus one
+// tampered and one unverifiable record. Saves answer "not enabled", as in
+// this build.
+function previewHistory() {
+  const scenario = authBackupRetiredScenario;
+  const fixes = authBackupRetiredRemediation;
+  const finish = (s: typeof scenario, id: string, ids: string[]): ExerciseSession => {
+    let session = startSession(s, id, iso(30));
+    const queue = [...ids];
+    while (session.status !== 'completed') {
+      const step = s.steps[session.currentStepId!]!;
+      session = applyDecision(s, session, queue.shift() ?? step.decisions[0]!.id);
+    }
+    return session;
+  };
+  const first = finish(scenario, 'preview-run-0001', [
+    'follow-runbook',
+    'inspect-change',
+    'notify-now',
+    'activate-nimbus',
+  ]);
+  const retestScenario = buildRetest(scenario, first, ['rem-runbook'], fixes);
+  const retest = finish(retestScenario, 'preview-retest-01', []);
+  const firstEval = evaluateSession(scenario, first);
+  const retestEval = evaluateSession(retestScenario, retest);
+  const comparison = compareRetest(
+    { scenario, session: first, evaluation: firstEval },
+    { scenario: retestScenario, session: retest, evaluation: retestEval },
+    fixes,
+    { id: retest.id, comparedAt: iso(20) },
+  );
+  const run: VerifiedRun = {
+    runId: first.id,
+    scenario,
+    remediation: fixes,
+    provenance: null,
+    audit: createAuditRecord(scenario, first),
+    evaluation: firstEval,
+    completedAt: iso(29),
+    retestIds: [retest.id],
+  };
+  const entry = (e: Partial<HistoryIndexEntry> & { id: string }): HistoryIndexEntry => ({
+    kind: 'run',
+    completedAt: iso(29),
+    scenarioId: scenario.id,
+    scenarioVersion: 1,
+    metCount: firstEval.metCount,
+    totalCount: firstEval.totalCount,
+    digest: 'preview',
+    ...e,
+  });
+  const generated = { changeKey: 'PREVIEW-14', findingId: 'PREVIEW-14:1001:3:legacyauth' };
+  return {
+    run,
+    retest: {
+      retestId: retest.id,
+      originalRunId: first.id,
+      fixSet: { remediationIds: ['rem-runbook'], approvedBy: 'preview', approvedAt: iso(21) },
+      scenario: retestScenario,
+      audit: createAuditRecord(retestScenario, retest),
+      evaluation: retestEval,
+      completedAt: iso(20),
+    },
+    comparison,
+    items: [
+      {
+        run: entry({ id: first.id }),
+        retests: [
+          entry({
+            id: retest.id,
+            kind: 'retest',
+            retestOf: first.id,
+            completedAt: iso(20),
+            metCount: retestEval.metCount,
+            totalCount: retestEval.totalCount,
+            outcome: comparison.outcome,
+          }),
+        ],
+      },
+      {
+        run: entry({
+          id: 'preview-tampered',
+          completedAt: iso(50),
+          scenarioId: 'rehearsal:PREVIEW-14:' + generated.findingId,
+          ...generated,
+          metCount: 1,
+          totalCount: 3,
+        }),
+        retests: [],
+      },
+      { run: entry({ id: 'preview-old-engine', completedAt: iso(400) }), retests: [] },
+    ],
+  };
+}
+
 export async function previewCall(
   functionKey: string,
   mode: PreviewMode,
@@ -487,6 +590,25 @@ export async function previewCall(
         upstreamStatus: 403,
       },
     };
+  }
+  if (functionKey === 'saveRehearsalRun' || functionKey === 'saveRetest') {
+    return { ok: true, data: { status: 'UNAVAILABLE', detail: HISTORY_NOT_ENABLED } };
+  }
+  if (functionKey === 'listRehearsalHistory') {
+    return {
+      ok: true,
+      data: { status: 'OK', items: mode === 'empty' ? [] : previewHistory().items, pruned: [] },
+    };
+  }
+  if (functionKey === 'getRehearsalRun') {
+    const runId = payload && 'runId' in payload ? payload.runId : '';
+    if (runId === 'preview-tampered') return { ok: true, data: { status: 'TAMPERED' } };
+    if (runId === 'preview-old-engine') return { ok: true, data: { status: 'UNVERIFIABLE' } };
+    return { ok: true, data: { status: 'OK', run: previewHistory().run } };
+  }
+  if (functionKey === 'getRetestComparison') {
+    const { run, retest, comparison } = previewHistory();
+    return { ok: true, data: { status: 'OK', original: run, retest, comparison } };
   }
   if (functionKey === 'getReadinessGraph') {
     const issueKey =

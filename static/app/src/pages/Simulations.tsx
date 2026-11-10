@@ -10,6 +10,8 @@ import { PageHeader } from '../components/Shell';
 import { Briefing } from '../components/simulation/Briefing';
 import { Debrief } from '../components/simulation/Debrief';
 import { Rehearsal } from '../components/simulation/Rehearsal';
+import { SaveNote } from '../components/history/SaveNote';
+import { saveCompleted, type SaveOutcome } from '../components/history/save';
 
 /** The run a retest is compared against, plus the fixes approved for it. */
 interface RetestOf {
@@ -36,6 +38,8 @@ function newId(prefix: string): string {
 export function SimulationsPage() {
   const [phase, setPhase] = useState<Phase>({ kind: 'briefing' });
   const { record } = useExercises();
+  // History save of the latest completed run, keyed by its session id.
+  const [saved, setSaved] = useState<{ id: string; outcome: SaveOutcome } | null>(null);
   const { source, selectDemo } = useRehearsalSource();
   const { scenario: baseScenario, remediation: remediationModel, provenance, analysis } = source;
   const workItemSource =
@@ -91,6 +95,11 @@ export function SimulationsPage() {
       };
     }
     record(exercise);
+    const id = next.id;
+    setSaved({ id, outcome: { kind: 'saving' } });
+    void saveCompleted(exercise, source).then((outcome) =>
+      setSaved((current) => (current?.id === id ? { id, outcome } : current)),
+    );
     setPhase({ kind: 'debrief', exercise });
   };
 
@@ -159,6 +168,9 @@ export function SimulationsPage() {
             onLeave={() => setPhase({ kind: 'briefing', returned: true })}
           />
         </>
+      ) : null}
+      {phase.kind === 'debrief' ? (
+        <SaveNote outcome={saved?.id === phase.exercise.session.id ? saved.outcome : null} />
       ) : null}
       {phase.kind === 'debrief' ? (
         <Debrief
