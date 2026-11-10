@@ -1,0 +1,230 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (screens/responsive): the full stamp and critique head app.css */
+/* ---------- Responsive ---------- */
+@media (max-width: 75rem) {
+  .rehearsal-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+  .rehearsal-side {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--gap-columns);
+  }
+  .rehearsal-side .region + .region {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+  .loop-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: var(--space-md);
+  }
+}
+
+@media (max-width: 60rem) {
+  :root {
+    --gutter: 24px;
+  }
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+    padding: 0 var(--gutter);
+    background: var(--color-paper);
+    border-bottom: var(--rule-hair) solid var(--color-rule);
+  }
+  .menu-toggle {
+    min-height: var(--hit);
+    padding: 0 var(--space-md);
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: var(--radius-control);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: var(--text-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--dur-micro) var(--ease-out);
+  }
+  .menu-toggle:hover {
+    background: var(--color-paper-2);
+  }
+  .menu-toggle:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    transition: none;
+  }
+  .sidebar {
+    display: none;
+    border-right: 0;
+    border-bottom: var(--rule-hair) solid var(--color-rule);
+  }
+  .sidebar[data-open='true'] {
+    display: flex;
+  }
+  .brand-sidebar,
+  .sidebar-note {
+    display: none;
+  }
+  .nav-link {
+    min-height: var(--hit);
+    font-size: var(--text-md);
+  }
+  .main {
+    padding-top: var(--space-lg);
+  }
+  .overview-grid,
+  .briefing,
+  .debrief-grid,
+  .rehearsal-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .analysis-grid > .region + .region {
+    border-left: 0;
+    padding-left: 0;
+    border-top: var(--rule-hair) solid var(--color-rule);
+    padding-top: var(--space-lg);
+  }
+  .overview-side,
+  .briefing-side {
+    border-left: 0;
+    padding-left: 0;
+    border-top: var(--rule-hair) solid var(--color-rule);
+    padding-top: var(--space-lg);
+  }
+  .rehearsal-stage {
+    order: -1;
+  }
+  .rehearsal-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rehearsal-side .region + .region {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: var(--rule-hair) solid var(--color-rule);
+  }
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --gutter: 16px;
+  }
+  .loop-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-header h1 {
+    font-size: var(--text-2xl);
+    text-wrap: balance;
+  }
+  .field {
+    flex: 1 1 calc(50% - var(--space-sm));
+    min-width: 0;
+  }
+  .field-grow {
+    flex-basis: 100%;
+  }
+  .field input,
+  .field select {
+    font-size: var(--text-md);
+    height: var(--hit);
+  }
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3xs);
+  }
+  .facts dd + dt {
+    margin-top: var(--space-xs);
+  }
+  /* Issue rows restack as labelled blocks; key and status stay first. */
+  .issues thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .issues,
+  .issues tbody,
+  .issues tr,
+  .issues th,
+  .issues td {
+    display: block;
+  }
+  .issues tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2xs) var(--space-sm);
+    padding: var(--space-sm) 0;
+    border-bottom: var(--rule-hair) solid var(--color-rule);
+  }
+  .issues th,
+  .issues td {
+    border: 0;
+    padding: 0;
+  }
+  .issues td.issue-summary {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .finding-sources {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-md);
+  }
+  /* Hops restack: kind above the node, the link's words below it. */
+  .hop,
+  .hop-missing {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3xs);
+    padding: var(--space-xs) 0;
+  }
+  .hop-meta {
+    justify-content: flex-start;
+  }
+  .hop-evidence,
+  .hop-reason {
+    grid-column: 1 / -1;
+  }
+  .hops {
+    padding-left: var(--space-sm);
+  }
+  .issues td.col-action {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding: var(--space-2xs) 0 0;
+  }
+  .issues .col-updated,
+  .issues .issue-type {
+    text-align: left;
+    font-size: var(--text-sm);
+  }
+  .plain-table thead {
+    display: none;
+  }
+  .plain-table,
+  .plain-table tbody,
+  .plain-table tr,
+  .plain-table th,
+  .plain-table td {
+    display: block;
+  }
+  .plain-table tr {
+    padding: var(--space-sm) 0;
+    border-bottom: var(--rule-hair) solid var(--color-rule);
+  }
+  .plain-table th,
+  .plain-table td {
+    border: 0;
+    padding: var(--space-3xs) 0;
+  }
+  /* Restacked rows keep their column name beside each value. */
+  .plain-table td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-weight: 600;
+    color: var(--color-ink-2);
+  }
+}

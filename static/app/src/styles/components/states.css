@@ -1,0 +1,111 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (components/states): the full stamp and critique head app.css */
+/* ---------- Connection ---------- */
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--control-h);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+.conn-ok {
+  color: var(--color-success);
+  font-weight: 600;
+}
+.conn-error {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* ---------- Regions ---------- */
+.region {
+  display: grid;
+  gap: var(--space-sm);
+  align-content: start;
+  min-width: 0;
+}
+.region + .region {
+  margin-top: var(--space-xl);
+}
+.region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.region-body {
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  max-width: 65ch;
+}
+.region-foot {
+  display: flex;
+  justify-content: flex-start;
+}
+.state-unknown {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  color: var(--color-ink);
+}
+
+/* ---------- Loading, empty ---------- */
+.skeleton {
+  display: grid;
+}
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) 6rem;
+  gap: var(--space-md);
+  align-items: center;
+  height: 44px;
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.skeleton-bar {
+  display: block;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--color-paper-2);
+  animation: pulse 1.4s var(--ease-in-out) infinite;
+}
+.skeleton-text {
+  width: 70%;
+}
+.screen-skeleton {
+  display: grid;
+  gap: var(--space-lg);
+}
+.screen-skeleton-head {
+  display: grid;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-lg);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.skeleton-title {
+  width: min(16rem, 60%);
+  height: 20px;
+}
+.skeleton-lead {
+  width: min(28rem, 85%);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.empty {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+  padding: var(--space-lg) 0;
+}
+.empty-title {
+  font-size: var(--text-md);
+  font-weight: 650;
+  color: var(--color-ink);
+}
+.empty-body {
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  max-width: 60ch;
+  margin-bottom: var(--space-xs);
+}

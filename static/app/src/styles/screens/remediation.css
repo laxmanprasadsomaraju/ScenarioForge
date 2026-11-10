@@ -1,0 +1,99 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (screens/remediation): the full stamp and critique head app.css */
+/* ---------- Remediation preview (M8) ---------- */
+.remediation {
+  padding-top: var(--space-lg);
+  border-top: var(--rule-hair) solid var(--color-rule);
+}
+.remediation-fields {
+  margin-bottom: 0;
+}
+.field-note {
+  min-height: 1lh;
+  max-width: 32ch;
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+}
+.remediation-subtitle {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--color-ink);
+}
+.draft {
+  margin: 0;
+  display: grid;
+  border-top: var(--rule-hair) solid var(--color-rule-strong);
+}
+.draft-row {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+  font-size: var(--text-sm);
+}
+.draft-row dt {
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+.draft-row dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-ink);
+}
+.draft-mono {
+  font-family: var(--font-outlier);
+}
+.draft-text {
+  margin: 0;
+  max-width: 90ch;
+  max-height: 28rem;
+  overflow: auto;
+  padding: var(--space-sm);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background: var(--color-paper-3);
+  font-family: var(--font-outlier);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.draft-text:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.draft-labels,
+.draft-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2xs);
+}
+.draft-problems ul {
+  margin: 0;
+  padding-left: var(--space-lg);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+.approval {
+  display: grid;
+  gap: var(--space-xs);
+}
+.approval-status {
+  min-height: 1lh;
+  font-size: var(--text-sm);
+}
+.approval-note {
+  color: var(--color-ink-2);
+}
+.approval-stale {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+@media (max-width: 40rem) {
+  .draft-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2xs);
+  }
+}

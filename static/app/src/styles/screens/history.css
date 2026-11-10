@@ -1,0 +1,48 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (screens/history): the full stamp and critique head app.css */
+/* ---------- History ---------- */
+.save-note {
+  margin: 0 0 var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+.save-note-not-saved {
+  color: var(--color-warning);
+}
+.history-scenario,
+.history-source {
+  display: block;
+}
+.history-source {
+  font-weight: 400;
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+.history-retests {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.history-retests li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.history-status {
+  display: block;
+  font-size: var(--text-sm);
+}
+.history-unavailable {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+}
+.history-unavailable-title {
+  font-weight: 600;
+  color: var(--color-error);
+}
+.history-facts {
+  margin-bottom: var(--space-lg);
+}
