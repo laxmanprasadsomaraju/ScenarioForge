@@ -1,4 +1,5 @@
 import api, { route } from '@forge/api';
+import { historyStorage as platformHistoryStorage } from './platform/storageFactory';
 import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
 import type { AnalysisEngine } from './analysis/analyzeChange';
@@ -173,12 +174,11 @@ resolver.define('checkRemediationApproval', ({ payload, context }) =>
 );
 
 /**
- * Storage for rehearsal history. `storage:app` is not granted in this build,
- * so there is none and every history resolver answers UNAVAILABLE ("not
- * enabled in this environment"). The rovo-test build supplies the Forge
- * adapter here.
+ * Storage for rehearsal history (rovo-test build). The Forge adapter is
+ * returned only when SF_ROVO_TEST_STORAGE=enabled on rovo-test; otherwise
+ * null and every history resolver answers UNAVAILABLE.
  */
-const historyStorage = (): StorageAdapter | null => null;
+const historyStorage = (): StorageAdapter | null => platformHistoryStorage();
 
 const history = createHistoryResolvers({
   historyStorage,
