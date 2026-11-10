@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Button from '@atlaskit/button/new';
+import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { SimulationScenario } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
 import type { CompletedExercise } from '../../lib/exercises';
 import { EvidenceList } from './Evidence';
+import { RemediationPreview } from './RemediationPreview';
 import { RetestVerdict } from './RetestVerdict';
 import { TimeRail } from './TimeRail';
 
@@ -18,12 +20,15 @@ export function Debrief({
   exercise,
   onRunAgain,
   onRetest,
+  workItemSource,
 }: {
   scenario: SimulationScenario;
   exercise: CompletedExercise;
   onRunAgain?: () => void;
   /** Offered only on a first run; a retest compares against its original. */
   onRetest?: (approvedRemediationIds: string[]) => void;
+  /** The real finding behind a generated rehearsal; enables the work item preview (M8). */
+  workItemSource?: { analysis: ChangeAnalysis; findingId: string };
 }) {
   const { evaluation, session } = exercise;
   const trail = decisionTrail(scenario, session);
@@ -146,7 +151,9 @@ export function Debrief({
               <p className="fix-status">
                 {applied.includes(r.id)
                   ? 'Applied in this retest (demo approval).'
-                  : 'Proposed. Creating Jira work items with your approval arrives in M8.'}
+                  : workItemSource
+                    ? 'Proposed. Preview it as a Jira work item below; nothing is created.'
+                    : 'Proposed. Creating Jira work items with your approval arrives in M8.'}
               </p>
             </li>
           ))}
@@ -177,6 +184,20 @@ export function Debrief({
           </div>
         ) : null}
       </section>
+
+      {workItemSource ? (
+        <RemediationPreview
+          analysis={workItemSource.analysis}
+          findingId={workItemSource.findingId}
+          fixes={scenario.remediation}
+          defaultFixId={applied[0]}
+          rehearsal={
+            exercise.retest
+              ? { comparison: exercise.retest.comparison, objectiveLabels }
+              : undefined
+          }
+        />
+      ) : null}
     </div>
   );
 }

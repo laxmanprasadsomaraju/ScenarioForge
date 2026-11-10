@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { SimulationScenario } from '@shared/domain/types';
 import type { GeneratedRehearsal } from '@shared/rehearsal/types';
 import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';
@@ -11,6 +12,8 @@ export interface RehearsalSource {
   remediation: ScenarioRemediationModel;
   /** Present only for rehearsals generated from a real M3 finding. */
   provenance?: GeneratedRehearsal['provenance'];
+  /** The analysis the finding came from, so a work item can quote it (M8 preview). */
+  analysis?: ChangeAnalysis;
 }
 
 export const DEMO_SOURCE: RehearsalSource = {
@@ -20,7 +23,7 @@ export const DEMO_SOURCE: RehearsalSource = {
 
 interface RehearsalSourceValue {
   source: RehearsalSource;
-  selectGenerated: (rehearsal: GeneratedRehearsal) => void;
+  selectGenerated: (rehearsal: GeneratedRehearsal, analysis?: ChangeAnalysis) => void;
   selectDemo: () => void;
 }
 
@@ -34,11 +37,12 @@ const RehearsalSourceContext = createContext<RehearsalSourceValue>({
 export function RehearsalSourceProvider({ children }: { children: ReactNode }) {
   const [source, setSource] = useState<RehearsalSource>(DEMO_SOURCE);
   const selectGenerated = useCallback(
-    (rehearsal: GeneratedRehearsal) =>
+    (rehearsal: GeneratedRehearsal, analysis?: ChangeAnalysis) =>
       setSource({
         scenario: rehearsal.scenario,
         remediation: rehearsal.remediation,
         provenance: rehearsal.provenance,
+        analysis,
       }),
     [],
   );

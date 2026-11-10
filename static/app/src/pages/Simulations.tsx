@@ -37,7 +37,9 @@ export function SimulationsPage() {
   const [phase, setPhase] = useState<Phase>({ kind: 'briefing' });
   const { record } = useExercises();
   const { source, selectDemo } = useRehearsalSource();
-  const { scenario: baseScenario, remediation: remediationModel, provenance } = source;
+  const { scenario: baseScenario, remediation: remediationModel, provenance, analysis } = source;
+  const workItemSource =
+    analysis && provenance ? { analysis, findingId: provenance.findingId } : undefined;
 
   const run = (scenario: SimulationScenario, retestOf?: RetestOf) =>
     setPhase({
@@ -164,6 +166,7 @@ export function SimulationsPage() {
           exercise={phase.exercise}
           onRunAgain={start}
           onRetest={(ids) => retest(phase.exercise, ids)}
+          workItemSource={workItemSource}
         />
       ) : null}
     </>
