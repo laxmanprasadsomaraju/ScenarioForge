@@ -89,7 +89,7 @@ describe('Planned screens', () => {
     async (label, m, action, dest) => {
       const user = userEvent.setup();
       render(<App />);
-      await user.click(nav().getByRole('link', { name: `${label}, planned for ${m}` }));
+      await user.click(nav().getByRole('link', { name: `${label}, coming later` }));
 
       // Lazy screen: the skeleton shows until its chunk resolves.
       expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('Planned screens', () => {
 
       await user.click(screen.getByRole('button', { name: action }));
       expect(await screen.findByRole('heading', { level: 1, name: dest })).toBeInTheDocument();
-      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Simulations');
+      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Rehearsals');
     },
   );
 });
@@ -117,7 +117,7 @@ describe('Origin labels', () => {
   it('marks in-tab reports as synthetic demo data when history is unavailable', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(nav().getByRole('link', { name: 'Simulations' }));
+    await user.click(nav().getByRole('link', { name: 'Rehearsals' }));
     await user.click(await screen.findByRole('button', { name: 'Start rehearsal' }));
     for (const label of [
       'Follow RB-AUTH-01 step 3',

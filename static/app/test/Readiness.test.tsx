@@ -373,7 +373,7 @@ describe('Entry from the Changes page', () => {
     ).toBeInTheDocument();
 
     // Leaving the screen drops the selection: coming back shows the list.
-    await user.click(nav.getByRole('link', { name: 'Overview' }));
+    await user.click(nav.getByRole('link', { name: 'Command center' }));
     await user.click(nav.getByRole('link', { name: 'Readiness checks' }));
     expect(
       await screen.findByRole('table', { name: 'Recent Jira changes to check' }),

@@ -296,7 +296,7 @@ describe('URL sync and back/forward', () => {
   it('follows a link pushed while the app is open', async () => {
     const history = openAt('/');
     const nav = within(await screen.findByRole('navigation', { name: 'ScenarioForge' }));
-    expect(nav.getByRole('link', { name: /Overview/ })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: /Command center/ })).toBeInTheDocument();
     act(() => history.push(readinessLinkPath('MC-62', FINDING)));
     expect(await screen.findByText('Opened from a link')).toBeInTheDocument();
     act(() => history.back());
