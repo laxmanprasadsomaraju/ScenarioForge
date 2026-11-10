@@ -325,13 +325,18 @@ describe('Readiness checks', () => {
     expect(api.analyzeChange).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps change rehearsal disabled and says when it arrives', async () => {
+  it('asks for a restore target before rehearsing a finding', async () => {
     api.analyzeChange.mockResolvedValue(analysis({ findings: [finding()] }));
-    await openCheck();
-    const rehearse = screen.getByRole('button', { name: 'Rehearse this change' });
+    const user = await openCheck();
+    const rehearse = await screen.findByRole('button', { name: 'Rehearse this finding' });
     expect(rehearse).toBeDisabled();
-    expect(rehearse).toHaveAccessibleDescription('Change-specific rehearsals arrive in M5');
-    expect(screen.getByText('Change-specific rehearsals arrive in M5')).toBeVisible();
+    const target = screen.getByRole('textbox', { name: 'Restore target (minutes)' });
+    await user.type(target, '3');
+    expect(screen.getByText('Enter whole minutes from 5 to 1440.')).toBeInTheDocument();
+    expect(rehearse).toBeDisabled();
+    await user.clear(target);
+    await user.type(target, '30');
+    expect(rehearse).toBeEnabled();
   });
 
   it('returns to the list from the analysis', async () => {

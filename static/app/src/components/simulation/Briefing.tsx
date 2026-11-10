@@ -17,8 +17,9 @@ export function Briefing({
   useEffect(() => {
     if (focusOnMount) titleRef.current?.focus();
   }, [focusOnMount]);
-  const change = scenario.evidence.find((e) => e.id === 'ev-change');
-  const service = scenario.evidence.find((e) => e.id === 'ev-service');
+  const change = scenario.evidence.find((e) => e.kind === 'jira-issue');
+  const service = scenario.evidence.find((e) => e.kind === 'jsm-service');
+  const serviceName = scenario.services[0]?.name;
   return (
     <div className="briefing">
       <section className="region briefing-main" aria-labelledby="briefing-title">
@@ -28,7 +29,10 @@ export function Briefing({
         <p className="briefing-summary">{scenario.summary}</p>
         <dl className="facts">
           <dt>Your role</dt>
-          <dd>Incident commander for Customer Sign-in</dd>
+          <dd>
+            Incident commander
+            {serviceName ? ` for ${serviceName}` : ' for the capability this runbook recovers'}
+          </dd>
           <dt>Clock</dt>
           <dd>Simulated minutes; each action costs the time it would take in reality</dd>
           <dt>Outcome</dt>

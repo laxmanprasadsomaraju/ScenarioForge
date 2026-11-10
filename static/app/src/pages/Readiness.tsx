@@ -21,6 +21,7 @@ import {
   SubjectsTable,
 } from '../components/readiness/Analysis';
 import { ImpactPath } from '../components/readiness/ImpactPath';
+import { RehearseFinding } from '../components/readiness/RehearseFinding';
 
 export function ReadinessPage() {
   const { selected } = useChangeSelection();
@@ -114,14 +115,6 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
         <Button appearance="subtle" onClick={() => openInJira(shown.browsePath)}>
           Open {shown.key} in Jira
         </Button>
-        <div className="rehearse">
-          <Button isDisabled aria-describedby="rehearse-note">
-            Rehearse this change
-          </Button>
-          <span id="rehearse-note" className="rehearse-note">
-            Change-specific rehearsals arrive in M5
-          </span>
-        </div>
       </div>
 
       <section
@@ -159,6 +152,8 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
           </ol>
         </section>
       ) : null}
+
+      {state.status === 'ready' ? <RehearseFinding analysis={state.data} /> : null}
 
       {state.status === 'ready' ? (
         <section

@@ -1535,6 +1535,20 @@ code {
   grid-column: auto;
 }
 
+.origin-modelled {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+}
+.provenance-note {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+  color: var(--color-ink-2);
+}
+.rehearse-finding .toolbar {
+  margin-bottom: 0;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 75rem) {
   .rehearsal-grid {
@@ -1659,6 +1673,9 @@ code {
   .field {
     flex: 1 1 calc(50% - var(--space-sm));
     min-width: 0;
+  }
+  .field-grow {
+    flex-basis: 100%;
   }
   .field input,
   .field select {

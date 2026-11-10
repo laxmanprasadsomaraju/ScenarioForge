@@ -264,7 +264,7 @@ function buildScenario(c: Context): SimulationScenario {
   const ev = { change: c.changeEv.id, step: c.stepEv.id };
 
   const summary = [
-    `Rehearsal modelled from finding ${c.finding.id}: ${key} ${changeDoes(s)}, and step ${n} of ${page} still refers to it.`,
+    `Rehearsal modelled from a finding: ${key} ${changeDoes(s)}, and step ${n} of ${page} still refers to it.`,
     c.finding.confidence === 'suspected'
       ? 'The link between the change and the step is suspected, not confirmed.'
       : 'The link between the change and the step is confirmed by an explicit cross-reference.',

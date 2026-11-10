@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import { applyDecision, evaluateSession, startSession } from '@shared/simulation/engine';
 import { buildRetest, compareRetest } from '@shared/simulation/retest';
-import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';
-import { authBackupRetiredRemediation as remediationModel } from '@shared/simulation/scenarios/authBackupRetiredRemediation';
+import Button from '@atlaskit/button/new';
+import { useRehearsalSource } from '../lib/rehearsalSource';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/Shell';
@@ -36,6 +36,8 @@ function newId(prefix: string): string {
 export function SimulationsPage() {
   const [phase, setPhase] = useState<Phase>({ kind: 'briefing' });
   const { record } = useExercises();
+  const { source, selectDemo } = useRehearsalSource();
+  const { scenario: baseScenario, remediation: remediationModel, provenance } = source;
 
   const run = (scenario: SimulationScenario, retestOf?: RetestOf) =>
     setPhase({
@@ -45,7 +47,7 @@ export function SimulationsPage() {
       retestOf,
     });
 
-  const start = () => run(authBackupRetiredScenario);
+  const start = () => run(baseScenario);
 
   // Fixes are approved inside this demo only; no Jira work item is created.
   const retest = (original: CompletedExercise, approvedIds: string[]) => {
@@ -71,6 +73,7 @@ export function SimulationsPage() {
     }
     const exercise: CompletedExercise = {
       scenario,
+      remediation: remediationModel,
       session: next,
       evaluation: evaluateSession(scenario, next),
       completedAt: new Date().toISOString(),
@@ -106,20 +109,37 @@ export function SimulationsPage() {
         lead={
           phase.kind === 'briefing'
             ? 'A short outage, played on a simulated clock, built from one change.'
-            : authBackupRetiredScenario.title
+            : baseScenario.title
         }
-        aside={<OriginTag origin="demo" />}
+        aside={
+          provenance ? (
+            <span className="origin origin-modelled">Modelled from {provenance.changeKey}</span>
+          ) : (
+            <OriginTag origin="demo" />
+          )
+        }
       />
-      <p className="demo-note">
-        Synthetic scenario. It does not read your Jira, Confluence or service data yet; live
-        evidence arrives in M2 and M3.
-      </p>
+      {provenance ? (
+        <div className="demo-note provenance-note">
+          <p>
+            Built from {provenance.confidence === 'confirmed' ? 'a confirmed' : 'a suspected'}{' '}
+            finding on {provenance.changeKey}. The change text and runbook step are quoted from Jira
+            and Confluence; every outcome is modelled by fixed rules, not observed.
+          </p>
+          {phase.kind === 'briefing' ? (
+            <Button appearance="subtle" onClick={selectDemo}>
+              Use the synthetic demo scenario instead
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <p className="demo-note">
+          Synthetic scenario. To rehearse a real change, open Readiness checks and rehearse one of
+          its findings.
+        </p>
+      )}
       {phase.kind === 'briefing' ? (
-        <Briefing
-          scenario={authBackupRetiredScenario}
-          onStart={start}
-          focusOnMount={phase.returned}
-        />
+        <Briefing scenario={baseScenario} onStart={start} focusOnMount={phase.returned} />
       ) : null}
       {phase.kind === 'running' ? (
         <>

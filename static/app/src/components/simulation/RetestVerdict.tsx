@@ -1,6 +1,5 @@
 import type { Consequence, RetestResult } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
-import { authBackupRetiredRemediation as model } from '@shared/simulation/scenarios/authBackupRetiredRemediation';
 import type { RetestComparison } from '@shared/simulation/types';
 import type { CompletedExercise } from '../../lib/exercises';
 
@@ -20,7 +19,7 @@ const ASSESSMENT: Record<Consequence['assessment'], string> = {
 
 /** How each run fared when it relied on the procedure that had the gap. */
 function procedureOutcome(run: CompletedExercise, findingId: string): string {
-  const gap = model.gaps.find((g) => g.findingId === findingId);
+  const gap = run.remediation.gaps.find((g) => g.findingId === findingId);
   const keys = new Set(gap?.exerciseDecisions.map((d) => `${d.stepId}/${d.decisionId}`) ?? []);
   const taken = decisionTrail(run.scenario, run.session).filter(({ record }) =>
     keys.has(`${record.stepId}/${record.decisionId}`),
