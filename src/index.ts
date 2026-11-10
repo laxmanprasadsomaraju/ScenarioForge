@@ -1,11 +1,15 @@
 import api, { route } from '@forge/api';
 import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
+import type { AnalysisEngine } from './analysis/analyzeChange';
+import { analyzeChange } from './analysis/analyzeChange';
+import { pendingEngine } from './analysis/pendingEngine';
 import type { ConfluenceGateway } from './confluence/client';
 import { getRecoveryProcedure, searchRecoveryPages } from './confluence/client';
-import type { JiraGateway } from './jira/client';
+import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import {
+  parseAnalyzeChangeRequest,
   parseGetRecoveryProcedureRequest,
   parseListChangesRequest,
   parseListRecoveryPagesRequest,
@@ -15,9 +19,13 @@ import {
  * All Jira calls run asUser so results are limited to what the signed-in user
  * can already see in Jira. No app-level credentials ever reach the browser.
  */
-const forgeJira: JiraGateway = {
+const forgeJira: JiraGateway & JiraIssueGateway = {
   searchIssues: (params) => api.asUser().requestJira(route`/rest/api/3/search/jql?${params}`),
   myself: () => api.asUser().requestJira(route`/rest/api/3/myself`),
+  getIssue: (issueKey, params) =>
+    api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}?${params}`),
+  getRemoteLinks: (issueKey) =>
+    api.asUser().requestJira(route`/rest/api/3/issue/${issueKey}/remotelink`),
 };
 
 /**
@@ -30,6 +38,13 @@ const forgeConfluence: ConfluenceGateway = {
   getPage: (pageId, params) =>
     api.asUser().requestConfluence(route`/wiki/api/v2/pages/${pageId}?${params}`),
 };
+
+/**
+ * Deterministic change-to-recovery engine (no AI). Replaced by the
+ * shared/analysis engine at integration; until then analysis reports
+ * `not-assessed`.
+ */
+const analysisEngine: AnalysisEngine = pendingEngine;
 
 async function guarded<T>(
   work: () => Promise<ApiResult<T>>,
@@ -81,6 +96,19 @@ resolver.define('getRecoveryProcedure', ({ payload }) =>
     }
     return getRecoveryProcedure(forgeConfluence, parsed.value.pageId);
   }, 'Confluence'),
+);
+
+resolver.define('analyzeChange', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parseAnalyzeChangeRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return analyzeChange(
+      { jira: forgeJira, confluence: forgeConfluence, engine: analysisEngine },
+      parsed.value,
+    );
+  }),
 );
 
 export const handler = resolver.getDefinitions();
