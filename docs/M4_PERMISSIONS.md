@@ -401,3 +401,77 @@ Pass criteria are unchanged from TEAMWORK_GRAPH_TEST_PLAN.md §3.8. A step passe
 11. Assets permission behaviour for `asUser` calls (401 reports in the community).
 12. Whether demo-site provisioning makes the requester org admin, and the demo site's org. Not documented; check via §3.
 13. The exact admin consent screen text, and where the per-scope toggles sit in Connected apps.
+
+## 6. JSM probe (no new scope)
+
+Added 2026-11-10 (Lane A, branch `lane-a/jsm-probe`). This is §2.5(a) Step 1, which the owner approved. **No scope and no manifest change.** It uses only `read:jira-work`, through `api.asUser().requestJira`.
+
+### 6.1 Calls (checked on the Jira v3 spec, downloaded 2026-11-10)
+
+Spec: https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json
+
+| Call                                               | operationId          | Scopes in the spec                                                                                                                                                          | Notes                                                                                                                                                                                         |
+| -------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /rest/api/3/field`                            | `getFields`          | classic `read:jira-work` (Current); granular Beta `read:field:jira`, `read:avatar:jira`, `read:project-category:jira`, `read:project:jira`, `read:field-configuration:jira` | "Permissions required: None." It returns only the fields the user can view: those used in a project where the user has _Browse Projects_. Responses are 200 and 401. Connect scope is `READ`. |
+| `GET /rest/api/3/issue/{issueIdOrKey}?fields=<id>` | `getIssue`           | classic `read:jira-work` (Current)                                                                                                                                          | This is the issue read the analysis already makes. The probe makes a second call that asks only for the field.                                                                                |
+| `GET /rest/api/3/field/search` (**not used**)      | `getFieldsPaginated` | classic `read:jira-work` (Current)                                                                                                                                          | Described as "a paginated list of fields for Classic Jira projects", with Connect scope `NONE`. `getFields` is simpler and already covers the probe.                                          |
+
+The field ID is looked up on every graph build and never cached across invocations. This matters because the field list depends on the user's project permissions.
+
+### 6.2 Field detection rule, and its uncertainty
+
+1. A custom field whose `schema.custom` is `com.atlassian.jira.plugins.service-entity:service-entity-field-cftype` (`AFFECTED_SERVICES_CUSTOM_TYPE`).
+2. Otherwise, a custom field named "Affected services" (any case) whose `schema.type` is `array` and whose `schema.items` mentions "service". A name alone never matches.
+3. If several fields match the same rule, the one with the lowest ID wins, so the result is deterministic.
+
+- **[Unverified on developer.atlassian.com]** The custom type string. The Jira REST spec only mentions the field as the "Affected Services" option for `prePopulatedFieldId`. The string comes from Atlassian's public issue tracker, https://jira.atlassian.com/browse/CONFCLOUD-76552. There the field schema reads `"type": "array", "items": "service-entity-field", "custom": "com.atlassian.jira.plugins.service-entity:service-entity-field-cftype"`. The same type string appears in a community post (lead only).
+- **[Unverified]** The value shape. The same tracker entry shows the value as `[{ "id": "ari:cloud:graph::service/<uuid>/<uuid>" }]`, with no name. The support KB https://support.atlassian.com/jira/kb/how-to-set-the-affected-services-field-from-referenced-services-on-an-assets-object-attribute-via-automation-for-assets/ writes the field as `[{"id": "<Service ID>"}]`.
+
+### 6.3 Value parsing
+
+- `null`, or the field missing from the issue response, means empty.
+- An array of objects, each with a non-empty string `id`, is read. The optional string `name`, `workspaceId` and `objectId` are kept. Other keys are ignored.
+- Anything else is **unreadable**: a string, a bare object, an entry without a string `id`, or a known key that holds something other than a string. The probe then shows no service and sets JSM to `error`. It never guesses which key holds a service.
+- `workspaceId` and `objectId` are kept for the Assets proposal (§2.5 Step 2). They are never resolved, and the probe makes no Assets call.
+
+### 6.4 What the probe can and cannot see
+
+It can see:
+
+- whether the user can see an Affected services field on the site;
+- the entries of that field on the change, as Jira returns them to that user;
+- the service name, but only if the value carries one.
+
+It cannot see:
+
+- **Service names when the value holds only IDs.** This is the shape on record. Such a service is labelled with its ID verbatim, and the JSM detail says that resolving names needs Assets.
+- **Which service a runbook recovers.** No `page-recovers-service` edge is drawn. Each page with a finding gets an unassessed JSM service link instead.
+- **Owning teams.** No `team-owns-service` edge is drawn. Each service gets an unassessed team link with `source: 'teamwork-graph'`, and the existing Teamwork Graph per-page entries stay.
+- Service tier, dependencies, or anything else in the service registry or Assets.
+
+### 6.5 Graph mapping
+
+| Probe result                                              | JSM source status | Detail                                                             | Graph                                                                                                                                                                                            |
+| --------------------------------------------------------- | ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| no matching field                                         | `not-connected`   | "No Affected services field on this site."                         | Per-page unassessed JSM service links (the builder default)                                                                                                                                      |
+| field read, N services                                    | `used`            | "Affected services field read on MC-62: N service(s)."             | Per service: a `service:jsm:<id>` node (source `jsm`, origin `live`) and a confirmed `change-impacts-service` edge with `jsm-service` evidence (excerpt = the service name, URL `/browse/<KEY>`) |
+| field read, empty                                         | `used`            | "… 0 service(s)."                                                  | Unassessed `change:<KEY>` service link: "Affected services is empty on <KEY>."                                                                                                                   |
+| HTTP 401/403 on either call                               | `not-permitted`   | names the call and the status                                      | No service; per-page unassessed links carry the detail                                                                                                                                           |
+| other HTTP error, unreadable body or value, network error | `error`           | names the call and the status, or says the value could not be read | Same as above                                                                                                                                                                                    |
+
+A probe failure never fails the graph, and `validateGraph` still guards every build.
+
+### 6.6 What the live check should show (owner, MC-62 on the demo site)
+
+1. **Field set on MC-62.**
+   - JSM shows `used`, with the detail "Affected services field read on MC-62: N service(s)."
+   - The impact path shows one service node per entry, joined to the change by a confirmed edge.
+   - With the value shape on record (ID only), each label is the service ARI. The detail adds "N without a name in the field; shown by id (resolving names needs Assets, not connected)."
+   - That result is the evidence for §2.5 Step 2. If the label is a readable name instead, the value carries `name` and Step 2 is not needed for names.
+2. **Field empty on MC-62.** JSM shows `used`, and the change carries the unassessed note "Affected services is empty on MC-62."
+3. **No field on the site** (for example, no JSM, or JSM Free after 31 July 2026). JSM shows `not-connected` with "No Affected services field on this site."
+4. **JSM shows `error` with "could not read".** The value shape differs from §6.3. Record the raw shape by hand from the issue's REST response (`/rest/api/3/issue/MC-62?fields=<id>` in the browser) before any code change.
+5. **In every case:**
+   - No team node appears.
+   - No runbook page is linked to a service.
+   - The Teamwork Graph source stays `not-connected`.

@@ -2,16 +2,26 @@ import type { GetReadinessGraphRequest, ReadinessGraph } from '../../shared/grap
 import { buildGraphFromAnalysis } from '../../shared/graph/build';
 import { validateGraph } from '../../shared/graph/validate';
 import type { ApiResult } from '../../shared/api';
+import { jsmGraphExtras } from '../../shared/graph/jsm';
 import type { AnalyzeChangeDeps } from '../analysis/analyzeChange';
 import { analyzeChange } from '../analysis/analyzeChange';
+import type { JiraFieldGateway } from '../jira/affectedServices';
+import { probeAffectedServices } from '../jira/affectedServices';
+import type { JiraIssueGateway } from '../jira/client';
+
+export interface ReadinessGraphDeps extends AnalyzeChangeDeps {
+  jira: JiraIssueGateway & JiraFieldGateway;
+}
 
 /**
  * Readiness graph for one change (M4), read as the signed-in user.
  *
  * Runs the M3 change-to-recovery analysis with the same gateways and engine,
- * then builds the graph from it. No service or team source is connected yet,
- * so the graph holds only Jira, Confluence and M3 facts and lists the missing
- * service links as unassessed.
+ * then builds the graph from it. Services come from the JSM Affected services
+ * probe (one field read with `read:jira-work`, see
+ * src/jira/affectedServices.ts); a probe failure only changes the JSM source
+ * status and never fails the graph. No team source is connected yet, so
+ * owning teams stay unassessed.
  *
  * A graph that fails `validateGraph` is never returned: it would mean an edge
  * without evidence or an invented node, so the caller gets an
@@ -19,7 +29,7 @@ import { analyzeChange } from '../analysis/analyzeChange';
  * no page or issue text reaches the logs.
  */
 export async function getReadinessGraph(
-  deps: AnalyzeChangeDeps,
+  deps: ReadinessGraphDeps,
   request: GetReadinessGraphRequest,
 ): Promise<ApiResult<ReadinessGraph>> {
   const analysis = await analyzeChange(deps, request);
@@ -27,7 +37,12 @@ export async function getReadinessGraph(
     return analysis;
   }
   const now = deps.now ?? (() => new Date());
-  const graph = buildGraphFromAnalysis(analysis.data, now().toISOString());
+  const probe = await probeAffectedServices(deps.jira, analysis.data.changeKey, now);
+  const graph = buildGraphFromAnalysis(
+    analysis.data,
+    now().toISOString(),
+    jsmGraphExtras(analysis.data, probe),
+  );
   const problems = validateGraph(graph);
   if (problems.length > 0) {
     console.error('Readiness graph failed validation', `${problems.length} problem(s)`);
