@@ -8,6 +8,14 @@
       name="description"
       content="Rehearse recovery from the changes your team ships, inside Jira."
     />
+    <!-- Paints the device's ground until the theme loads. Styles may be inline under
+         the app's CSP (styles: unsafe-inline); scripts may not, so no pre-paint script. -->
+    <style>
+      html {
+        background: Canvas;
+        color-scheme: light dark;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

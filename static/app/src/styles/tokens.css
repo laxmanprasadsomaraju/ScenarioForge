@@ -1,8 +1,23 @@
 /*
- * ScenarioForge design tokens. Ground, ink and semantic colours defer to the
- * Atlassian Design System tokens the Jira host injects (view.theme.enable()),
- * so the app follows Jira's light and dark themes. The literal values are
- * fallbacks for local development outside Jira.
+ * ScenarioForge design tokens, in two layers (docs/UI_REDESIGN_PHASE_A.md § 5).
+ *
+ * 1. Atlassian Design System tokens (--ds-*) are the single source of light
+ *    and dark truth for neutrals and status colours. Jira injects them
+ *    (view.theme.enable()); an explicit Light or Dark choice, or "Match
+ *    device" outside Jira, loads the bundled ADS theme onto the app root as a
+ *    subtree theme. The literal fallbacks are the refreshed ADS light values.
+ * 2. The semantic layer (--sf-*) names product roles. It aliases ADS and owns
+ *    only what ADS lacks: the copper brand ramp, the command band surface and
+ *    the data-origin set. Components read --sf-* only.
+ *
+ * Aliases are declared on :root and again on every subtree-themed element:
+ * a custom property that references another resolves where it is declared,
+ * so a subtree with its own --ds-* values needs its own copy of the aliases.
+ * Brand and origin values flip on data-color-mode, the same attribute ADS
+ * uses, wherever it is set (html in Jira, the app root for an override).
+ *
+ * The --color-* names are migration aliases for existing rules; Phase E
+ * removes them.
  */
 :root {
   --space-3xs: 2px;
@@ -28,37 +43,15 @@
   --gutter: 40px;
   --gap-columns: 32px;
   --sidebar: 248px;
+  --rail: 64px;
+  --topbar-h: 56px;
+  /* Room kept above a focused or scrolled-to element; grows when the app bar shows. */
+  --scroll-pad: var(--space-lg);
   --control-h: 36px;
   --hit: 44px;
   --z-raised: 10;
   --z-sticky: 200;
   --z-sticky-nav: 300;
-
-  --color-paper: var(--ds-surface, #ffffff);
-  --color-paper-2: var(--ds-background-neutral-subtle-hovered, #f4f5f7);
-  --color-paper-3: var(--ds-surface-sunken, #f7f8f9);
-  --color-ink: var(--ds-text, #172b4d);
-  --color-ink-2: var(--ds-text-subtle, #44546f);
-  --color-muted: var(--ds-text-subtlest, #626f86);
-  --color-rule: var(--ds-border, #dcdfe4);
-  --color-rule-strong: var(--ds-border-bold, #758195);
-
-  /* Forge copper: the product's one signal. Primary action, selection, the exercise clock. */
-  --color-accent: oklch(52% 0.13 50);
-  --color-accent-ink: oklch(99% 0.01 50);
-  --color-accent-soft: oklch(95% 0.03 50);
-  --color-accent-text: oklch(46% 0.13 50);
-  --color-focus: var(--ds-border-focused, #388bff);
-
-  --color-success: var(--ds-text-success, #216e4e);
-  --color-success-soft: var(--ds-background-success, #dcfff1);
-  --color-error: var(--ds-text-danger, #ae2e24);
-  --color-error-soft: var(--ds-background-danger, #ffeceb);
-  --color-warning: var(--ds-text-warning, #a54800);
-  --color-warning-soft: var(--ds-background-warning, #fff7d6);
-  --color-info-soft: var(--ds-background-information, #e9f2ff);
-  --color-demo: var(--ds-text-discovery, #5e4db2);
-  --color-demo-soft: var(--ds-background-discovery, #f3f0ff);
 
   --font-display:
     ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
@@ -66,21 +59,108 @@
   --font-body: var(--font-display);
   --font-outlier: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
+  --radius-badge: 4px;
   --radius-control: 6px;
   --radius-panel: 8px;
+  --radius-band: 12px;
   --radius-pill: 999px;
   --rule-hair: 1px;
-  --shadow-raised: var(
-    --ds-shadow-raised,
-    0 1px 1px rgb(9 30 66 / 0.25),
-    0 0 1px rgb(9 30 66 / 0.31)
-  );
   --tracking-display: -0.01em;
 }
 
-html[data-color-mode='dark'] {
-  --color-accent: oklch(72% 0.13 55);
-  --color-accent-ink: oklch(20% 0.03 50);
-  --color-accent-soft: oklch(30% 0.05 50);
-  --color-accent-text: oklch(78% 0.12 55);
+/* Semantic layer: ADS aliases. Re-declared on a subtree theme (see above). */
+:root,
+[data-subtree-theme] {
+  --sf-surface: var(--ds-surface, #ffffff);
+  --sf-surface-sunken: var(--ds-surface-sunken, #f8f8f8);
+  --sf-surface-raised: var(--ds-surface-raised, #ffffff);
+  --sf-surface-overlay: var(--ds-surface-overlay, #ffffff);
+  --sf-surface-hover: var(--ds-background-neutral-subtle-hovered, #0515240f);
+  --sf-surface-pressed: var(--ds-background-neutral-subtle-pressed, #0b120e24);
+  --sf-text: var(--ds-text, #292a2e);
+  --sf-text-subtle: var(--ds-text-subtle, #505258);
+  --sf-text-subtlest: var(--ds-text-subtlest, #6b6e76);
+  --sf-border: var(--ds-border, #0b120e24);
+  --sf-border-bold: var(--ds-border-bold, #7d818a);
+  --sf-focus: var(--ds-border-focused, #4688ec);
+
+  --sf-status-success: var(--ds-text-success, #4c6b1f);
+  --sf-status-success-bg: var(--ds-background-success, #efffd6);
+  --sf-status-danger: var(--ds-text-danger, #ae2e24);
+  --sf-status-danger-bg: var(--ds-background-danger, #ffeceb);
+  --sf-status-warning: var(--ds-text-warning, #9e4c00);
+  --sf-status-warning-bg: var(--ds-background-warning, #fff5db);
+  --sf-status-info: var(--ds-text-information, #1558bc);
+  --sf-status-info-bg: var(--ds-background-information, #e9f2fe);
+  --sf-status-unknown: var(--ds-text-subtle, #505258);
+  --sf-status-unknown-bg: var(--ds-background-accent-gray-subtlest, #f0f1f2);
+  --sf-status-unknown-border: var(--ds-border-bold, #7d818a);
+
+  --sf-origin-live: var(--ds-text-information, #1558bc);
+  --sf-origin-live-bg: var(--ds-background-information, #e9f2fe);
+  --sf-origin-modelled: var(--ds-text-accent-teal, #206a83);
+  --sf-origin-modelled-bg: var(--ds-background-accent-teal-subtlest, #e7f9ff);
+  --sf-origin-synthetic: var(--ds-text-discovery, #803fa5);
+  --sf-origin-synthetic-bg: var(--ds-background-discovery, #f8eefe);
+  --sf-origin-session: var(--sf-text-subtle);
+  --sf-origin-session-bg: var(--sf-surface-sunken);
+
+  --sf-shadow-raised: var(
+    --ds-shadow-raised,
+    0 1px 1px rgb(30 31 33 / 0.25),
+    0 0 1px rgb(30 31 33 / 0.31)
+  );
+  --sf-shadow-overlay: var(
+    --ds-shadow-overlay,
+    0 8px 12px rgb(30 31 33 / 0.15),
+    0 0 1px rgb(30 31 33 / 0.31)
+  );
+
+  /* Migration aliases (removed in Phase E). */
+  --color-paper: var(--sf-surface);
+  --color-paper-2: var(--sf-surface-hover);
+  --color-paper-3: var(--sf-surface-sunken);
+  --color-ink: var(--sf-text);
+  --color-ink-2: var(--sf-text-subtle);
+  --color-muted: var(--sf-text-subtlest);
+  --color-rule: var(--sf-border);
+  --color-rule-strong: var(--sf-border-bold);
+  --color-focus: var(--sf-focus);
+  --color-accent: var(--sf-accent-bold);
+  --color-accent-ink: var(--sf-accent-ink);
+  --color-accent-soft: var(--sf-accent-subtle);
+  --color-accent-text: var(--sf-accent-text);
+  --color-success: var(--sf-status-success);
+  --color-success-soft: var(--sf-status-success-bg);
+  --color-error: var(--sf-status-danger);
+  --color-error-soft: var(--sf-status-danger-bg);
+  --color-warning: var(--sf-status-warning);
+  --color-warning-soft: var(--sf-status-warning-bg);
+  --color-info-soft: var(--sf-status-info-bg);
+  --color-demo: var(--sf-origin-synthetic);
+  --color-demo-soft: var(--sf-origin-synthetic-bg);
+  --shadow-raised: var(--sf-shadow-raised);
+}
+
+/* Brand (forge copper) and the command band, dark. html[...] outranks :root, so order is free;
+ * the light block comes last so tools reading the file top-down see light values. */
+html[data-color-mode='dark'],
+[data-subtree-theme][data-color-mode='dark'] {
+  --sf-surface-command: oklch(23.5% 0.018 58);
+  --sf-accent-text: oklch(80% 0.115 60);
+  --sf-accent-bold: oklch(76% 0.14 58);
+  --sf-accent-ink: #1f1f21;
+  --sf-accent-subtle: oklch(31% 0.055 52);
+  --sf-accent-border: oklch(68% 0.14 55);
+}
+
+/* Brand (forge copper) and the command band: light. Identity and state, never a second primary. */
+:root,
+[data-subtree-theme][data-color-mode='light'] {
+  --sf-surface-command: oklch(97.5% 0.012 62);
+  --sf-accent-text: oklch(50% 0.13 48);
+  --sf-accent-bold: oklch(53% 0.145 48);
+  --sf-accent-ink: #ffffff;
+  --sf-accent-subtle: oklch(95.5% 0.03 62);
+  --sf-accent-border: oklch(62% 0.15 50);
 }
