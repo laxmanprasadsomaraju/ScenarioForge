@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AnalysisEngine } from '../src/analysis/analyzeChange';
 import { analyzeChange } from '../src/analysis/analyzeChange';
-import { pendingEngine } from '../src/analysis/pendingEngine';
+import { ruleEngine } from '../src/analysis/ruleEngine';
 import type { ConfluenceGateway, ConfluenceResponse } from '../src/confluence/client';
 import type { JiraIssueGateway, JiraResponse } from '../src/jira/client';
 import { buildRunbookSubjectCql } from '../src/validation';
@@ -247,11 +247,80 @@ describe('analyzeChange orchestration', () => {
     expect(engine.extractChangeSubjects).not.toHaveBeenCalled();
     expect(confluence.searchContent).not.toHaveBeenCalled();
   });
+});
 
-  it('the placeholder engine reports not-assessed without calling Confluence', async () => {
-    const confluence = confluenceGateway(response(200, searchBody(1)));
-    const result = await run(confluence, pendingEngine);
-    expect(result.ok && result.data.status).toBe('not-assessed');
-    expect(confluence.searchContent).not.toHaveBeenCalled();
+describe('analyzeChange with the real rule engine (M3 live-test shapes)', () => {
+  const DESCRIPTION =
+    'We will decommission the LegacyAuth tenant on 30 November. NimbusID replaces LegacyAuth as the secondary identity provider.';
+  const STEP3 =
+    'If the primary IdP is unavailable for more than 5 minutes, run authctl failover --target legacyauth.';
+  const issueA = {
+    key: 'SF-1',
+    fields: {
+      summary: '[DEMO] Retire LegacyAuth backup SSO tenant',
+      description: {
+        type: 'doc',
+        version: 1,
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: DESCRIPTION }] }],
+      },
+      status: { name: 'To Do' },
+      issuetype: { name: 'Task' },
+      updated: '2026-11-10T09:00:00.000+0000',
+    },
+  };
+  const runbookPage = (extra = '') => ({
+    id: '98305',
+    title: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+    _links: { webui: '/spaces/SFDEMO/pages/98305/RB-AUTH-01' },
+    body: {
+      storage: {
+        value: `<p>Synthetic runbook.${extra}</p><ol><li>Confirm elevated sign-in failures.</li><li>Check the primary IdP status page.</li><li>${STEP3}</li><li>Post a status update to customers.</li></ol>`,
+      },
+    },
+  });
+  const search = {
+    results: [{ content: { id: '98305', type: 'page', title: '[DEMO] RB-AUTH-01' } }],
+    size: 1,
+  };
+
+  async function analyse(issue: unknown, page: unknown) {
+    const jira: JiraIssueGateway = {
+      getIssue: vi.fn(async () => response(200, issue)),
+      getRemoteLinks: vi.fn(async () => response(200, [])),
+    };
+    const confluence = confluenceGateway(response(200, search), async () => response(200, page));
+    const result = await analyzeChange(
+      { jira, confluence, engine: ruleEngine, now: NOW },
+      { issueKey: 'SF-1' },
+    );
+    if (!result.ok) throw new Error(result.error.message);
+    return result.data;
+  }
+
+  it('finds the stale failover step as suspected, quoting both sources exactly', async () => {
+    const analysis = await analyse(issueA, runbookPage());
+    expect(analysis.status).toBe('findings');
+    expect(analysis.subjects[0]).toMatchObject({ term: 'legacyauth', replacement: 'NimbusID' });
+    const [finding] = analysis.findings;
+    expect(finding).toMatchObject({ stepOrder: 3, confidence: 'suspected', aiAssisted: false });
+    const excerpts = finding!.evidence.map((e) => e.excerpt);
+    expect(DESCRIPTION).toContain(excerpts[0]);
+    expect(excerpts[1]).toBe(STEP3);
+  });
+
+  it('confirms the finding when the runbook page names the issue key', async () => {
+    const analysis = await analyse(issueA, runbookPage(' Related change: SF-1'));
+    expect(analysis.findings[0]).toMatchObject({ confidence: 'confirmed' });
+    expect(analysis.findings[0]!.basis).toContain('page-mentions-issue');
+  });
+
+  it('reports a cancelled retirement as not assessed, never as a finding', async () => {
+    const cancelled = {
+      ...issueA,
+      fields: { ...issueA.fields, status: { name: "Won't Do" } },
+    };
+    const analysis = await analyse(cancelled, runbookPage());
+    expect(analysis.findings).toEqual([]);
+    expect(analysis.status).toBe('not-assessed');
   });
 });

@@ -3,7 +3,7 @@ import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
 import type { AnalysisEngine } from './analysis/analyzeChange';
 import { analyzeChange } from './analysis/analyzeChange';
-import { pendingEngine } from './analysis/pendingEngine';
+import { ruleEngine } from './analysis/ruleEngine';
 import type { ConfluenceGateway } from './confluence/client';
 import { getRecoveryProcedure, searchRecoveryPages } from './confluence/client';
 import type { JiraGateway, JiraIssueGateway } from './jira/client';
@@ -44,7 +44,7 @@ const forgeConfluence: ConfluenceGateway = {
  * shared/analysis engine at integration; until then analysis reports
  * `not-assessed`.
  */
-const analysisEngine: AnalysisEngine = pendingEngine;
+const analysisEngine: AnalysisEngine = ruleEngine;
 
 async function guarded<T>(
   work: () => Promise<ApiResult<T>>,
