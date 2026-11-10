@@ -1,7 +1,8 @@
 import { useSite } from '../lib/site';
-import { PageHeader } from '../components/Shell';
+import { PageHeader } from '../components/PageHeader';
 import { useConnection } from '../components/Connection';
 import { ErrorPanel } from '../components/States';
+import { AppearanceControl } from '../components/AppearanceControl';
 import { formatAbsolute } from '../lib/format';
 
 const SOURCES: { name: string; status: string; detail: string }[] = [
@@ -95,6 +96,13 @@ export function SettingsPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="region" aria-labelledby="appearance-title">
+        <h2 id="appearance-title" className="section-title">
+          Appearance
+        </h2>
+        <AppearanceControl />
       </section>
 
       <section className="region" aria-labelledby="data-title">

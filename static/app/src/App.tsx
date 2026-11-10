@@ -4,6 +4,7 @@ import { RehearsalSourceProvider } from './lib/rehearsalSource';
 import { ExerciseProvider } from './lib/exercises';
 import { RouterProvider, useRouter } from './lib/router';
 import { SiteProvider } from './lib/site';
+import { AppearanceProvider, subtreeAttributes } from './lib/appearance';
 import { Shell } from './components/Shell';
 import { ScreenErrorBoundary, ScreenSkeleton } from './components/States';
 import { ChangesPage } from './pages/Changes';
@@ -48,7 +49,27 @@ function Screen() {
   }
 }
 
-export function App() {
+export function App({
+  hostTheming,
+  initialHostThemed = null,
+}: {
+  /** Jira's theming call, started in main.tsx before the first render. */
+  hostTheming?: Promise<boolean>;
+  initialHostThemed?: boolean | null;
+} = {}) {
+  return (
+    <AppearanceProvider hostTheming={hostTheming} initialHostThemed={initialHostThemed}>
+      {(mode) => (
+        // The app root: an ADS subtree theme when Light or Dark overrides Jira's choice.
+        <div className="app-root" {...subtreeAttributes(mode)}>
+          <AppContent />
+        </div>
+      )}
+    </AppearanceProvider>
+  );
+}
+
+function AppContent() {
   return (
     <SiteProvider>
       <RouterProvider>
