@@ -314,7 +314,18 @@ describe('analyzeChange', () => {
       pagesRead: 3,
       pagesWithoutSteps: 1,
       pagesSkipped: 0,
+      pagesChecked: [
+        expect.objectContaining({ pageId: RB_AUTH.pageId, stepSource: 'ordered-list' }),
+        expect.objectContaining({ pageId: RB_DB.pageId, stepSource: 'ordered-list' }),
+        expect.objectContaining({ pageId: NOTES.pageId, stepSource: 'none' }),
+      ],
     });
+    expect(result.change).toEqual({
+      key: 'DEMO-101',
+      summary: ISSUE_A.summary,
+      browsePath: '/browse/DEMO-101',
+    });
+    expect(result.findings[0]!.pageWebuiPath).toBe(RB_AUTH.webuiPath);
     expect(result.findings).toHaveLength(1);
     const finding = result.findings[0]!;
     expect(finding).toMatchObject({
@@ -545,6 +556,10 @@ describe('coverage', () => {
       pagesRead: 2,
       pagesWithoutSteps: 1,
       pagesSkipped: 2,
+      pagesChecked: [
+        expect.objectContaining({ pageId: RB_AUTH.pageId, stepSource: 'ordered-list' }),
+        expect.objectContaining({ pageId: NOTES.pageId, stepSource: 'none' }),
+      ],
     });
   });
 
@@ -556,6 +571,7 @@ describe('coverage', () => {
       pagesRead: 1,
       pagesWithoutSteps: 0,
       pagesSkipped: 3,
+      pagesChecked: [expect.objectContaining({ pageId: RB_AUTH.pageId, title: RB_AUTH.title })],
     });
     expect(result.coverage.pagesFound).toBe(1);
     expect(updated.findings).toBe(result.findings);

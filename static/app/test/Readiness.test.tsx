@@ -31,6 +31,7 @@ function finding(overrides: Partial<ChangeRecoveryFinding> = {}): ChangeRecovery
     pageId: '1001',
     pageTitle: 'RB-AUTH-01 Customer sign-in recovery',
     stepOrder: 3,
+    pageWebuiPath: null,
     subject: SUBJECT,
     confidence: 'confirmed',
     basis: ['term-match', 'page-mentions-issue'],
@@ -56,11 +57,22 @@ function analysis(overrides: Partial<ChangeAnalysis> = {}): ApiResult<ChangeAnal
     ok: true,
     data: {
       changeKey: 'MC-12',
+      change: {
+        key: 'MC-12',
+        summary: 'Retire LegacyAuth backup SSO tenant',
+        browsePath: '/browse/MC-12',
+      },
       analyzedAt: new Date().toISOString(),
       status: 'findings',
       subjects: [SUBJECT],
       findings: [],
-      coverage: { pagesFound: 4, pagesRead: 3, pagesWithoutSteps: 1, pagesSkipped: 1 },
+      coverage: {
+        pagesFound: 4,
+        pagesRead: 3,
+        pagesWithoutSteps: 1,
+        pagesSkipped: 1,
+        pagesChecked: [],
+      },
       ...overrides,
     },
   };
@@ -168,11 +180,72 @@ describe('Readiness checks', () => {
     );
   });
 
+  it('links the runbook from the finding page path and lists exactly the pages checked', async () => {
+    api.analyzeChange.mockResolvedValue(
+      analysis({
+        findings: [finding({ pageWebuiPath: '/spaces/SFDEMO/pages/98305/RB-AUTH-01' })],
+        change: {
+          key: 'MC-12',
+          summary: '[DEMO] Retire LegacyAuth backup SSO tenant',
+          browsePath: '/browse/MC-12',
+        },
+        coverage: {
+          pagesFound: 2,
+          pagesRead: 2,
+          pagesWithoutSteps: 1,
+          pagesSkipped: 0,
+          pagesChecked: [
+            {
+              pageId: '98305',
+              title: '[DEMO] RB-AUTH-01',
+              webuiPath: '/spaces/SFDEMO/pages/98305/RB-AUTH-01',
+              stepSource: 'ordered-list',
+            },
+            { pageId: '98307', title: '[DEMO] Notes', webuiPath: null, stepSource: 'none' },
+          ],
+        },
+      }),
+    );
+    const user = await openCheck();
+    const item = await screen.findByRole('listitem', {
+      name: 'Step 3 of RB-AUTH-01 Customer sign-in recovery',
+    });
+    // The header shows the change as the analysis read it from Jira.
+    expect(screen.getByText('[DEMO] Retire LegacyAuth backup SSO tenant')).toBeInTheDocument();
+
+    vi.mocked(router.open).mockClear();
+    await user.click(within(item).getByRole('button', { name: 'Open runbook in Confluence' }));
+    expect(router.open).toHaveBeenLastCalledWith(
+      'https://example.atlassian.net/wiki/spaces/SFDEMO/pages/98305/RB-AUTH-01',
+    );
+
+    const checked = screen.getByRole('heading', { name: 'Pages checked' }).nextElementSibling!;
+    const rows = within(checked as HTMLElement).getAllByRole('listitem');
+    expect(rows.map((r) => r.textContent)).toEqual([
+      '[DEMO] RB-AUTH-01Steps checked',
+      '[DEMO] NotesNo numbered steps; not checked',
+    ]);
+    await user.click(
+      within(checked as HTMLElement).getByRole('button', {
+        name: 'Open [DEMO] RB-AUTH-01 in Confluence (new tab)',
+      }),
+    );
+    expect(router.open).toHaveBeenLastCalledWith(
+      'https://example.atlassian.net/wiki/spaces/SFDEMO/pages/98305/RB-AUTH-01',
+    );
+  });
+
   it('says no findings is not a readiness pass and shows the coverage', async () => {
     api.analyzeChange.mockResolvedValue(
       analysis({
         status: 'no-findings',
-        coverage: { pagesFound: 5, pagesRead: 4, pagesWithoutSteps: 1, pagesSkipped: 1 },
+        coverage: {
+          pagesFound: 5,
+          pagesRead: 4,
+          pagesWithoutSteps: 1,
+          pagesSkipped: 1,
+          pagesChecked: [],
+        },
       }),
     );
     await openCheck();
@@ -204,7 +277,13 @@ describe('Readiness checks', () => {
         status: 'not-assessed',
         notAssessedReason: 'No retirement or replacement was recognised in the change text.',
         subjects: [],
-        coverage: { pagesFound: 0, pagesRead: 0, pagesWithoutSteps: 0, pagesSkipped: 0 },
+        coverage: {
+          pagesFound: 0,
+          pagesRead: 0,
+          pagesWithoutSteps: 0,
+          pagesSkipped: 0,
+          pagesChecked: [],
+        },
       }),
     );
     await openCheck();

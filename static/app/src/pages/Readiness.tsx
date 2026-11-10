@@ -97,17 +97,20 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
     headingRef.current?.focus();
   }, [state.status]);
 
+  // Once loaded, show the change exactly as the analysis read it from Jira.
+  const shown = state.status === 'ready' ? state.data.change : change;
+
   return (
     <>
       <PageHeader
         title="Readiness check"
-        lead={change.summary}
+        lead={shown.summary}
         aside={<OriginTag origin="live" product="Jira and Confluence" />}
       />
       <div className="procedure-actions analysis-actions">
         <Button onClick={clear}>Back to recent changes</Button>
-        <Button appearance="subtle" onClick={() => openInJira(change.browsePath)}>
-          Open {change.key} in Jira
+        <Button appearance="subtle" onClick={() => openInJira(shown.browsePath)}>
+          Open {shown.key} in Jira
         </Button>
         <div className="rehearse">
           <Button isDisabled aria-describedby="rehearse-note">
@@ -149,7 +152,7 @@ function AnalysisView({ change }: { change: JiraIssueSummary }) {
           </h2>
           <ol className="findings">
             {state.data.findings.map((f) => (
-              <FindingItem key={f.id} finding={f} change={change} />
+              <FindingItem key={f.id} finding={f} change={state.data.change} />
             ))}
           </ol>
         </section>

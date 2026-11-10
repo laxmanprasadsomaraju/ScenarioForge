@@ -63,3 +63,7 @@ A gap is `resolved` only if the retest actually followed the procedure that had 
 ## D16. Contract-change proposals pending (2026-11-09)
 
 Proposed by lanes, not yet applied to `shared/domain/types.ts`: `remediatedFrom` on scenarios and `scenarioFingerprint` / `appliedRemediationIds` on sessions (Lane C, needed for M5 persistence); an optional `path` on `EvidenceReference` and confidence on `RecoveryStep.dependsOn` (Lane A); `'teamwork-graph'` as an evidence kind (Lane D). To be decided when M5 persistence starts, with tests.
+
+## D18. "Not assessed" when a change names nothing to check (2026-11-10)
+
+A change with no recognised retirement, replacement, migration, rename, disable or upgrade is `not-assessed`, not `no-findings`. `no-findings` only follows a real search and read of runbooks. Confirmed live on MC-63 and MC-42. Also accepted: runbooks read without numbered steps give `not-assessed`. M3 contract additions: `ChangeAnalysis.change`, `AnalysisCoverage.pagesChecked`, `ChangeRecoveryFinding.pageWebuiPath`. Deferred: a partial-scope flag on subjects and coded not-assessed reasons.

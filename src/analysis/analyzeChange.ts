@@ -44,6 +44,7 @@ const NO_COVERAGE: AnalysisCoverage = {
   pagesRead: 0,
   pagesWithoutSteps: 0,
   pagesSkipped: 0,
+  pagesChecked: [],
 };
 
 function notAssessed(
@@ -55,6 +56,7 @@ function notAssessed(
 ): ChangeAnalysis {
   return {
     changeKey: change.key,
+    change: { key: change.key, summary: change.summary, browsePath: change.browsePath },
     analyzedAt,
     status: 'not-assessed',
     notAssessedReason: reason,

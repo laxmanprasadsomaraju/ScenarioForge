@@ -80,6 +80,7 @@ function fakeEngine(subjects: ChangeSubject[] = [SUBJECT], terms = ['legacyauth'
       (change: ChangeEvidence, runbooks: RunbookEvidence[], analyzedAt: string) =>
         ({
           changeKey: change.key,
+          change: { key: change.key, summary: change.summary, browsePath: change.browsePath },
           analyzedAt,
           status: subjects.length === 0 ? 'not-assessed' : 'no-findings',
           ...(subjects.length === 0 ? { notAssessedReason: 'No change subjects recognised.' } : {}),
@@ -90,6 +91,7 @@ function fakeEngine(subjects: ChangeSubject[] = [SUBJECT], terms = ['legacyauth'
             pagesRead: runbooks.length,
             pagesWithoutSteps: 0,
             pagesSkipped: -1,
+            pagesChecked: [],
           },
         }) satisfies ChangeAnalysis,
     ),
@@ -118,7 +120,13 @@ describe('analyzeChange orchestration', () => {
         analyzedAt: '2026-11-10T12:00:00.000Z',
         status: 'no-findings',
         subjects: [SUBJECT],
-        coverage: { pagesFound: 2, pagesRead: 2, pagesWithoutSteps: 0, pagesSkipped: 0 },
+        coverage: {
+          pagesFound: 2,
+          pagesRead: 2,
+          pagesWithoutSteps: 0,
+          pagesSkipped: 0,
+          pagesChecked: [],
+        },
       }),
     });
     const change = vi.mocked(engine.extractChangeSubjects).mock.calls[0]![0];
@@ -183,7 +191,13 @@ describe('analyzeChange orchestration', () => {
           'Runbooks were not checked: 2 recovery pages found, but none could be read.',
         subjects: [SUBJECT],
         findings: [],
-        coverage: { pagesFound: 2, pagesRead: 0, pagesWithoutSteps: 0, pagesSkipped: 2 },
+        coverage: {
+          pagesFound: 2,
+          pagesRead: 0,
+          pagesWithoutSteps: 0,
+          pagesSkipped: 2,
+          pagesChecked: [],
+        },
       }),
     });
     expect(engine.analyzeChange).not.toHaveBeenCalled();

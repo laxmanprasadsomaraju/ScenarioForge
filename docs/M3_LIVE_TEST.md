@@ -44,7 +44,7 @@ Edit the `[DEMO] RB-AUTH-01` Confluence page and add a line: `Related change: <I
 
 - **Summary:** `[DEMO] Upgrade marketing email templates`
 - **Description:** `Synthetic change. Refresh the email campaign templates.`
-- Expected: `no-findings` or `not-assessed`, never a finding, and never shown as "ready".
+- Expected (corrected 2026-11-10): **`not-assessed`**, because the change names nothing that is retired, replaced, migrated, renamed, disabled or upgraded, so there is no subject to search runbooks for. `no-findings` is reserved for changes whose subjects were searched for and whose runbooks were read without a conflicting step. Reporting "no conflicts found" here would claim a check that never ran (D6, D18). Never a finding and never "ready" in either case.
 
 ### Existing issues (MC-10, MC-9, MC-7, MC-42)
 
@@ -52,12 +52,23 @@ Edit the `[DEMO] RB-AUTH-01` Confluence page and add a line: `Related change: <I
 
 ## Checks
 
-| #   | Check                                             | Expected                                                                         | Result  |
-| --- | ------------------------------------------------- | -------------------------------------------------------------------------------- | ------- |
-| 1   | Readiness checks lists recent changes             | Live Jira data, issues A and B visible                                           | Pending |
-| 2   | Check issue A                                     | Subject LegacyAuth, replacement NimbusID, verbatim sentence from the description | Pending |
-| 3   | Finding on RB-AUTH-01 step 3                      | Suspected, side-by-side change text and step text, both linking to source        | Pending |
-| 4   | Add `Related change: <key>` to the page, re-check | Confirmed, basis includes "page mentions issue"                                  | Pending |
-| 5   | Check issue B                                     | No finding; message says this is not a readiness pass; coverage shown            | Pending |
-| 6   | Check MC-42                                       | Not assessed with a reason                                                       | Pending |
-| 7   | Monitoring for `confluence-test`                  | `analyzeChange` invocations, no errors                                           | Pending |
+| #   | Check                                             | Expected                                                                         | Result                                                                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Readiness checks lists recent changes             | Live Jira data, issues A and B visible                                           | **Passed** (owner): MC-62 and MC-63 listed as live Jira data                                                                                                                                                                                                             |
+| 2   | Check issue A                                     | Subject LegacyAuth, replacement NimbusID, verbatim sentence from the description | **Passed** (owner, MC-62): LegacyAuth retired, replaced by NimbusID; exact quote shown                                                                                                                                                                                   |
+| 3   | Finding on RB-AUTH-01 step 3                      | Suspected, side-by-side change text and step text, both linking to source        | **Passed** (owner, MC-62): "Suspected — text match" on RB-AUTH-01 step 3 (`authctl failover --target legacyauth`), exact Jira and Confluence quotes and links; coverage 1 found, 1 read, 0 not read                                                                      |
+| 4   | Add `Related change: <key>` to the page, re-check | Confirmed, basis includes "page mentions issue"                                  | **Passed** (owner, MC-62): after adding `Related change: MC-62`, "Confirmed — explicit link", explanation names MC-62; quotes and links intact; coverage 1/1/0                                                                                                           |
+| 5   | Check issue B                                     | No finding; message says this is not a readiness pass; coverage shown            | **Passed against corrected expectation** (owner, MC-63): "Not assessed", reason "No retirement, replacement or migration was recognised", coverage 0 found/read, no finding. The original row expected the no-findings wording; that expectation was wrong (see Issue B) |
+| 6   | Check MC-42                                       | Not assessed with a reason                                                       | **Passed** (owner, MC-42): "Not assessed" with a reason, coverage 0, no fabricated conflict                                                                                                                                                                              |
+| 7   | Monitoring for `confluence-test`                  | `analyzeChange` invocations, no errors                                           | **Partly verified (CLI)**: no resolver errors in `forge logs`; invocation counts not available from the CLI                                                                                                                                                              |
+
+## Expectation change for check 5
+
+The plan was internally inconsistent: the Issue B section allowed `no-findings` or `not-assessed`, while check 5 expected the "not a readiness pass" wording that only `no-findings` shows. The implementation's behaviour (`not-assessed` when no subject is recognised) is the safer one and matches the contract (`shared/analysis/types.ts`): a change with nothing to look for cannot be said to have "no conflicts". The expectation was corrected; the implementation was not changed.
+
+## M3 acceptance (2026-11-10)
+
+- Live, passed: 1, 2, 3, 4, 6; 5 against the corrected expectation.
+- CLI only: 7 (no errors logged; invocation counts not checked in the console).
+- Automated: 34 labelled synthetic cases (precision 1.000, recall 0.923), cancelled, historical, partial, replacement-only and ambiguous categories, exact-quote substring tests, end-to-end orchestration with the real engine.
+- Evidence improvements after the live run (approved): finding carries the runbook page path, coverage lists exactly the pages checked, and the analysis carries the Jira summary and link.

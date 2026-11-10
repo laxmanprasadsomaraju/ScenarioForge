@@ -77,6 +77,8 @@ export interface ChangeRecoveryFinding {
   pageId: string;
   pageTitle: string;
   stepOrder: number;
+  /** Runbook page path relative to `<site>/wiki`, for the source link. */
+  pageWebuiPath: string | null;
   subject: ChangeSubject;
   /** `confirmed` only with an explicit cross-reference plus a term match. */
   confidence: 'confirmed' | 'suspected';
@@ -88,6 +90,15 @@ export interface ChangeRecoveryFinding {
   aiAssisted: false;
 }
 
+/** A runbook page whose content was read during the analysis. */
+export interface CheckedPage {
+  pageId: string;
+  title: string;
+  webuiPath: string | null;
+  /** `none`: read, but no numbered list, so no step was checked. */
+  stepSource: 'ordered-list' | 'none';
+}
+
 export interface AnalysisCoverage {
   /** Recovery pages returned by the search. */
   pagesFound: number;
@@ -97,6 +108,8 @@ export interface AnalysisCoverage {
   pagesWithoutSteps: number;
   /** Pages found but not read (limits, errors or permissions). */
   pagesSkipped: number;
+  /** Exactly the pages that were read, in the order they were checked. */
+  pagesChecked: CheckedPage[];
 }
 
 export type AnalysisStatus =
@@ -109,6 +122,8 @@ export type AnalysisStatus =
 
 export interface ChangeAnalysis {
   changeKey: string;
+  /** The change as read from Jira, so results always show their source. */
+  change: { key: string; summary: string; browsePath: string };
   analyzedAt: string;
   status: AnalysisStatus;
   /** Present when status is 'not-assessed'. */

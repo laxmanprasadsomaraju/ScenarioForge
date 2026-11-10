@@ -166,6 +166,12 @@ function coverageFor(runbooks: RunbookEvidence[], search: SearchCoverage = {}): 
     pagesRead,
     pagesWithoutSteps: runbooks.filter((r) => !hasSteps(r)).length,
     pagesSkipped,
+    pagesChecked: runbooks.map((r) => ({
+      pageId: r.pageId,
+      title: r.title,
+      webuiPath: r.webuiPath,
+      stepSource: hasSteps(r) ? 'ordered-list' : 'none',
+    })),
   };
 }
 
@@ -190,7 +196,13 @@ export function analyzeChange(
   const pages = uniqueRunbooks(runbooks);
   const coverage = coverageFor(pages, search);
   const subjects = reading.subjects.map((s) => ({ ...s }));
-  const base = { changeKey: change.key, analyzedAt, subjects, coverage };
+  const base = {
+    changeKey: change.key,
+    change: { key: change.key, summary: change.summary, browsePath: change.browsePath },
+    analyzedAt,
+    subjects,
+    coverage,
+  };
 
   if (subjects.length === 0) {
     const reason = reading.changeCancelled
@@ -265,6 +277,7 @@ export function analyzeChange(
             pageId: runbook.pageId,
             pageTitle: runbook.title,
             stepOrder: step.order,
+            pageWebuiPath: runbook.webuiPath,
             subject: { ...subject },
             confidence: confirmed ? 'confirmed' : 'suspected',
             basis: ['term-match', ...crossReferences],

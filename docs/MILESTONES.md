@@ -36,14 +36,15 @@ Confluence search and page-step extraction implemented and unit-tested on `integ
 
 Read Confluence recovery pages and JSM services with user permissions; evidence references with source URLs and retrieval time. Acceptance: real runbook page shown with a link back; permission-denied page excluded, not leaked.
 
-## M3: Change-to-recovery intelligence, Partly done (deployed to confluence-test, live test pending)
+## M3: Change-to-recovery intelligence, Done (live-verified on confluence-test)
 
 - [x] Deterministic, AI-free engine: subjects (retire, replace, migrate, rename, disable, upgrade), step matching with word boundaries, confirmed only with an explicit cross-reference
 - [x] Cancelled, historical, partial, replacement-only and ambiguous changes handled; 34 labelled synthetic cases, precision 1.000, recall 0.923
 - [x] Exact quotes from Jira and Confluence (tested as substrings of the source)
 - [x] "No findings" reported with coverage, never as a pass; unreadable or step-less runbooks give "Not assessed"
 - [x] Readiness checks screen with Confirmed / Suspected / Not assessed in words
-- [ ] Live test on real Jira and Confluence (docs/M3_LIVE_TEST.md)
+- [x] Live test on real Jira and Confluence: MC-62 suspected then confirmed, MC-63 and MC-42 not assessed (docs/M3_LIVE_TEST.md)
+- [x] Evidence: runbook links, pages checked, Jira summary and link in every analysis
 
 ## M4: Recovery readiness graph
 

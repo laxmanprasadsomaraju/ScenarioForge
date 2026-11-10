@@ -47,13 +47,42 @@ const LEGACY_AUTH: ChangeSubject = {
 };
 
 function previewAnalysis(issueKey: string): ChangeAnalysis {
-  const base = { changeKey: issueKey, analyzedAt: iso(0) };
+  const base = {
+    changeKey: issueKey,
+    change: { key: issueKey, summary: 'Preview change', browsePath: `/browse/${issueKey}` },
+    analyzedAt: iso(0),
+  };
   if (issueKey === 'PREVIEW-14') {
     return {
       ...base,
       status: 'findings',
       subjects: [LEGACY_AUTH],
-      coverage: { pagesFound: 4, pagesRead: 3, pagesWithoutSteps: 1, pagesSkipped: 1 },
+      coverage: {
+        pagesFound: 4,
+        pagesRead: 3,
+        pagesWithoutSteps: 1,
+        pagesSkipped: 1,
+        pagesChecked: [
+          {
+            pageId: '1001',
+            title: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+            webuiPath: '/spaces/SFDEMO/pages/1001',
+            stepSource: 'ordered-list',
+          },
+          {
+            pageId: '1002',
+            title: '[DEMO] RB-DB-02 Database failover runbook',
+            webuiPath: '/spaces/SFDEMO/pages/1002',
+            stepSource: 'ordered-list',
+          },
+          {
+            pageId: '1003',
+            title: '[DEMO] Recovery notes without steps',
+            webuiPath: '/spaces/SFDEMO/pages/1003',
+            stepSource: 'none',
+          },
+        ],
+      },
       findings: [
         {
           id: 'f1',
@@ -61,6 +90,7 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
           pageId: '1001',
           pageTitle: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
           stepOrder: 3,
+          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
           subject: LEGACY_AUTH,
           confidence: 'confirmed',
           basis: ['term-match', 'page-mentions-issue'],
@@ -91,6 +121,7 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
           pageId: '1003',
           pageTitle: '[DEMO] RB-SSO-04 Partner single sign-on outage',
           stepOrder: 2,
+          pageWebuiPath: '/spaces/SFDEMO/pages/1001',
           subject: LEGACY_AUTH,
           confidence: 'suspected',
           basis: ['term-match'],
@@ -131,7 +162,13 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
         },
       ],
       findings: [],
-      coverage: { pagesFound: 5, pagesRead: 5, pagesWithoutSteps: 0, pagesSkipped: 0 },
+      coverage: {
+        pagesFound: 5,
+        pagesRead: 5,
+        pagesWithoutSteps: 0,
+        pagesSkipped: 0,
+        pagesChecked: [],
+      },
     };
   }
   return {
@@ -141,7 +178,13 @@ function previewAnalysis(issueKey: string): ChangeAnalysis {
       'No retirement, replacement, migration, rename, disable or upgrade was recognised in the change text, so no runbook was checked.',
     subjects: [],
     findings: [],
-    coverage: { pagesFound: 0, pagesRead: 0, pagesWithoutSteps: 0, pagesSkipped: 0 },
+    coverage: {
+      pagesFound: 0,
+      pagesRead: 0,
+      pagesWithoutSteps: 0,
+      pagesSkipped: 0,
+      pagesChecked: [],
+    },
   };
 }
 

@@ -1,8 +1,8 @@
 import type { Ref } from 'react';
 import Button from '@atlaskit/button/new';
-import type { JiraIssueSummary } from '@shared/api';
 import type {
   AnalysisCoverage,
+  CheckedPage,
   ChangeAction,
   ChangeAnalysis,
   ChangeRecoveryFinding,
@@ -104,8 +104,8 @@ export function AnalysisStatement({
           No conflicts found in {plural(coverage.pagesRead, 'runbook', 'runbooks')} read
         </h2>
         <p className="analysis-sub analysis-caveat">
-          This is not a readiness pass. Only the runbooks counted under Coverage were checked; pages
-          that were not found or not read can still depend on this change.
+          This is not a readiness pass. Only the runbooks listed under Pages checked were read;
+          pages that were not found or not read can still depend on this change.
         </p>
       </div>
     );
@@ -175,6 +175,16 @@ export function CoverageFacts({
         <dt>Checked at</dt>
         <dd>{formatAbsolute(analyzedAt)}</dd>
       </dl>
+      <h3 className="section-title pages-checked-title">Pages checked</h3>
+      {coverage.pagesChecked.length === 0 ? (
+        <p className="region-body">No runbook page was read for this change.</p>
+      ) : (
+        <ul className="pages-checked">
+          {coverage.pagesChecked.map((page) => (
+            <CheckedPageItem key={page.pageId} page={page} />
+          ))}
+        </ul>
+      )}
       {coverage.pagesWithoutSteps > 0 || coverage.pagesSkipped > 0 ? (
         <p className="region-body">
           Steps in runbooks without a numbered list, or not read because of limits, errors or
@@ -182,6 +192,30 @@ export function CoverageFacts({
         </p>
       ) : null}
     </>
+  );
+}
+
+function CheckedPageItem({ page }: { page: CheckedPage }) {
+  const { openInJira } = useSite();
+  const path = confluencePath(page.webuiPath ?? undefined);
+  return (
+    <li>
+      {path ? (
+        <button
+          type="button"
+          className="issue-key page-title"
+          onClick={() => openInJira(path)}
+          aria-label={`Open ${page.title} in Confluence (new tab)`}
+        >
+          {page.title}
+        </button>
+      ) : (
+        <span>{page.title}</span>
+      )}
+      <span className="page-checked-note">
+        {page.stepSource === 'ordered-list' ? 'Steps checked' : 'No numbered steps; not checked'}
+      </span>
+    </li>
   );
 }
 
@@ -235,12 +269,14 @@ export function FindingItem({
   change,
 }: {
   finding: ChangeRecoveryFinding;
-  change: JiraIssueSummary;
+  change: { key: string; browsePath: string };
 }) {
   const { openInJira } = useSite();
   const changeEvidence = pick(finding.evidence, ['jira-issue']);
   const stepEvidence = pick(finding.evidence, ['runbook-step', 'confluence-page']);
-  const runbookPath = confluencePath(stepEvidence?.url);
+  const runbookPath = finding.pageWebuiPath
+    ? confluencePath(finding.pageWebuiPath)
+    : confluencePath(stepEvidence?.url);
   const titleId = `finding-${finding.id}`;
 
   return (
