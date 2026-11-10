@@ -102,7 +102,7 @@ describe('Detect → Rehearse → Fix → Verify from a real finding', () => {
     expect(screen.queryByText('Synthetic demo data')).not.toBeInTheDocument();
 
     // Fix
-    const fix = screen.getByText(/^Update .*step 3$/).closest('li')!;
+    const fix = screen.getByText(/^Update .*step 3$/, { selector: '.fix-title' }).closest('li')!;
     await user.click(within(fix).getByRole('checkbox', { name: 'Approve for the retest' }));
     await user.click(screen.getByRole('button', { name: 'Run targeted retest' }));
 
@@ -111,5 +111,9 @@ describe('Detect → Rehearse → Fix → Verify from a real finding', () => {
     expect(
       screen.getByRole('heading', { name: 'Retest verdict: Gap resolved' }),
     ).toBeInTheDocument();
+
+    // Prepare a work item (M8 preview): offered, but creation stays disabled.
+    expect(screen.getByRole('heading', { name: 'Prepare a Jira work item' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
   });
 });
