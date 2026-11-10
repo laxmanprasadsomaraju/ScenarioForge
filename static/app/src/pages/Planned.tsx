@@ -11,20 +11,9 @@ interface PlannedScreen {
   meanwhile: { label: string; route: RouteId };
 }
 
-export type PlannedId = 'plans' | 'readiness' | 'crisis-room';
+export type PlannedId = 'readiness' | 'crisis-room';
 
 export const PLANNED: Record<PlannedId, PlannedScreen> = {
-  plans: {
-    title: 'Recovery plans',
-    lead: 'Runbooks from Confluence and the services they recover.',
-    milestone: 'M2',
-    will: [
-      'Read recovery runbooks from Confluence with your permissions.',
-      'Link each runbook step to the services and providers it depends on.',
-      'Show which recent Jira changes touch those dependencies.',
-    ],
-    meanwhile: { label: 'See the demo runbook in a rehearsal', route: 'simulations' },
-  },
   readiness: {
     title: 'Readiness checks',
     lead: 'Evidence-backed checks that a recovery plan still works after a change.',

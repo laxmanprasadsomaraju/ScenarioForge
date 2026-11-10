@@ -1043,6 +1043,40 @@ code {
   font-weight: 600;
 }
 
+.field-help {
+  min-height: 1lh;
+  font-size: var(--text-xs);
+  color: var(--color-error);
+}
+.page-title {
+  font-family: var(--font-body);
+  white-space: normal;
+  text-align: left;
+}
+.procedure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+.procedure-steps {
+  font-size: var(--text-md);
+  gap: var(--space-xs);
+  max-width: 75ch;
+}
+.procedure-facts {
+  margin-top: var(--space-md);
+}
+.procedure-excerpt {
+  margin: 0;
+  padding-left: var(--space-sm);
+  border-left: 2px solid var(--color-rule-strong);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  max-width: 75ch;
+  white-space: pre-line;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 75rem) {
   .rehearsal-grid {

@@ -16,6 +16,9 @@ const ReportsPage = lazy(() => import('./pages/Reports').then((m) => ({ default:
 const SettingsPage = lazy(() =>
   import('./pages/Settings').then((m) => ({ default: m.SettingsPage })),
 );
+const RecoveryPlansPage = lazy(() =>
+  import('./pages/RecoveryPlans').then((m) => ({ default: m.RecoveryPlansPage })),
+);
 const PlannedPage = lazy(() => import('./pages/Planned').then((m) => ({ default: m.PlannedPage })));
 
 function Screen() {
@@ -26,6 +29,7 @@ function Screen() {
     case 'changes':
       return <ChangesPage />;
     case 'plans':
+      return <RecoveryPlansPage />;
     case 'readiness':
     case 'crisis-room':
       return <PlannedPage id={route.id} />;

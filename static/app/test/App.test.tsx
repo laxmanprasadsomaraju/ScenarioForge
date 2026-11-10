@@ -72,7 +72,6 @@ describe('Rehearsal', () => {
 
 describe('Planned screens', () => {
   it.each([
-    ['Recovery plans', 'M2', 'See the demo runbook in a rehearsal', 'Recovery rehearsal'],
     ['Readiness checks', 'M3', 'Review recent Jira changes', 'Changes'],
     ['Crisis room', 'M7', 'Rehearse solo with the demo scenario', 'Recovery rehearsal'],
   ])('%s says Planned for %s and offers a working alternative', async (label, m, action, dest) => {

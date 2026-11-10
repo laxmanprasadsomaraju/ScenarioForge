@@ -10,7 +10,12 @@ const SOURCES: { name: string; status: string; detail: string }[] = [
     status: 'Checking',
     detail: 'Issue search and your own profile, read only, as you.',
   },
-  { name: 'Confluence', status: 'Not connected', detail: 'Recovery runbooks, planned for M2.' },
+  {
+    name: 'Confluence',
+    status: 'In testing',
+    detail:
+      'Recovery runbook search and page steps, read only, as you. Being verified in a separate test environment.',
+  },
   {
     name: 'Jira Service Management',
     status: 'Not connected',

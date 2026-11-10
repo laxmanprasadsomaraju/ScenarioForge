@@ -52,6 +52,62 @@ export async function previewCall(
       },
     };
   }
+  if (functionKey === 'listRecoveryPages') {
+    return {
+      ok: true,
+      data: {
+        pages:
+          mode === 'empty'
+            ? []
+            : [
+                {
+                  id: '1001',
+                  title: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+                  spaceKey: 'SFDEMO',
+                  lastUpdated: iso(5),
+                  webuiPath: '/spaces/SFDEMO/pages/1001',
+                },
+                {
+                  id: '1002',
+                  title: '[DEMO] RB-DB-02 Database failover runbook',
+                  spaceKey: 'SFDEMO',
+                  lastUpdated: iso(30),
+                  webuiPath: '/spaces/SFDEMO/pages/1002',
+                },
+              ],
+        truncated: false,
+        fetchedAt: iso(0),
+        cql: 'type = page AND (text ~ "runbook" OR text ~ "recovery")',
+      },
+    };
+  }
+  if (functionKey === 'getRecoveryProcedure') {
+    return {
+      ok: true,
+      data: {
+        pageId: '1001',
+        title: '[DEMO] RB-AUTH-01 Customer sign-in recovery',
+        spaceId: '1',
+        lastUpdated: iso(5),
+        webuiPath: '/spaces/SFDEMO/pages/1001',
+        excerpt: 'Preview fixture text.',
+        excerptTruncated: false,
+        steps: [
+          { order: 1, instruction: 'Confirm elevated sign-in failures.', dependsOn: [] },
+          { order: 2, instruction: 'Check the primary IdP status page.', dependsOn: [] },
+          { order: 3, instruction: 'Fail over to LegacyAuth.', dependsOn: [] },
+        ],
+        stepSource: 'ordered-list',
+        evidence: {
+          id: 'preview',
+          origin: 'live',
+          kind: 'confluence-page',
+          title: 'Preview fixture',
+          retrievedAt: iso(0),
+        },
+      },
+    };
+  }
   if (functionKey === 'getConnectionStatus') {
     return {
       ok: true,
