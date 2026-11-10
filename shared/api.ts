@@ -121,3 +121,10 @@ export interface RecoveryProcedureExcerpt {
  * re-exported here so the UI can import every resolver type from one place.
  */
 export type { AnalyzeChangeRequest, AnalyzeChangeResponse, ChangeAnalysis } from './analysis/types';
+
+/* Readiness graph (M4). The contract lives in shared/graph. */
+export type {
+  GetReadinessGraphRequest,
+  GetReadinessGraphResponse,
+  ReadinessGraph,
+} from './graph/types';

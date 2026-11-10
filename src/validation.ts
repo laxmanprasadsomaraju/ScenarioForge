@@ -1,4 +1,5 @@
 import type { AnalyzeChangeRequest } from '../shared/analysis/types';
+import type { GetReadinessGraphRequest } from '../shared/graph/types';
 import type {
   GetRecoveryProcedureRequest,
   ListChangesRequest,
@@ -186,6 +187,16 @@ export function parseAnalyzeChangeRequest(payload: unknown): Validated<AnalyzeCh
     return { ok: false, message: 'issueKey must be a Jira issue key such as OPS-123.' };
   }
   return { ok: true, value: { issueKey } };
+}
+
+/**
+ * Validates a `getReadinessGraph` payload. Same rule as `analyzeChange`: only
+ * `issueKey` is read, and it must be a Jira issue key.
+ */
+export function parseGetReadinessGraphRequest(
+  payload: unknown,
+): Validated<GetReadinessGraphRequest> {
+  return parseAnalyzeChangeRequest(payload);
 }
 
 /**

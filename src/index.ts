@@ -8,8 +8,10 @@ import type { ConfluenceGateway } from './confluence/client';
 import { getRecoveryProcedure, searchRecoveryPages } from './confluence/client';
 import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
+import { getReadinessGraph } from './graph/getReadinessGraph';
 import {
   parseAnalyzeChangeRequest,
+  parseGetReadinessGraphRequest,
   parseGetRecoveryProcedureRequest,
   parseListChangesRequest,
   parseListRecoveryPagesRequest,
@@ -105,6 +107,19 @@ resolver.define('analyzeChange', ({ payload }) =>
       return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
     }
     return analyzeChange(
+      { jira: forgeJira, confluence: forgeConfluence, engine: analysisEngine },
+      parsed.value,
+    );
+  }),
+);
+
+resolver.define('getReadinessGraph', ({ payload }) =>
+  guarded(async () => {
+    const parsed = parseGetReadinessGraphRequest(payload);
+    if (!parsed.ok) {
+      return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
+    }
+    return getReadinessGraph(
       { jira: forgeJira, confluence: forgeConfluence, engine: analysisEngine },
       parsed.value,
     );
