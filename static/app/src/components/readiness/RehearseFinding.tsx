@@ -34,7 +34,7 @@ export function RehearseFinding({ analysis }: { analysis: ChangeAnalysis }) {
       return;
     }
     setError(null);
-    selectGenerated(result.rehearsal);
+    selectGenerated(result.rehearsal, analysis);
     navigate('simulations');
   };
 
