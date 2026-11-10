@@ -1,3 +1,4 @@
+import { QuestionCircleIcon } from '../components/icons';
 import { useCallback } from 'react';
 import { Button } from '../components/Button';
 import { api } from '../lib/api';
@@ -9,7 +10,6 @@ import { ConnectionStatusLine } from '../components/Connection';
 import { IssueTable } from '../components/IssueTable';
 import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/PageHeader';
-import QuestionCircleIcon from '@atlaskit/icon/core/question-circle';
 import { DataRegion } from '../components/DataRegion';
 import { EmptyState } from '../components/States';
 import { authBackupRetiredScenario } from '@shared/simulation/scenarios/authBackupRetired';

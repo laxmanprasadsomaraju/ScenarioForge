@@ -1,4 +1,18 @@
 import {
+  BookWithBookmarkIcon,
+  ChangesIcon,
+  ClockIcon,
+  CrossIcon,
+  HomeIcon,
+  ListBulletedIcon,
+  MenuIcon,
+  PeopleGroupIcon,
+  SearchIcon,
+  SettingsIcon,
+  SidebarCollapseIcon,
+  SidebarExpandIcon,
+} from './icons';
+import {
   useCallback,
   useEffect,
   useRef,
@@ -6,18 +20,6 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import HomeIcon from '@atlaskit/icon/core/home';
-import ChangesIcon from '@atlaskit/icon/core/changes';
-import SearchIcon from '@atlaskit/icon/core/search';
-import BookWithBookmarkIcon from '@atlaskit/icon/core/book-with-bookmark';
-import ClockIcon from '@atlaskit/icon/core/clock';
-import PeopleGroupIcon from '@atlaskit/icon/core/people-group';
-import ListBulletedIcon from '@atlaskit/icon/core/list-bulleted';
-import SettingsIcon from '@atlaskit/icon/core/settings';
-import SidebarCollapseIcon from '@atlaskit/icon/core/sidebar-collapse';
-import SidebarExpandIcon from '@atlaskit/icon/core/sidebar-expand';
-import MenuIcon from '@atlaskit/icon/core/menu';
-import CrossIcon from '@atlaskit/icon/core/cross';
 import { ROUTES, type NavGroup, type RouteDef, type RouteId } from '../lib/routes';
 import { useRouter } from '../lib/router';
 import { previewMode } from '../lib/preview';

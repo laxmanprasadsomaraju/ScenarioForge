@@ -1,5 +1,5 @@
+import { QuestionCircleIcon } from '../icons';
 import type { Ref } from 'react';
-import QuestionCircleIcon from '@atlaskit/icon/core/question-circle';
 import { StatusBadge } from '../Badge';
 import { Button } from '../Button';
 import type {

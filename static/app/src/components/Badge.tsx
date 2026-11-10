@@ -1,9 +1,11 @@
+import {
+  QuestionCircleIcon,
+  StatusErrorIcon,
+  StatusInformationIcon,
+  StatusSuccessIcon,
+  StatusWarningIcon,
+} from './icons';
 import type { ReactNode } from 'react';
-import StatusSuccessIcon from '@atlaskit/icon/core/status-success';
-import StatusErrorIcon from '@atlaskit/icon/core/status-error';
-import StatusWarningIcon from '@atlaskit/icon/core/status-warning';
-import StatusInformationIcon from '@atlaskit/icon/core/status-information';
-import QuestionCircleIcon from '@atlaskit/icon/core/question-circle';
 
 /**
  * Status tones (docs/UI_REDESIGN_PHASE_A.md § 5.2). The word always carries
