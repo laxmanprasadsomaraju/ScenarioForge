@@ -2,10 +2,19 @@
 /* ---------- Shell ----------
  * Desktop: a sidebar (248px) the user can collapse to a 64px icon rail; on
  * narrow desktops (60 to 80rem) the rail is the default. Under 60rem: an app
- * bar with a menu button and a drawer that closes on Escape. */
+ * bar with a menu button and a modal drawer.
+ *
+ * Height: Forge auto-sizes Custom UI iframes to their content unless the module
+ * sets viewportSize (global:fullPage has none), and a host may also give the
+ * frame a fixed height. So nothing here depends on a vh height: the sidebar is
+ * sticky and capped at the frame's height. In a fixed-height frame it stays put
+ * while the page scrolls, its nav scrolls inside it and the footer stays in
+ * view; in a content-sized frame it sits at the top, footer right under the
+ * nav, and adds no height of its own (no resize loop). */
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  align-items: start;
   background: var(--sf-surface);
 }
 .shell[data-rail='true'] {
@@ -40,14 +49,53 @@
 }
 
 .sidebar {
-  /* Forge sizes the iframe to its content, so the sidebar stretches with the page instead of sticking. */
+  position: sticky;
+  /* Sticky in its own column; the app bar (under 60rem) and the rehearsal bar never share it. */
+  inset-block-start: 0;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
   min-width: 0;
-  padding: var(--space-md) var(--space-sm) var(--space-lg);
+  max-height: 100vh;
+  max-height: 100dvh;
+  padding: var(--space-md) var(--space-sm) var(--space-md);
   background: var(--sf-surface-sunken);
   border-right: var(--rule-hair) solid var(--sf-border);
+}
+/* The grid row is as tall as the screen; the sunken column runs its full height behind the sticky sidebar. */
+.shell::before {
+  content: '';
+  grid-column: 1;
+  grid-row: 1;
+  align-self: stretch;
+  background: var(--sf-surface-sunken);
+  border-right: var(--rule-hair) solid var(--sf-border);
+}
+.sidebar,
+.main {
+  grid-row: 1;
+}
+.sidebar {
+  grid-column: 1;
+}
+.main {
+  grid-column: 2;
+}
+.sidebar-head,
+.sidebar-foot {
+  flex: none;
+}
+/* Only the destinations scroll, so the head and footer are always reachable. */
+.sidebar-nav {
+  display: grid;
+  align-content: start;
+  gap: var(--space-md);
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 .sidebar-head {
   display: flex;
@@ -163,11 +211,41 @@
   white-space: nowrap;
 }
 .sidebar-foot {
+  position: relative;
   display: grid;
-  gap: var(--space-md);
-  margin-top: auto;
-  padding-top: var(--space-md);
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
   border-top: var(--rule-hair) solid var(--sf-border);
+}
+.theme-menu {
+  position: relative;
+  display: grid;
+}
+.theme-menu-button[aria-expanded='true'] {
+  background: var(--sf-surface-pressed);
+  color: var(--sf-text);
+}
+/* Opens beside the rail, over the content, anchored to the button's bottom edge. */
+.theme-menu-panel {
+  position: absolute;
+  left: calc(100% + var(--space-xs));
+  bottom: 0;
+  z-index: 4;
+  width: max-content;
+  max-width: 16rem;
+  padding: var(--space-sm);
+  border-radius: var(--radius-control);
+  background: var(--sf-surface-raised, var(--sf-surface));
+  box-shadow: var(--sf-shadow-overlay);
+}
+.theme-menu-panel[hidden] {
+  display: none;
+}
+.theme-menu-panel .appearance-compact .appearance-legend {
+  padding-inline: 0;
+}
+.scrim[hidden] {
+  display: none;
 }
 
 /* The rail: icons only, names in the link's accessible name and title. */
@@ -178,10 +256,13 @@
 .shell[data-rail='true'] .sidebar-head {
   justify-content: center;
 }
+.shell[data-rail='true'] .sidebar-nav {
+  scrollbar-width: none;
+}
 .shell[data-rail='true'] .brand-sidebar,
 .shell[data-rail='true'] .nav-group-label,
 .shell[data-rail='true'] .nav-upcoming,
-.shell[data-rail='true'] .sidebar .appearance {
+.shell[data-rail='true'] .sidebar-foot > .appearance {
   display: none;
 }
 .shell[data-rail='true'] .nav-link {
@@ -222,12 +303,26 @@
 @media (max-width: 60rem) {
   :root {
     --scroll-pad: calc(var(--topbar-h) + var(--space-md));
+    --app-bar-offset: var(--topbar-h);
   }
   .shell,
   .shell[data-rail='true'] {
     grid-template-columns: minmax(0, 1fr);
   }
+  .shell::before {
+    content: none;
+  }
+  .main {
+    grid-column: 1;
+    grid-row: 2;
+  }
   .topbar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 5;
+    grid-row: 1;
+    padding-inline: max(var(--gutter), env(safe-area-inset-left))
+      max(var(--gutter), env(safe-area-inset-right));
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -244,13 +339,29 @@
     font-size: var(--text-md);
     font-weight: 600;
   }
-  /* The drawer: always full labels, whatever the desktop rail choice. */
+  /* The drawer: a modal panel under the app bar, always with full labels. */
   .sidebar,
   .shell[data-rail='true'] .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    z-index: 5;
     display: none;
-    padding: var(--space-md) var(--gutter) var(--space-lg);
-    border-right: 0;
-    border-bottom: var(--rule-hair) solid var(--sf-border);
+    width: min(20rem, 100%);
+    max-height: calc(100dvh - var(--topbar-h));
+    padding: var(--space-md) var(--space-md) max(var(--space-md), env(safe-area-inset-bottom))
+      max(var(--space-md), env(safe-area-inset-left));
+    border-right: var(--rule-hair) solid var(--sf-border);
+    box-shadow: var(--sf-shadow-overlay);
+  }
+  .scrim {
+    position: fixed;
+    inset: var(--topbar-h) 0 0;
+    z-index: 4;
+    background: var(--sf-blanket);
+  }
+  .theme-menu {
+    display: none;
   }
   .sidebar[data-open='true'],
   .shell[data-rail='true'] .sidebar[data-open='true'] {
@@ -263,7 +374,7 @@
   .shell[data-rail='true'] .nav-upcoming {
     display: revert;
   }
-  .shell[data-rail='true'] .sidebar .appearance {
+  .shell[data-rail='true'] .sidebar-foot > .appearance {
     display: grid;
   }
   .shell[data-rail='true'] .nav-link {
