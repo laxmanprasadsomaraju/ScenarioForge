@@ -4,23 +4,23 @@ Update at the end of every session. Last update: 2026-11-11 (Lane QA, branch `qa
 
 ## Key branches
 
-| Branch                     | SHA                 | Role                                                                                                                                          |
-| -------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `feature/m0-m1-foundation` | `d279245`           | Remote default branch; M1 as deployed to `development`                                                                                        |
-| `integration/lanes-1`      | `26076b1`           | Integration: lanes, UI redesign, sidebar fix, M7 core, M9 TWG (flag off), Marketplace drafts; `confluence-test` 2.6.0 deployed from `1a517f9` |
-| `qa/review-1`              | on top of `26076b1` | Lane QA review fixes (combined JSM + TWG service cap)                                                                                         |
-| `m9/mcp`                   | `c2b28fc`           | M9 MCP; Code complete, not merged (needs `rovo:mcp` approval)                                                                                 |
-| `rovo-test/build`          | `77e1262`           | M6 Phase 1 (probes) + acceptance doc; rovo-test only                                                                                          |
-| `rovo-test/phase2`         | `abbe8d6`           | M6 Phase 2 agents; deployed to `rovo-test`; never merge into other envs                                                                       |
-| `ui/sidebar-fix`           | `980b2db`           | Merged at `1a517f9`; Deployed to `confluence-test` 2.6.0; awaiting owner frame-mode check                                                     |
-| `m7/crisis-room-core`      | `0eabd5c`           | M7 core engine; merged at `c91f644`; Automated tests passed                                                                                   |
-| `docs/project-memory`      | this PR             | Project memory and milestone audit                                                                                                            |
+| Branch                     | SHA                 | Role                                                                                                                                                |
+| -------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feature/m0-m1-foundation` | `d279245`           | Remote default branch; M1 as deployed to `development`                                                                                              |
+| `integration/lanes-1`      | `26076b1`           | Integration: lanes, UI redesign, sidebar fix, M7 core, M9 TWG (flag off), Marketplace drafts; `confluence-test` 2.6.0 deployed from `1a517f9`       |
+| `qa/review-1`              | on top of `26076b1` | Lane QA review fixes (combined JSM + TWG service cap)                                                                                               |
+| `m9/mcp`                   | `c2b28fc`           | M9 MCP; Code complete, not merged (needs `rovo:mcp` approval)                                                                                       |
+| `rovo-test/build`          | `77e1262`           | M6 Phase 1 (probes) + acceptance doc; rovo-test only                                                                                                |
+| `rovo-test/phase2`         | `abbe8d6`           | M6 Phase 2 agents; deployed to `rovo-test`; never merge into other envs                                                                             |
+| `ui/sidebar-fix`           | `980b2db`           | Merged at `1a517f9`; Deployed to `confluence-test` 2.6.0; Accepted for primary functionality ([UI_SIDEBAR_ACCEPTANCE.md](UI_SIDEBAR_ACCEPTANCE.md)) |
+| `m7/crisis-room-core`      | `0eabd5c`           | M7 core engine; merged at `c91f644`; Automated tests passed                                                                                         |
+| `docs/project-memory`      | this PR             | Project memory and milestone audit                                                                                                                  |
 
 Older lane branches (`lane-*`, `ui/c1…ui/e-polish`, `ui/redesign*`) are merged into `integration/lanes-1`. There is no `main` branch on the remote.
 
 ## Active work
 
-- Sidebar fix Deployed on confluence-test 2.6.0; awaiting owner frame-mode check.
+- Sidebar fix Accepted (6 live checks on confluence-test 2.6.0). Pending, not live-verified: 600px-tall viewport, 200% zoom, drawer focus trap/restore, theme persistence after reload.
 - M7 crisis room: core engine merged (Automated tests passed); UI and Realtime Not started.
 - M9: TWG merged behind `SF_TWG` (off); MCP on `m9/mcp` @ `c2b28fc`; Marketplace drafts merged.
 - Lane QA review on `qa/review-1`.
@@ -29,7 +29,7 @@ Older lane branches (`lane-*`, `ui/c1…ui/e-polish`, `ui/redesign*`) are merged
 ## Pending owner approvals
 
 1. Turn AI on for rovo-test (`SF_ROVO_TEST_AI=enabled`) and spend Rovo credits for the Phase 2 live test (RT2 `M6_PHASE2_TEST_SCRIPT.md`).
-2. Check the sidebar fix in frame mode on `confluence-test` 2.6.0.
+2. Run the four pending sidebar checks on `confluence-test` 2.6.0: 600px-tall viewport, 200% zoom, drawer focus trap/restore, theme persistence after reload.
 3. Any `storage:app` / Rovo modules outside rovo-test (major version, permanent entities).
 4. `write:jira-work` for M8 work-item creation.
 5. Confluence scopes on `development` (or retire `development`).

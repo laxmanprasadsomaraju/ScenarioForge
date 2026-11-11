@@ -31,4 +31,8 @@ M3 → M5 → (M6 storage on rovo-test) → M8 approval/write → M10. M6 Phase 
 | Best Teamwork Graph       | M4 owning-team edges         | 3                   |
 | Best Marketplace app      | Whole app; blocks link share | Owner decision only |
 
+Current bonus readiness: [BONUS_READINESS.md](BONUS_READINESS.md).
+
+UI redesign: sidebar Accepted for primary functionality on `confluence-test` 2.6.0 ([UI_SIDEBAR_ACCEPTANCE.md](UI_SIDEBAR_ACCEPTANCE.md)); pending: 600px-tall viewport, 200% zoom, drawer focus trap/restore, theme persistence after reload.
+
 Feasibility and risks: [BONUS_FEASIBILITY.md](BONUS_FEASIBILITY.md); readiness matrix: [CODEGEIST_REQUIREMENTS.md](CODEGEIST_REQUIREMENTS.md).
