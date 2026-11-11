@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { view } from '@forge/bridge';
 import { parseDeepLink, type ParsedLink } from '@shared/links/deepLink';
-import { bridgeCall } from './preview';
+import { bridgeCall, previewMode } from './preview';
 import { routeForPath, ROUTES, type RouteDef, type RouteId } from './routes';
 
 /** The part of the global page URL after `/scenarioforge`. */
@@ -26,6 +26,8 @@ interface RouterValue {
    * screens still load every record through the user's own resolvers.
    */
   link: ParsedLink;
+  /** The raw query of the current location; screens with their own links parse it strictly. */
+  search: string;
   navigate: (id: RouteId) => void;
   /** Pushes an app path that may carry a query, such as a canonical deep link. */
   navigatePath: (path: string) => void;
@@ -34,6 +36,7 @@ interface RouterValue {
 const RouterContext = createContext<RouterValue>({
   route: ROUTES[0]!,
   link: { kind: 'none' },
+  search: '',
   navigate: () => {},
   navigatePath: () => {},
 });
@@ -74,6 +77,11 @@ export function RouterProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         history.current = null;
+        // Dev preview only: `&path=/crisis-room?room=…` opens an app path directly.
+        if (import.meta.env.DEV && previewMode) {
+          const path = new URLSearchParams(window.location.search).get('path');
+          if (path?.startsWith('/')) setLocation(splitPath(path));
+        }
       });
     return () => unlisten?.();
   }, []);
@@ -96,6 +104,7 @@ export function RouterProvider({ children }: { children: ReactNode }) {
       route: routeForPath(location.pathname),
       // Only Readiness checks and Simulations take links; elsewhere the query is ignored.
       link: parseDeepLink(location.pathname, location.search),
+      search: location.search,
       navigate,
       navigatePath,
     }),

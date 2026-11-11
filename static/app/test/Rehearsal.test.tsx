@@ -68,7 +68,7 @@ describe('Mission briefing', () => {
       'href',
       '/crisis-room',
     );
-    expect(material.getByText(/coming later/)).toBeInTheDocument();
+    expect(material.getByText(/Team rooms need app storage/)).toBeInTheDocument();
   });
 
   it('states the finding confidence for a rehearsal built from a real change', () => {

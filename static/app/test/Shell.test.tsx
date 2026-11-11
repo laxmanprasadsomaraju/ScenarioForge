@@ -63,7 +63,7 @@ describe('Navigation', () => {
       'Readiness checks',
       'Runbooks',
       'Rehearsals',
-      'Crisis room, coming later',
+      'Crisis room',
       'History',
       'Settings',
     ]);

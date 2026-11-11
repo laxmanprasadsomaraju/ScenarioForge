@@ -28,13 +28,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'readiness', path: '/readiness-checks', label: 'Readiness checks', group: 'understand' },
   { id: 'plans', path: '/recovery-plans', label: 'Runbooks', group: 'understand' },
   { id: 'simulations', path: '/simulations', label: 'Rehearsals', group: 'rehearse' },
-  {
-    id: 'crisis-room',
-    path: '/crisis-room',
-    label: 'Crisis room',
-    group: 'rehearse',
-    upcoming: true,
-  },
+  { id: 'crisis-room', path: '/crisis-room', label: 'Crisis room', group: 'rehearse' },
   { id: 'reports', path: '/reports', label: 'History', group: 'verify' },
   { id: 'settings', path: '/settings', label: 'Settings', group: 'footer' },
 ];

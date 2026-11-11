@@ -194,7 +194,7 @@ function parseSubmission(value: unknown): Parsed<RehearsalSubmission> {
   };
 }
 
-function parseSource(value: unknown): Parsed<RehearsalSourceRef> {
+export function parseSource(value: unknown): Parsed<RehearsalSourceRef> {
   const record = asRecord(value);
   if (!record) return invalid('source is required.');
   if (record.kind === 'demo') {
@@ -569,6 +569,8 @@ export function createHistoryResolvers(deps: HistoryResolverDeps) {
   }
 
   return {
+    /** Rebuilds a demo or generated scenario as the caller (also used by the Crisis Room). */
+    trustedScenario,
     listRehearsalHistory,
     getRehearsalRun,
     getRetestComparison,

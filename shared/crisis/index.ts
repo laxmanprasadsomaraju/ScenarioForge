@@ -21,3 +21,5 @@ export type { CreateRoomInput } from './room';
 export { roleView, ROLE_EVIDENCE } from './views';
 export type { ViewResult } from './views';
 export { buildDebrief, buildAfterActionReport } from './debrief';
+export { buildTimeline, ROLE_NAME } from './timeline';
+export * from './api';

@@ -19,6 +19,17 @@ import type {
   RecoveryProcedureExcerpt,
 } from '@shared/api';
 import type { AnalyzeChangeRequest, AnalyzeChangeResponse } from '@shared/analysis/types';
+import type {
+  CrisisCommandRequest,
+  CrisisCreateRoomRequest,
+  CrisisGate,
+  CrisisInviteRequest,
+  CrisisInviteResponse,
+  CrisisRoomResponse,
+  CrisisSaveRequest,
+  CrisisViewRequest,
+  CrisisViewResponse,
+} from '@shared/crisis/api';
 import type { GetReadinessGraphRequest, GetReadinessGraphResponse } from '@shared/graph/types';
 
 /**
@@ -28,6 +39,11 @@ import type { GetReadinessGraphRequest, GetReadinessGraphResponse } from '@share
  */
 async function call<T>(functionKey: string, payload?: object): Promise<ApiResult<T>> {
   if (import.meta.env.DEV && previewMode) {
+    if (functionKey.startsWith('crisis')) {
+      // Dev only: the real crisis resolvers over in-memory storage.
+      const { crisisPreviewCall } = await import('../dev/crisisPreview');
+      return (await crisisPreviewCall(functionKey, previewMode, payload)) as ApiResult<T>;
+    }
     const { previewCall } = await import('../dev/previewFixtures');
     return (await previewCall(functionKey, previewMode, payload)) as ApiResult<T>;
   }
@@ -72,4 +88,15 @@ export const api = {
   saveRehearsalRun: (request: SaveRehearsalRunRequest) =>
     call<SaveRehearsalResponse>('saveRehearsalRun', request),
   saveRetest: (request: SaveRetestRequest) => call<SaveRehearsalResponse>('saveRetest', request),
+  // Crisis room. Identity, ids, tokens and clocks are all server-side.
+  crisisStatus: () => call<{ status: 'AVAILABLE' } | CrisisGate>('crisisStatus'),
+  crisisOpenRoom: (request: CrisisCreateRoomRequest) =>
+    call<CrisisRoomResponse>('crisisOpenRoom', request),
+  crisisView: (request: CrisisViewRequest) => call<CrisisViewResponse>('crisisView', request),
+  crisisCommand: (request: CrisisCommandRequest) =>
+    call<CrisisRoomResponse>('crisisCommand', request),
+  crisisInviteToken: (request: CrisisInviteRequest) =>
+    call<CrisisInviteResponse>('crisisInviteToken', request),
+  crisisSaveDebrief: (request: CrisisSaveRequest) =>
+    call<SaveRehearsalResponse>('crisisSaveDebrief', request),
 };
