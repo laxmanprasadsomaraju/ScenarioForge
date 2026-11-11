@@ -583,5 +583,8 @@ export type HistoryResolvers = ReturnType<typeof createHistoryResolvers>;
 
 function logVerification(kind: 'run' | 'retest', problems: number) {
   // Counts only: problem text can quote stored content.
-  console.warn(`History ${kind} failed verification`, { problems });
+  console.warn(
+    kind === 'run' ? 'History run failed verification' : 'History retest failed verification',
+    { problems: Number(problems) },
+  );
 }

@@ -334,10 +334,7 @@ export function denialToFailure(denial: Extract<ReserveResult, { ok: false }>): 
   }
 }
 
-function logSettleProblem(what: string): void {
-  // Ids and text stay out of logs; an unsettled reservation is charged at its estimate.
-  console.error('Usage governor', what);
-}
+// Ids and text stay out of logs; an unsettled reservation is charged at its estimate.
 
 async function governed<T extends ActionSuccess>(
   deps: AgentActionDeps,
