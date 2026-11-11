@@ -1,0 +1,60 @@
+# VARIANT, NOT DEPLOYED, NOT THE ROOT MANIFEST. Nothing reads this file unless
+# someone copies it over manifest.yml by hand. Reference: docs/proposals/MANIFEST_VARIANTS.md
+# M8 write-test: web app only, for its OWN Forge environment (for example
+# `write-test`). `write:jira-work` appears ONLY in this variant. Remediation
+# approval/audit records reuse `rehearsal-history` (key prefix remediation-item:,
+# src/platform/storageFactory.ts remediationStorage), so no new entity.
+# Flags: SF_STORAGE=enabled, SF_REMEDIATION_WRITE=enabled. SF_AI, SF_CRISIS,
+# SF_TWG, SF_USER_DAILY_CAP stay unset.
+modules:
+  global:fullPage:
+    - key: scenarioforge-global-full-page
+      title: ScenarioForge
+      resource: main
+      resolver:
+        function: resolver
+      routePrefix: scenarioforge
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/app/build
+    tunnel:
+      port: 3000
+permissions:
+  scopes:
+    - read:jira-work
+    - read:jira-user
+    # Remediation preparation and the approval check re-read the change and its
+    # runbook (src/index.ts remediationDeps uses forgeConfluence).
+    - search:confluence
+    - read:page:confluence
+    - storage:app
+    # POST /rest/api/3/issue, /issueLink, /issue/{key}/remotelink
+    # (src/remediation/forgeWrite.ts). Present ONLY in this variant.
+    - write:jira-work
+  content:
+    styles:
+      - unsafe-inline
+app:
+  storage:
+    # PROPOSED, NOT COMMITTED. Entity names are permanent once deployed.
+    entities:
+      # Rehearsal history (sfh1:*) and remediation records (remediation-item:*).
+      - name: rehearsal-history
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/113a7a88-0d52-4161-b72e-791a83bd9355
+  compatibility:
+    jira:
+      required: true
+    confluence:
+      required: false
