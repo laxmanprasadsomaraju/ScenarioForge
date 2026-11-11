@@ -17,7 +17,7 @@ import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
 import { forgeRemediationJira } from './remediation/forge';
 import { handleCreateRemediationWorkItem } from './remediation/create';
-import { productionRemediationStorage, productionRemediationWriter } from './remediation/gateways';
+import { remediationCreateWiring } from './remediation/gateways';
 import { checkRemediationApproval, prepareRemediationRequest } from './remediation/prepare';
 import {
   parseCheckRemediationApprovalRequest,
@@ -164,8 +164,9 @@ resolver.define('getReadinessGraph', ({ payload, context }) =>
 );
 
 // M8: preparation is read-only (GETs as the user). The create resolver is
-// compiled in but hard-disabled: the production writer is null, so it answers
-// WRITE_NOT_PERMITTED before reading anything (src/remediation/gateways.ts).
+// compiled in but hard-disabled: unless SF_REMEDIATION_WRITE and SF_STORAGE are
+// both exactly 'enabled' the writer is null and it answers WRITE_NOT_PERMITTED
+// before reading anything (src/remediation/gateways.ts). No write scope either.
 const remediationDeps = {
   jira: forgeRemediationJira,
   confluence: forgeConfluence,
@@ -204,8 +205,7 @@ resolver.define('createRemediationWorkItem', ({ payload, context }) =>
     handleCreateRemediationWorkItem(
       {
         ...remediationDeps,
-        writer: productionRemediationWriter(),
-        storage: productionRemediationStorage(),
+        ...remediationCreateWiring(),
       },
       payload,
       context?.accountId,

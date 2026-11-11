@@ -166,3 +166,24 @@ export function historyStore(options?: PlatformOptions): HistoryStore | null {
   if (!storage) return null;
   return new HistoryStore({ storage, now: options?.now });
 }
+
+/**
+ * M8 write gateway opt-in, on top of `SF_STORAGE`. Exactly `enabled`, else off.
+ * Server-side only. Even when set, the manifest has no `write:jira-work`
+ * scope, so Jira would refuse every write.
+ */
+export const REMEDIATION_WRITE_FLAG = 'SF_REMEDIATION_WRITE';
+
+export function remediationWriteEnabled(env: PlatformEnv = process.env): boolean {
+  return env[REMEDIATION_WRITE_FLAG] === 'enabled';
+}
+
+/**
+ * Approval and audit records for remediation creates. They reuse the existing
+ * `rehearsal-history` entity under the `remediation-item:` key prefix (no new
+ * manifest entity). Needs SF_STORAGE and SF_REMEDIATION_WRITE.
+ */
+export function remediationStorage(options?: PlatformOptions): StorageAdapter | null {
+  if (!remediationWriteEnabled(envOf(options))) return null;
+  return entityStorage(HISTORY_ENTITY, options);
+}

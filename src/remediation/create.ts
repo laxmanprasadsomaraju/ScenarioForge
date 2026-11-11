@@ -29,10 +29,11 @@ import { parseCreateRemediationWorkItemRequest } from './validation';
  * M8 creation adapter: turns an approved, fingerprinted request into a Jira
  * work item, as the user, exactly once.
  *
- * Hard-disabled in every build: the write gateway is injected and production
- * passes null (src/remediation/gateways.ts), so the resolver answers
- * WRITE_NOT_PERMITTED before reading anything. There is no Forge write
- * implementation anywhere in the codebase; `write:jira-work` is not requested.
+ * Hard-disabled in every deployed build: the write gateway is injected and
+ * production passes null unless SF_REMEDIATION_WRITE and SF_STORAGE are both
+ * `enabled` (src/remediation/gateways.ts), so the resolver answers
+ * WRITE_NOT_PERMITTED before reading anything. The manifest also requests no
+ * `write:jira-work`, so a mis-set flag still cannot write.
  *
  * Order when a writer and a store exist:
  * 1. Rebuild the draft and exact request server-side (prepareRemediationRequest,
@@ -67,6 +68,8 @@ export interface CreateRemediationDeps extends PrepareRemediationDeps {
   storage: StorageAdapter | null;
 }
 
+/** A `creating`/`unknown` record this old with no labelled work item is released as failed. */
+export const LOCK_EXPIRY_MS = 15 * 60 * 1000;
 export const MAX_APPROVAL_AGE_MS = 24 * 60 * 60 * 1000;
 /** Clock difference tolerated for an approval timestamp slightly ahead of the server. */
 export const APPROVAL_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -322,6 +325,36 @@ export async function createRemediationWorkItem(
       return fail('CONFLICT', `${dup.data.reason} A person needs to decide which one to keep.`);
     }
     record.audit.push({ step: 'duplicate-check', outcome: 'none', at: at(), actorAccountId: null });
+    // Lock expiry: a `creating`/`unknown` record older than LOCK_EXPIRY_MS with
+    // no work item carrying the label means the process died (or the create was
+    // never accepted). Release it as failed so a fresh approval can retry; the
+    // label search above already ran, so an accepted create would have been adopted.
+    const since =
+      record.state.status === 'creating'
+        ? record.state.startedAt
+        : record.state.status === 'unknown'
+          ? record.state.at
+          : null;
+    if (since !== null && now().getTime() - Date.parse(since) > LOCK_EXPIRY_MS) {
+      const moved = move(record.state, {
+        kind: 'failed',
+        message: 'The earlier create attempt expired without creating a work item.',
+        at: at(),
+      });
+      record.state = moved.state;
+      record.audit.push({
+        step: 'lock',
+        outcome: 'expired',
+        at: at(),
+        actorAccountId: null,
+        transition: moved.audit,
+      });
+      if (!(await save(record))) return conflict();
+      return fail(
+        'CONFLICT',
+        'The earlier create attempt expired and no work item was found. Create again to retry.',
+      );
+    }
     if (!(await save(record))) return conflict();
     return respond(
       record,

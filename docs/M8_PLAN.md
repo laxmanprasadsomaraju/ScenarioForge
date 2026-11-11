@@ -212,3 +212,13 @@ Browser path written (Code complete, Automated tests passed): review proposed fi
 ### 13.1 Duplicate check before approval (Automated tests passed)
 
 `RemediationPreview` now takes an optional read-only `checker` (`makeDuplicateChecker`, server `prepareRemediationRequest`, GETs only). "Check for duplicates" shows No existing / Existing KEY / Ambiguous / Not assessed, and the result is forgotten when the draft changes. The exact draft was already shown above the approval controls. "Runbook updated" now reads "Not implemented: this build does not read runbook changes" (no stored state exists to support it). Creation stays hard-disabled.
+
+## 14. Status 2026-11-11 (Lane A, `m8/write-gateway`)
+
+Code complete, Automated tests passed. Nothing deployed, no real Jira call, no manifest or package change (diff vs 606347c is empty).
+
+- Write gateway `src/remediation/writeGateway.ts`: exactly POST `/rest/api/3/issue`, `/rest/api/3/issueLink`, `/rest/api/3/issue/{key}/remotelink`; any other method or path throws before a request. AbortSignal timeout (default 10 s). Strict statuses (201, remote link 200/201); an unexpected success status on the create is treated as unknown (adopted by label, never a second issue), on a link as a recorded failed link. Forge transport `src/remediation/forgeWrite.ts` uses `asUser()` only.
+- Factory `src/remediation/gateways.ts` (`remediationCreateWiring`): writer and store exist only when the server-side variable `SF_REMEDIATION_WRITE` and `SF_STORAGE` are both exactly `enabled`; otherwise both null and the resolver answers WRITE_NOT_PERMITTED before reading anything. The manifest also has no `write:jira-work`, so a mis-set flag still cannot write.
+- Records: `remediation-item:<label>` in the existing `rehearsal-history` entity (no new manifest entity), versioned conditional writes, ids-only audit. In-memory adapter for tests.
+- Lock expiry: a `creating`/`unknown` record older than 15 minutes with no labelled work item is released as `failed` (audit step `lock`, outcome `expired`) so a fresh create can retry; a labelled item is adopted instead.
+- Not done: "Runbook updated" remains not implemented. Real Jira behaviour (statuses, createmeta fields, remote link semantics) is unverified until a separately approved `write-test` environment (proposals/M8_TEST_DEPLOY.md).
