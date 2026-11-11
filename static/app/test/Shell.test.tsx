@@ -204,3 +204,15 @@ describe('Navigation', () => {
     vi.restoreAllMocks();
   });
 });
+
+describe('Skip link', () => {
+  it('is the first tab stop and moves focus to the main region', async () => {
+    const user = userEvent.setup();
+    render(<App hostTheming={Promise.resolve(true)} />);
+    await user.tab();
+    const skip = screen.getByRole('link', { name: 'Skip to main content' });
+    expect(skip).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('main')).toHaveFocus();
+  });
+});

@@ -256,6 +256,16 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="shell" data-rail={rail}>
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          event.preventDefault();
+          mainRef.current?.focus();
+        }}
+      >
+        Skip to main content
+      </a>
       <header className="topbar">
         <span className="brand">
           <Mark />
@@ -342,7 +352,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <main ref={mainRef} className="main" tabIndex={-1}>
+      <main ref={mainRef} id="main-content" className="main" tabIndex={-1}>
         {import.meta.env.DEV && previewMode ? (
           <p className="preview-banner" role="note">
             Development preview with fixture data ({previewMode}). Nothing here comes from Jira.
