@@ -107,3 +107,12 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Status: **Automated tests passed** (1113 root, 186 app, prettier, sloplint, audit, forge lint 0 errors with the `storage:app` major-version notice). Independent review: no high or medium defects. Manifest, scopes, entities and package files identical to 13513d5. Not deployed; not live verified; not merged into `integration/lanes-1` or `main`.
 - Review notes: one extra `serverInfo` call per successful action (no caching); crisis timeline shows actor account ids to room participants who already receive them in `participants`; `logHygiene` test is narrow.
 - Pending owner approvals: deep-link deploy to `rovo-test`; M7 storage test; M8 `write-test`; MCP test; entity choices; Marketplace option and Devpost check; API token revocation.
+
+## Update 2026-11-11 (lead, release/judged-full 054195d)
+
+- `release/judged-full` is now `054195d` (fast-forward from `606347c`; rollback point `606347c`, earlier `13513d5`). Contents: M8 write gateway (`m8/write-gateway` 0dbb5c1), security hardening (`sec/hardening` 5bfd27d), release quality (`release/quality` 96713e7), merged as `release/judged-full-integrate2` 9a0a4fd, plus four low-severity review fixes (`review/integrate2` 054195d).
+- Status: **Automated tests passed** (1160 root, 199 app, prettier, sloplint, audit, forge lint 0 errors with the `storage:app` major-version notice). Manifest and package files identical to `606347c`. Independent review found no way to write to Jira unless `SF_REMEDIATION_WRITE` and `SF_STORAGE` are both exactly `enabled`, and the manifest has no write scope. Not deployed, not live verified.
+- Review fixes: stored work item no longer revealed to a different request for the same label; log checker gaps closed; audit lines capped at 200; crisis assign-role/hand-off check seating first.
+- Open design limit: approval records (`approvedAt`, `approver`) come from the browser, so the 24 h age check is forgeable. Not an escalation (actor must equal approver), but fix with server-issued approvals before any `write-test` run. Also: a created item with a failed link is never retried automatically, and the UI text "check again" is misleading.
+- Upgrade note: `rovo-test` uses `SF_ROVO_TEST_*`; this code reads `SF_STORAGE`, `SF_AI`, `SF_CRISIS`, `SF_TWG`, `SF_REMEDIATION_WRITE`.
+- Owner Facilitator Tests 9 to 12 still pending; `rovo-test` untouched.
