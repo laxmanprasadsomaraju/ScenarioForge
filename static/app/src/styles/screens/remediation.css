@@ -2,7 +2,7 @@
 /* ---------- Remediation preview ---------- */
 .remediation {
   padding-top: var(--space-lg);
-  border-top: var(--rule-hair) solid var(--color-rule);
+  border-top: var(--rule-hair) solid var(--sf-border);
 }
 .remediation-fields {
   margin-bottom: 0;
@@ -11,34 +11,34 @@
   min-height: 1lh;
   max-width: 32ch;
   font-size: var(--text-xs);
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .remediation-subtitle {
   font-size: var(--text-sm);
   font-weight: 650;
-  color: var(--color-ink);
+  color: var(--sf-text);
 }
 .draft {
   margin: 0;
   display: grid;
-  border-top: var(--rule-hair) solid var(--color-rule-strong);
+  border-top: var(--rule-hair) solid var(--sf-border-bold);
 }
 .draft-row {
   display: grid;
   grid-template-columns: 10rem minmax(0, 1fr);
   gap: var(--space-md);
   padding: var(--space-xs) 0;
-  border-bottom: var(--rule-hair) solid var(--color-rule);
+  border-bottom: var(--rule-hair) solid var(--sf-border);
   font-size: var(--text-sm);
 }
 .draft-row dt {
   font-weight: 600;
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .draft-row dd {
   margin: 0;
   min-width: 0;
-  color: var(--color-ink);
+  color: var(--sf-text);
 }
 .draft-mono {
   font-family: var(--font-outlier);
@@ -49,9 +49,9 @@
   max-height: 28rem;
   overflow: auto;
   padding: var(--space-sm);
-  border: var(--rule-hair) solid var(--color-rule);
+  border: var(--rule-hair) solid var(--sf-border);
   border-radius: var(--radius-control);
-  background: var(--color-paper-3);
+  background: var(--sf-surface-sunken);
   font-family: var(--font-outlier);
   font-size: var(--text-xs);
   line-height: 1.5;
@@ -59,7 +59,7 @@
   overflow-wrap: anywhere;
 }
 .draft-text:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--sf-focus);
   outline-offset: 2px;
 }
 .draft-labels,
@@ -74,7 +74,7 @@
   margin: 0;
   padding-left: var(--space-lg);
   font-size: var(--text-sm);
-  color: var(--color-error);
+  color: var(--sf-status-danger);
 }
 .approval {
   display: grid;
@@ -85,10 +85,10 @@
   font-size: var(--text-sm);
 }
 .approval-note {
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .approval-stale {
-  color: var(--color-warning);
+  color: var(--sf-status-warning);
   font-weight: 600;
 }
 @media (max-width: 40rem) {

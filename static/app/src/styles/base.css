@@ -104,8 +104,8 @@ td.num {
   overflow: hidden;
   background: linear-gradient(
     160deg,
-    var(--color-paper-2, var(--color-paper)),
-    var(--color-paper-3, var(--color-paper))
+    var(--sf-surface-hover, var(--sf-surface)),
+    var(--sf-surface-sunken, var(--sf-surface))
   );
 }
 [data-slot] > img {

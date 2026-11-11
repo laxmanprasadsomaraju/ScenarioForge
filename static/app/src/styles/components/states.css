@@ -6,14 +6,14 @@
   gap: var(--space-xs);
   min-height: var(--control-h);
   font-size: var(--text-sm);
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .conn-ok {
-  color: var(--color-success);
+  color: var(--sf-status-success);
   font-weight: 600;
 }
 .conn-error {
-  color: var(--color-error);
+  color: var(--sf-status-danger);
   font-weight: 600;
 }
 
@@ -34,7 +34,7 @@
   gap: var(--space-sm);
 }
 .region-body {
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
   font-size: var(--text-sm);
   max-width: 65ch;
 }
@@ -174,13 +174,13 @@
   gap: var(--space-md);
   align-items: center;
   height: 44px;
-  border-bottom: var(--rule-hair) solid var(--color-rule);
+  border-bottom: var(--rule-hair) solid var(--sf-border);
 }
 .skeleton-bar {
   display: block;
   height: 10px;
   border-radius: 3px;
-  background: var(--color-paper-2);
+  background: var(--sf-surface-hover);
   animation: pulse 1.4s var(--ease-in-out) infinite;
 }
 .skeleton-text {
@@ -194,7 +194,7 @@
   display: grid;
   gap: var(--space-sm);
   padding-bottom: var(--space-lg);
-  border-bottom: var(--rule-hair) solid var(--color-rule);
+  border-bottom: var(--rule-hair) solid var(--sf-border);
 }
 .skeleton-title {
   width: min(16rem, 60%);
@@ -217,10 +217,10 @@
 .empty-title {
   font-size: var(--text-md);
   font-weight: 650;
-  color: var(--color-ink);
+  color: var(--sf-text);
 }
 .empty-body {
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
   font-size: var(--text-sm);
   max-width: 60ch;
   margin-bottom: var(--space-xs);

@@ -3,10 +3,10 @@
 .save-note {
   margin: 0 0 var(--space-md);
   font-size: var(--text-sm);
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .save-note-not-saved {
-  color: var(--color-warning);
+  color: var(--sf-status-warning);
 }
 .history-scenario,
 .history-source {
@@ -15,7 +15,7 @@
 .history-source {
   font-weight: 400;
   font-size: var(--text-sm);
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }
 .history-retests {
   display: grid;
@@ -41,7 +41,7 @@
 }
 .history-unavailable-title {
   font-weight: 600;
-  color: var(--color-error);
+  color: var(--sf-status-danger);
 }
 .history-facts {
   margin-bottom: var(--space-lg);

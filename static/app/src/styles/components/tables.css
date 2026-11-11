@@ -11,7 +11,7 @@
 .plain-table th,
 .plain-table td {
   padding: var(--space-xs) var(--space-sm) var(--space-xs) 0;
-  border-bottom: var(--rule-hair) solid var(--color-rule);
+  border-bottom: var(--rule-hair) solid var(--sf-border);
   text-align: left;
   vertical-align: middle;
 }
@@ -19,17 +19,17 @@
 .plain-table thead th {
   font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
   white-space: nowrap;
-  border-bottom-color: var(--color-rule-strong);
+  border-bottom-color: var(--sf-border-bold);
 }
 .issues tbody th,
 .plain-table tbody th {
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--sf-text);
 }
 .issues tbody tr:hover {
-  background: var(--color-paper-3);
+  background: var(--sf-surface-sunken);
 }
 .issue-key {
   display: inline-flex;
@@ -40,7 +40,7 @@
   border: 0;
   border-radius: 3px;
   background: transparent;
-  color: var(--color-accent-text);
+  color: var(--sf-accent-text);
   font-family: var(--font-outlier);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -58,21 +58,21 @@
   opacity: 0.7;
 }
 .issue-key:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--sf-focus);
   outline-offset: 1px;
   transition: none;
 }
 .issue-summary {
-  color: var(--color-ink);
+  color: var(--sf-text);
   min-width: 12rem;
 }
 .issue-type {
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
   white-space: nowrap;
 }
 .col-updated {
   white-space: nowrap;
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
   text-align: right;
 }
 .issues .col-updated {
@@ -91,9 +91,9 @@
 }
 .facts dt {
   font-weight: 600;
-  color: var(--color-ink);
+  color: var(--sf-text);
 }
 .facts dd {
   margin: 0;
-  color: var(--color-ink-2);
+  color: var(--sf-text-subtle);
 }

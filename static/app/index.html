@@ -11,6 +11,11 @@
     <!-- Paints the device's ground until the theme loads. Styles may be inline under
          the app's CSP (styles: unsafe-inline); scripts may not, so no pre-paint script. -->
     <style>
+      /* Hallmark · shape: app screen · posture: restrained · pre-paint ground only: the full stamp and critique head src/styles/app.css */
+      html,
+      body {
+        overflow-x: clip;
+      }
       html {
         background: Canvas;
         color-scheme: light dark;
