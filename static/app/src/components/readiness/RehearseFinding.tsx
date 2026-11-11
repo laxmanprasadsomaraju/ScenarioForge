@@ -67,7 +67,7 @@ export function RehearseFinding({
   };
 
   return (
-    <section className="region rehearse-finding" aria-labelledby="rehearse-title">
+    <section className="region rehearse-finding next-action" aria-labelledby="rehearse-title">
       <h2 id="rehearse-title" className="section-title">
         Rehearse a finding
       </h2>

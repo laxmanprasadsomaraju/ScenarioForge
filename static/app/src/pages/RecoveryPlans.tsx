@@ -7,6 +7,8 @@ import { formatAbsolute, formatRelative } from '../lib/format';
 import { useSite } from '../lib/site';
 import { useApi } from '../lib/useApi';
 import { OriginTag } from '../components/OriginTag';
+import { StatusBadge } from '../components/Badge';
+import { ShowQuery } from '../components/readiness/ShowQuery';
 import { DataRegion } from '../components/DataRegion';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
@@ -82,7 +84,8 @@ export function RecoveryPlansPage() {
         isEmpty={(data) => data.pages.length === 0}
         empty={(data) => (
           <EmptyState title="No recovery pages found">
-            Confluence returned no pages you can view for <code>{data.cql}</code>.
+            Confluence returned no pages you can view.
+            <ShowQuery query={data.cql} language="CQL" />
           </EmptyState>
         )}
       >
@@ -91,8 +94,9 @@ export function RecoveryPlansPage() {
             <p className="results-meta">
               {data.pages.length} pages
               {data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
-              {formatAbsolute(data.fetchedAt)} with <code>{data.cql}</code>
+              {formatAbsolute(data.fetchedAt)}.
             </p>
+            <ShowQuery query={data.cql} language="CQL" />
             <table className="issues">
               <caption className="visually-hidden">Recovery pages in Confluence</caption>
               <thead>
@@ -177,16 +181,26 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
         {state.status === 'ready' ? (
           <>
             {state.data.stepSource === 'ordered-list' ? (
+              <p className="results-meta">
+                {state.data.steps.length} numbered{' '}
+                {state.data.steps.length === 1 ? 'step' : 'steps'}, in page order
+              </p>
+            ) : null}
+            {state.data.stepSource === 'ordered-list' ? (
               <ol className="runbook-steps procedure-steps">
                 {state.data.steps.map((step) => (
                   <li key={step.order}>{step.instruction}</li>
                 ))}
               </ol>
             ) : (
-              <p className="region-body">
-                This page has no numbered list, so ScenarioForge did not guess any steps. The text
-                below is the page as written.
-              </p>
+              <div className="steps-missing">
+                <StatusBadge tone="unknown">No numbered steps</StatusBadge>
+                <p className="region-body">
+                  This page has no numbered list, so ScenarioForge did not guess any steps.
+                  Readiness checks cannot compare a change against it. The text below is the page as
+                  written.
+                </p>
+              </div>
             )}
             <dl className="facts procedure-facts">
               <dt>Source</dt>
@@ -195,11 +209,13 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
               <dd>{formatAbsolute(state.data.lastUpdated)}</dd>
               <dt>Read at</dt>
               <dd>{formatAbsolute(state.data.evidence.retrievedAt ?? null)}</dd>
+              <dt>Read with</dt>
+              <dd>Your Confluence permissions</dd>
               <dt>Dependencies</dt>
-              <dd>Not inferred yet. Mapping steps to services and changes arrives in M3.</dd>
+              <dd>Shown on the readiness check of a change that touches this page.</dd>
             </dl>
-            <h3 className="section-title">Page text</h3>
-            <blockquote className="procedure-excerpt">
+            <h3 className="section-title">Page text, quoted</h3>
+            <blockquote className="quote procedure-excerpt">
               {state.data.excerpt}
               {state.data.excerptTruncated ? ' …' : ''}
             </blockquote>

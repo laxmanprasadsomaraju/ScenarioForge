@@ -14,6 +14,7 @@ import { useApi } from '../lib/useApi';
 import { IssueTable } from '../components/IssueTable';
 import { CheckImpactButton } from '../components/readiness/CheckImpactButton';
 import { OriginTag } from '../components/OriginTag';
+import { ShowQuery } from '../components/readiness/ShowQuery';
 import { DataRegion } from '../components/DataRegion';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState } from '../components/States';
@@ -65,7 +66,7 @@ export function ChangesPage() {
     <>
       <PageHeader
         title="Changes"
-        lead="Jira work updated recently. Check any change against the recovery runbooks it could affect."
+        lead="Jira work items updated recently. Not every update changes recovery; check the ones that might."
         aside={<OriginTag origin="live" />}
       />
 
@@ -160,8 +161,8 @@ export function ChangesPage() {
                 : undefined
             }
           >
-            Jira returned no results for <code>{data.jql}</code>. Results are limited to projects
-            you can browse.
+            Jira returned no results. Results are limited to projects you can browse.
+            <ShowQuery query={data.jql} language="JQL" />
           </EmptyState>
         )}
       >
@@ -179,8 +180,9 @@ export function ChangesPage() {
               <p className="results-meta">
                 Showing {visible.length} of {issues.length}
                 {data.truncated ? ' (Jira has more; narrow the window to see older ones)' : ''}.
-                Fetched {formatAbsolute(data.fetchedAt)} with <code>{data.jql}</code>
+                Fetched {formatAbsolute(data.fetchedAt)}.
               </p>
+              <ShowQuery query={data.jql} language="JQL" />
               <IssueTable
                 issues={visible}
                 caption="Jira issues updated recently"

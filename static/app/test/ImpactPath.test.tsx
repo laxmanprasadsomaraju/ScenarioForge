@@ -405,6 +405,18 @@ describe('Impact path', () => {
     expect(api.analyzeChange).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('heading', { name: 'Findings' })).toBeInTheDocument();
   });
+
+  it('says a confirmed link is a real dependency, not a sign that recovery works', async () => {
+    const { region } = await openCheck();
+    expect(
+      within(region).getByText(
+        /A confirmed link means the dependency is real, not that recovery still works\./,
+      ),
+    ).toBeInTheDocument();
+    expect(within(region).getAllByText('Confirmed')[0]!.closest('.badge')).toHaveClass(
+      'badge-warning',
+    );
+  });
 });
 
 describe('sourcePath', () => {
