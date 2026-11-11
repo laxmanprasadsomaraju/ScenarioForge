@@ -45,3 +45,7 @@ Older lane branches (`lane-*`, `ui/c1…ui/e-polish`, `ui/redesign*`) are merged
 - M7 domain model and pure-logic tests in `shared/` (no manifest change).
 - M10 prep: Devpost write-up draft, video script, judge-install checklist.
 - Owner reads the Devpost rules page and fills the "confirmed on page" column in [CONTEST_RULES_CHECKLIST.md](CONTEST_RULES_CHECKLIST.md).
+
+## Handoff 2026-11-11 (lead)
+
+No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged. Remaining work needs owner approvals (see docs/BONUS_READINESS.md, docs/M8_PLAN.md §12, docs/M7_PLAN.md §5, docs/submission/FINAL_CHECKLIST.md). Known small gaps: M7 observers see proposals as "A decision"; no per-user room-creation limit; M8 browser call path to the create resolver not written (first step after write:jira-work approval).

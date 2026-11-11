@@ -57,3 +57,15 @@ App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the
 
 - **Complete:** CI, dependency audit (0 known vulnerabilities, 2026-11-09), accessibility work in the UI redesign (keyboard-only MC-62 workflow test, forced-colors).
 - **Not started:** final security review, judge installation test, distribution link, demo video (<5 min), Devpost write-up, production deploy.
+
+## Update 2026-11-11 (lead)
+
+| Item                                   | Status                                                                                | Evidence                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Sidebar fix                            | Accepted (primary functionality); 4 edge cases pending                                | docs/UI_SIDEBAR_ACCEPTANCE.md, confluence-test 2.6.0                        |
+| M7 Crisis Room (engine, resolvers, UI) | Automated tests passed; storage off in every environment; live multiplayer not tested | m7/crisis-room-ui 91a53b7 merged                                            |
+| M8 creation adapter                    | Automated tests passed; hard-disabled (no writer, no write scope)                     | m8/creation-adapter 4d2cd39 merged; approval request in docs/M8_PLAN.md §12 |
+| M10 submission prep                    | In progress (docs)                                                                    | docs/submission/                                                            |
+| Security                               | Server logs record error names only                                                   | e1d2598                                                                     |
+
+Integration tip after these merges: see `git log -1 integration/lanes-1`. Tests: 926 root, 172 app; Hallmark 0/0/0; audit 0; forge lint 0 errors.
