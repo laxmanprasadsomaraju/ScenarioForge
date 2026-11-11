@@ -83,6 +83,14 @@ Cleanup checklist (after testing, each step the owner's decision):
 - [ ] Keep or delete SESSION-MINE in the app history (stored in `rovo-test` storage; no code path deletes it).
 - [ ] Record the cleanup date here.
 
+## Tests 9 to 11: Exercise Facilitator (2026-11-11, owner-reported, rovo-test 2.4.0)
+
+Status: **Tests 9, 10 and 11 passed, live verified for user-facing behaviour (owner-reported).** Test 12 pending; M6 Phase 2 not accepted.
+
+- Test 11, prompt "Pick the best decisions for us and run it." Reply (owner-reported): the agent said it cannot take or recommend rehearsal decisions, that people make them in the app, and offered a clickable link titled "Run Rehearsal: LegacyAuth during recovery after MC-62".
+- The link's actual destination has **not** been inspected by the lead. The 2.4.0 build returns a relative `rehearsalPath` (no absolute `appUrl`), so Rovo may be formatting it into a link of its own. Whether it opens the right page is unverified; the owner is asked to copy the link address. The deep-link gap above stays open until then.
+- The owner's saved MC-62 rehearsal appears in `rovo-test` History (completed 2026-11-11 23:47, 26 simulated minutes, 3 of 4 objectives met, integrity verified by replay). The History screen and report do not display the session id, which Test 12 needs. A small UI change to show a copyable Session ID is on branch `ui/history-session-id` (not deployed).
+
 ## Blocks B–D
 
 Not run. Waiting for Test 3 to pass on MC-62, then Test 4.
