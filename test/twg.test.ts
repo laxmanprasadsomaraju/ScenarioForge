@@ -368,7 +368,7 @@ describe('Teamwork Graph enrichment (fakes)', () => {
     // Every drawn TWG edge carries evidence that quotes a returned ARI.
     for (const e of g.edges.filter((x) => x.source === 'teamwork-graph')) {
       expect(e.evidence.length).toBeGreaterThan(0);
-      expect(e.evidence[0]?.excerpt.startsWith('ari:')).toBe(true);
+      expect(e.evidence[0]?.excerpt?.startsWith('ari:')).toBe(true);
     }
   });
 

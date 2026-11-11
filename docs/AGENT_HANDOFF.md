@@ -68,3 +68,11 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Devpost: all four pages HTTP 403 again; owner-confirm list unchanged.
 - M6 Phase 2 Block A passed (user-facing) 2026-11-11; AI activation still pending owner approval.
 - Next safe action: owner reviews F1–F9 and sends support questions 1–10.
+
+## Lane 3 handoff (2026-11-11, branch `release/judged-full-validation`, based on `release/judged-full` @ `13513d5`)
+
+Changed: MCP tool matrix tests; Teamwork Graph ARI/site-id hardening plus tests; log-hygiene fix and test; docs: `M9_MCP_EXTERNAL_TEST.md`, `scripts/mcp-external-check.mjs` (not run), `proposals/M9_MARKETPLACE_OPTIONS.md`, `proposals/M10_RELEASE_VALIDATION.md`, `submission/DEMO_SCRIPT.md`, `submission/BONUS_EVIDENCE_CHECKLIST.md`, TWG approval requests. No deploy, install, scope, variable, Rovo or Jira/Confluence write. No approvals were granted or inferred.
+
+Pending owner decisions: drop `remediation-item` (and probably `crisis-room`) before any first deploy; Marketplace option A or B by 27 Nov; Devpost rules check (Marketplace bonus existence, second app id); everything in BONUS_EVIDENCE_CHECKLIST.
+
+Next safe action: owner reviews M10_RELEASE_VALIDATION.md; do not merge this branch anywhere without the F2 exception.

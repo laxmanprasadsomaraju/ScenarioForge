@@ -69,3 +69,13 @@ App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the
 | Security                               | Server logs record error names only                                                   | e1d2598                                                                     |
 
 Integration tip after these merges: see `git log -1 integration/lanes-1`. Tests: 926 root, 172 app; Hallmark 0/0/0; audit 0; forge lint 0 errors.
+
+## Update 2026-11-11 (Lane 3 validation, `release/judged-full-validation`)
+
+| Item                         | Status                                          | Evidence                                                                    |
+| ---------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| MCP tool matrix              | Automated tests passed (not deployed, not live) | `test/mcpTools.test.ts`, [M9_MCP_EXTERNAL_TEST.md](M9_MCP_EXTERNAL_TEST.md) |
+| Teamwork Graph hardening     | Automated tests passed (flag off, no scopes)    | `test/twg.test.ts`                                                          |
+| Release validation           | Automated tests passed; UI headless checks only | [proposals/M10_RELEASE_VALIDATION.md](proposals/M10_RELEASE_VALIDATION.md)  |
+| Log hygiene fix              | Automated tests passed                          | `test/logHygiene.test.ts`                                                   |
+| Demo script, bonus checklist | In progress (docs)                              | `docs/submission/DEMO_SCRIPT.md`, `BONUS_EVIDENCE_CHECKLIST.md`             |

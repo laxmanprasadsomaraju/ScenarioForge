@@ -59,7 +59,7 @@ const CLOUD_ID = /^[A-Za-z0-9-]{1,64}$/;
  * else (spaces, markup, control characters, newlines, over-long text) is
  * dropped as "not a real relationship" rather than rendered.
  */
-export const SAFE_ARI = /^ari:[A-Za-z0-9:_./\-]{1,300}$/;
+export const SAFE_ARI = /^ari:[A-Za-z0-9:_./-]{1,300}$/;
 
 export function customQueryText(operationName: string): string {
   return `query ${operationName}($queryKey: String!, $queryParams: CypherRequestParams) {

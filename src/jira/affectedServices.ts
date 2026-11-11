@@ -216,7 +216,7 @@ export async function probeAffectedServices(
   } catch (error) {
     console.error(
       'Affected services probe failed',
-      error instanceof Error ? error.message : 'unknown',
+      error instanceof Error ? error.name : 'unknown',
     );
     return {
       kind: 'error',

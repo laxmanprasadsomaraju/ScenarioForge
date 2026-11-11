@@ -84,3 +84,23 @@ The owner opens admin.atlassian.com, picks the site's organisation, and confirms
 - Registering the persisted queries as an app contributor.
 - `forge variables set` for `SF_TWG`, `TWG_QK_IMPACTS` and `TWG_QK_OWNERS`.
 - Any merge of `m9/twg` into `integration/lanes-1` (the code is inert without the flag).
+
+## Exact approval requests (nothing here is approved; no scope is added by this branch)
+
+Update 2026-11-11 (Lane 3, `release/judged-full-validation`): the saved-query integration stays behind `SF_TWG` (unset). Gateway hardening added with tests (`test/twg.test.ts`): returned ARIs must match `^ari:[A-Za-z0-9:_./-]{1,300}$` or they are dropped (hostile strings are never drawn), the site id interpolated into the work-item ARI must be `[A-Za-z0-9-]{1,64}`, duplicate rows draw once, and partial results (one owner call failing) keep the other relationships and mark only the failed one Not assessed. Status: **Automated tests passed**; no live evidence.
+
+```
+APPROVAL REQUEST A (org admin, owner's own words)
+I am an organisation admin of <org> and approve installing a graph-test build of
+ScenarioForge that requests read:graph:issue:jira, read:graph:component:compass and
+read:graph:team:atlassian, on site <site> only. Teamwork Graph reads happen as the
+signed-in user. Nothing is written.
+
+APPROVAL REQUEST B (owner)
+1. Create environment graph-test and deploy a throwaway branch with the manifest diff above.
+2. Register the two persisted queries (scenarioforge_changeImpacts, scenarioforge_componentOwners).
+3. forge variables set -e graph-test SF_TWG / TWG_QK_IMPACTS / TWG_QK_OWNERS.
+4. Record the live result (including empty or not-permitted) in docs/*LIVE_TEST*.md.
+```
+
+The judged build must not contain these scopes. Without a live result TWG is **Code complete / Automated tests passed** and is not claimed as a bonus.

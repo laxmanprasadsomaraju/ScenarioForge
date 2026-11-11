@@ -111,7 +111,7 @@ function setup(f: Fake = {}, over: Partial<ForgeActionDeps> = {}) {
     governor: () => governor,
     cache: () => ({
       get: async () => ({ hit: false as const, reason: 'MISS' as const }),
-      put: async () => {},
+      put: async () => ({ stored: true as const, evicted: 0 }),
     }),
     historyStore: () => ({ getRun: history as never }),
     now: NOW,

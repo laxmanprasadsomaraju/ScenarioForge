@@ -12,3 +12,12 @@ As of 2026-11-11 (re-checked with read-only `forge environments list` / `forge i
 Approval proposals (2026-11-11): [M10 judged release](proposals/M10_JUDGING_RELEASE.md), [M7 test deploy](proposals/M7_TEST_DEPLOY.md), [M8 test deploy](proposals/M8_TEST_DEPLOY.md), [M9 Marketplace eligibility](proposals/M9_MARKETPLACE_ELIGIBILITY.md). The judged build (four scopes) contains none of the bonus features; bonus evidence must come from test environments.
 
 Feature-complete alternative (all bonuses' code in the judged build, TWG excluded for the org-admin install requirement): [M10_FEATURE_COMPLETE_RELEASE.md](proposals/M10_FEATURE_COMPLETE_RELEASE.md).
+
+## Update 2026-11-11 (Lane 3, `release/judged-full-validation`)
+
+No bonus is implemented end to end: none has a live external demonstration. Offline work only.
+
+- **MCP:** Automated tests passed. New per-tool matrix `test/mcpTools.test.ts` (missing/spoofed identity, AI off, forbidden, not-assessed, injection text, read-only). External test prepared, not run: [M9_MCP_EXTERNAL_TEST.md](M9_MCP_EXTERNAL_TEST.md), `scripts/mcp-external-check.mjs`.
+- **Teamwork Graph:** Automated tests passed. Hardened ARI and site-id handling; partial/hostile/empty/error tests added. Approval requests in [M9_TWG_RUNBOOK.md](M9_TWG_RUNBOOK.md).
+- **Marketplace:** research in [proposals/M9_MARKETPLACE_OPTIONS.md](proposals/M9_MARKETPLACE_OPTIONS.md). The full Jira+Confluence app can only be listed paid; second-app-id qualification, individual eligibility and the 2026 Devpost bonus list are unverified. Deadline 27 Nov. No Jira-only listing.
+- Evidence list: [submission/BONUS_EVIDENCE_CHECKLIST.md](submission/BONUS_EVIDENCE_CHECKLIST.md).
