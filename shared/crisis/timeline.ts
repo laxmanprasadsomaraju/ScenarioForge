@@ -1,6 +1,6 @@
 import { decisionTrail } from '../simulation/engine';
 import { rebuildRoom } from './room';
-import type { CrisisEvent, CrisisRole, TimelineEntry } from './types';
+import type { CrisisEvent, CrisisRole, ParticipantAlias, TimelineEntry } from './types';
 
 /**
  * The shared timeline while a room is open (lobby, running or after).
@@ -19,7 +19,10 @@ export const ROLE_NAME: Record<CrisisRole, string> = {
   observer: 'Observer',
 };
 
-export function buildTimeline(events: readonly CrisisEvent[]): TimelineEntry[] {
+export function buildTimeline(
+  events: readonly CrisisEvent[],
+  alias: ParticipantAlias,
+): TimelineEntry[] {
   const state = rebuildRoom(events);
   const trail = state.session ? decisionTrail(state.scenario, state.session) : [];
   const roles = new Map<string, CrisisRole>();
@@ -93,7 +96,7 @@ export function buildTimeline(events: readonly CrisisEvent[]): TimelineEntry[] {
     out.push({
       seq: e.seq,
       at: e.at,
-      actor: e.actor,
+      actor: alias(e.actor),
       role: roles.get(e.actor) ?? null,
       type: e.type,
       atMinute,

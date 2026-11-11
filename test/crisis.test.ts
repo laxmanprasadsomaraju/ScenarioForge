@@ -17,6 +17,7 @@ import { replaySession, verifyAuditRecord } from '../shared/simulation/replay';
 import { evaluateSession } from '../shared/simulation/engine';
 import { authBackupRetiredScenario as scenario } from '../shared/simulation/scenarios/authBackupRetired';
 
+const alias = (id: string) => `p_${id}`;
 const OWNER = 'acc-owner';
 const ENG = 'acc-eng';
 const SEC = 'acc-sec';
@@ -211,7 +212,7 @@ describe('permissions per role', () => {
     expect(
       r.try('acc-stranger', { type: 'communicate', kind: 'status-update', text: 'x' }),
     ).toMatchObject({ reason: 'NOT_PARTICIPANT' });
-    expect(roleView(r.state, 'acc-stranger')).toEqual({ ok: false, reason: 'NOT_PARTICIPANT' });
+    expect(roleView(r.state, 'acc-stranger', alias)).toEqual({ ok: false, reason: 'NOT_PARTICIPANT' });
   });
   it('rejects proposals and commits outside the running state or for unavailable decisions', () => {
     const r = new Room();
@@ -465,7 +466,7 @@ describe('role-scoped views', () => {
     const r = fullRoom();
     const s = r.state;
     const v = (who: string) => {
-      const res = roleView(s, who);
+      const res = roleView(s, who, alias);
       if (!res.ok) throw new Error('no view');
       return res.view;
     };
@@ -489,7 +490,7 @@ describe('role-scoped views', () => {
   it('tracks objective progress live', () => {
     const r = fullRoom();
     playOptimal(r);
-    const res = roleView(r.state, OBS);
+    const res = roleView(r.state, OBS, alias);
     expect(res.ok && res.view.objectives.every((o) => o.progress === 'met')).toBe(true);
   });
 });
@@ -498,8 +499,8 @@ describe('debrief and after-action report', () => {
   it('attributes contributions per role from the log', () => {
     const r = fullRoom();
     playOptimal(r);
-    const d = buildDebrief(r.events);
-    const c = (id: string) => d.contributions.find((x) => x.accountId === id)!;
+    const d = buildDebrief(r.events, alias);
+    const c = (id: string) => d.contributions.find((x) => x.participantId === alias(id))!;
     expect(c(OWNER)).toMatchObject({ decisionsCommitted: 3, roles: ['incident-commander'] });
     expect(c(ENG)).toMatchObject({ proposals: 1, proposalsAdopted: 1, statusUpdates: 1 });
     expect(c(SEC)).toMatchObject({ proposals: 1, proposalsAdopted: 0 });
@@ -519,12 +520,12 @@ describe('debrief and after-action report', () => {
     r.do(ENG, { type: 'commit-decision', decisionId: 'check-changes' });
     r.do(ENG, { type: 'commit-decision', decisionId: 'notify-now' });
     r.do(ENG, { type: 'commit-decision', decisionId: 'activate-nimbus' });
-    const d = buildDebrief(r.events);
-    expect(d.contributions.find((x) => x.accountId === OWNER)?.roles).toEqual([
+    const d = buildDebrief(r.events, alias);
+    expect(d.contributions.find((x) => x.participantId === alias(OWNER))?.roles).toEqual([
       'incident-commander',
       'engineering-responder',
     ]);
-    expect(d.contributions.find((x) => x.accountId === ENG)?.roles).toEqual([
+    expect(d.contributions.find((x) => x.participantId === alias(ENG))?.roles).toEqual([
       'engineering-responder',
       'incident-commander',
     ]);
@@ -539,7 +540,7 @@ describe('debrief and after-action report', () => {
     expect(report.submission.scenarioFingerprint).toBe(report.audit.scenarioFingerprint);
   });
   it('refuses a debrief before the session completes', () => {
-    expect(() => buildDebrief(fullRoom().events)).toThrow(CrisisLogError);
+    expect(() => buildDebrief(fullRoom().events, alias)).toThrow(CrisisLogError);
   });
   it('status updates remain allowed in debrief, stakeholder notices and proposals do not', () => {
     const r = fullRoom();

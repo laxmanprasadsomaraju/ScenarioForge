@@ -1,6 +1,7 @@
 import type { ApiResult, RehearsalSourceRef, SaveRehearsalResponse } from '../../shared/api';
 import { HISTORY_NOT_ENABLED } from '../../shared/api';
 import type { StorageAdapter } from '../../shared/agents/storage';
+import { createHmac } from 'node:crypto';
 import {
   buildAfterActionReport,
   buildDebrief,
@@ -32,6 +33,7 @@ import type {
   CrisisRoomSnapshot,
   CrisisRoomState,
   CrisisViewResponse,
+  ParticipantAlias,
 } from '../../shared/crisis';
 import { HistoryStore } from '../../shared/history';
 import type { HistoryUser, TrustedScenario } from '../../shared/history';
@@ -76,18 +78,36 @@ interface RoomRecord {
   remediation: TrustedScenario['remediation'];
   provenance: TrustedScenario['provenance'];
   events: CrisisEvent[];
+  /**
+   * Server-only key for client-visible participant ids. Absent on rooms created
+   * before it existed; those derive a key from installation + room id, which
+   * still keeps account ids out of payloads (see participantAlias).
+   */
+  aliasKey?: string;
 }
 
 export const ROOM_HOURS = 8;
 export const INVITE_HOURS = 4;
 const KEY_PREFIX = 'sfc1';
-const ACCOUNT_ID = /^[A-Za-z0-9:_-]{1,128}$/;
+const PARTICIPANT_ID = /^p_[A-Za-z0-9_-]{16}$/;
 const ID = /^[A-Za-z0-9:._-]{1,80}$/;
 const INVITE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const JOIN_RETRIES = 3;
 const NO_IDENTITY =
   'Your Atlassian account could not be identified, so team rooms are not available.';
 const UNREACHABLE = 'Room storage could not be reached. Try again shortly.';
+
+/**
+ * Client-visible participant id: HMAC-SHA-256 of the account id under a
+ * per-room secret that never leaves the server. Stable inside the room,
+ * different in every other room, and not derivable from the account id alone.
+ */
+export function participantAlias(record: RoomRecord, installation: string, roomId: string) {
+  const key = record.aliasKey ?? `legacy:${installation}:${roomId}`;
+  const alias: ParticipantAlias = (accountId) =>
+    `p_${createHmac('sha256', key).update(accountId).digest('base64url').slice(0, 16)}`;
+  return alias;
+}
 
 export function roomKey(installation: string, roomId: string): string {
   return `${KEY_PREFIX}:${encodeSegment(installation)}:room:${roomId}`;
@@ -131,14 +151,17 @@ export function parseClientCommand(value: unknown): Parsed<CrisisClientCommand> 
     case 'close':
       return { ok: true, value: { type: c.type } };
     case 'assign-role':
-      if (typeof c.accountId !== 'string' || !ACCOUNT_ID.test(c.accountId))
-        return bad('accountId is malformed.');
+      if (typeof c.participantId !== 'string' || !PARTICIPANT_ID.test(c.participantId))
+        return bad('participantId is malformed.');
       if (!isRole(c.role)) return bad('role is not a crisis role.');
-      return { ok: true, value: { type: 'assign-role', accountId: c.accountId, role: c.role } };
+      return {
+        ok: true,
+        value: { type: 'assign-role', participantId: c.participantId, role: c.role },
+      };
     case 'hand-off-command':
-      return typeof c.to === 'string' && ACCOUNT_ID.test(c.to)
-        ? { ok: true, value: { type: 'hand-off-command', to: c.to } }
-        : bad('to is malformed.');
+      return typeof c.toParticipantId === 'string' && PARTICIPANT_ID.test(c.toParticipantId)
+        ? { ok: true, value: { type: 'hand-off-command', toParticipantId: c.toParticipantId } }
+        : bad('toParticipantId is malformed.');
     case 'propose':
       if (typeof c.decisionId !== 'string' || !ID.test(c.decisionId))
         return bad('decisionId is malformed.');
@@ -227,9 +250,11 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
   function snapshot(
     record: RoomRecord,
     state: CrisisRoomState,
-    viewer: string,
+    user: HistoryUser,
   ): CrisisRoomSnapshot | null {
-    const result = roleView(state, viewer);
+    const viewer = user.accountId;
+    const alias = participantAlias(record, user.installation, state.roomId);
+    const result = roleView(state, viewer, alias);
     if (!result.ok) return null;
     const isOwner = state.owner === viewer;
     const nowMs = now().getTime();
@@ -240,7 +265,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       synthetic: record.source.kind === 'demo',
       isOwner,
       expiresAt: state.expiresAt,
-      timeline: buildTimeline(record.events),
+      timeline: buildTimeline(record.events, alias),
       invites: isOwner
         ? state.invites.map((i) => ({
             inviteId: i.inviteId,
@@ -255,7 +280,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
                   : 'open',
           }))
         : [],
-      debrief: completed ? buildDebrief(record.events) : null,
+      debrief: completed ? buildDebrief(record.events, alias) : null,
     };
   }
 
@@ -307,8 +332,8 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
     return typeof id === 'string' && CRISIS_ROOM_ID.test(id) ? id : null;
   }
 
-  function respond(record: RoomRecord, state: CrisisRoomState, viewer: string): CrisisRoomResponse {
-    const room = snapshot(record, state, viewer);
+  function respond(record: RoomRecord, state: CrisisRoomState, user: HistoryUser): CrisisRoomResponse {
+    const room = snapshot(record, state, user);
     return room ? { status: 'OK', room } : rejected('NOT_PARTICIPANT', null);
   }
 
@@ -352,6 +377,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       remediation: built.trusted.remediation,
       provenance: built.trusted.provenance,
       events,
+      aliasKey: random(24),
     };
     if (storedBytes(record) > FORGE_MAX_VALUE_BYTES) return data(rejected('LOG_FULL', null));
     try {
@@ -360,7 +386,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
     } catch {
       return data({ status: 'UNAVAILABLE', detail: UNREACHABLE });
     }
-    return data(respond(record, rebuildRoom(events), user.accountId));
+    return data(respond(record, rebuildRoom(events), user));
   }
 
   async function crisisView(request: ResolverRequest): Promise<ApiResult<CrisisViewResponse>> {
@@ -375,9 +401,10 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
     const loaded = await load(gated.storage, gated.user, roomId);
     if (!loaded.ok) return data(loaded.response);
     const { record, state } = loaded;
-    if (!roleView(state, gated.user.accountId).ok) return data(rejected('NOT_PARTICIPANT', null));
+    if (!state.participants.some((p) => p.accountId === gated.user.accountId && p.active))
+      return data(rejected('NOT_PARTICIPANT', null));
     if (known === state.version) return data({ status: 'UNCHANGED', version: state.version });
-    return data(respond(record, state, gated.user.accountId));
+    return data(respond(record, state, gated.user));
   }
 
   async function crisisCommand(request: ResolverRequest): Promise<ApiResult<CrisisRoomResponse>> {
@@ -393,8 +420,22 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
     const gated = gate(request);
     if (!gated.ok) return data(gated.gate);
 
-    const command: CrisisCommand =
-      cmd.type === 'propose' ? { ...cmd, proposalId: random(12) } : cmd;
+    let command: CrisisCommand;
+    if (cmd.type === 'assign-role' || cmd.type === 'hand-off-command') {
+      // Clients name people by opaque participant id; the real id stays server-side.
+      const loaded = await load(gated.storage, gated.user, roomId);
+      if (!loaded.ok) return data(loaded.response);
+      const alias = participantAlias(loaded.record, gated.user.installation, roomId);
+      const wanted = cmd.type === 'assign-role' ? cmd.participantId : cmd.toParticipantId;
+      const target = loaded.state.participants.find((p) => alias(p.accountId) === wanted);
+      if (!target) return data(rejected('INVALID_INPUT', loaded.state.version, 'Unknown participant.'));
+      command =
+        cmd.type === 'assign-role'
+          ? { type: 'assign-role', accountId: target.accountId, role: cmd.role }
+          : { type: 'hand-off-command', to: target.accountId };
+    } else {
+      command = cmd.type === 'propose' ? { ...cmd, proposalId: random(12) } : cmd;
+    }
     const applied = await apply(
       gated.storage,
       gated.user,
@@ -403,7 +444,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       command,
     );
     if (!applied.ok) return data(applied.response);
-    return data(respond(applied.record, applied.state, gated.user.accountId));
+    return data(respond(applied.record, applied.state, gated.user));
   }
 
   async function crisisInviteToken(
@@ -436,7 +477,7 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       },
     );
     if (!applied.ok) return data(applied.response);
-    const room = snapshot(applied.record, applied.state, gated.user.accountId);
+    const room = snapshot(applied.record, applied.state, gated.user);
     if (!room) return data(rejected('NOT_PARTICIPANT', null));
     // The invite's real expiry is capped by the engine at the room's expiry.
     const issued = applied.state.invites.find((i) => i.inviteId === inviteId)!;

@@ -32,7 +32,7 @@ export function Lobby({
   const owner = room.isOwner ? view.viewer : null;
   const shownIds = new Set(issued.map((i) => i.inviteId));
   const others = view.participants.filter(
-    (p) => p.active && p.accountId !== view.viewer && p.accountId !== view.commander,
+    (p) => p.active && p.participantId !== view.viewer && p.participantId !== view.commander,
   );
 
   return (
@@ -51,15 +51,15 @@ export function Lobby({
           <div className="crisis-assign">
             <h3 className="crisis-subtitle">Change a role</h3>
             {others.map((p) => (
-              <label key={p.accountId} className="field">
-                <span className="field-label">{name(p.accountId)}</span>
+              <label key={p.participantId} className="field">
+                <span className="field-label">{name(p.participantId)}</span>
                 <select
                   value={p.role}
                   disabled={handle.busy}
                   onChange={(e) =>
                     void handle.run({
                       type: 'assign-role',
-                      accountId: p.accountId,
+                      participantId: p.participantId,
                       role: e.target.value as CrisisRole,
                     })
                   }

@@ -1,7 +1,13 @@
 import type { EvidenceReference } from '../domain/types';
 import { currentStep, objectiveProgress } from '../simulation/engine';
 import { PROPOSER_ROLES } from './room';
-import type { CommunicationKind, CrisisRole, CrisisRoomState, RoleView } from './types';
+import type {
+  CommunicationKind,
+  CrisisRole,
+  CrisisRoomState,
+  ParticipantAlias,
+  RoleView,
+} from './types';
 
 /**
  * Role-scoped views. The server builds one per caller; the browser never
@@ -34,7 +40,11 @@ export const ROLE_EVIDENCE: Record<CrisisRole, readonly EvidenceReference['kind'
 
 export type ViewResult = { ok: true; view: RoleView } | { ok: false; reason: 'NOT_PARTICIPANT' };
 
-export function roleView(state: CrisisRoomState, viewer: string): ViewResult {
+export function roleView(
+  state: CrisisRoomState,
+  viewer: string,
+  alias: ParticipantAlias,
+): ViewResult {
   const me = state.participants.find((p) => p.accountId === viewer && p.active);
   if (!me) return { ok: false, reason: 'NOT_PARTICIPANT' };
   const { role } = me;
@@ -58,11 +68,11 @@ export function roleView(state: CrisisRoomState, viewer: string): ViewResult {
       roomId: state.roomId,
       version: state.version,
       status: state.status,
-      viewer,
+      viewer: alias(viewer),
       role,
-      commander: state.commander,
+      commander: alias(state.commander),
       participants: state.participants.map(({ accountId, role: r, active }) => ({
-        accountId,
+        participantId: alias(accountId),
         role: r,
         active,
       })),
@@ -84,9 +94,9 @@ export function roleView(state: CrisisRoomState, viewer: string): ViewResult {
       elapsedMinutes: state.session?.elapsedMinutes ?? 0,
       openProposals: state.proposals
         .filter((p) => p.status === 'open')
-        .map(({ status: _status, ...rest }) => rest),
-      decisions: state.decisions,
-      communications: state.communications,
+        .map(({ status: _status, proposer, ...rest }) => ({ ...rest, proposer: alias(proposer) })),
+      decisions: state.decisions.map((d) => ({ ...d, actor: alias(d.actor) })),
+      communications: state.communications.map((c) => ({ ...c, actor: alias(c.actor) })),
       can: {
         propose: canPropose,
         commit: canCommit,

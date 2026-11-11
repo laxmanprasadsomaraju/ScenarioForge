@@ -12,9 +12,9 @@ export { ROLE_NAME };
  * no permission to look up names, and ids are not for display.
  */
 export function namer(view: Pick<RoleView, 'participants' | 'viewer'>) {
-  const index = new Map(view.participants.map((p, i) => [p.accountId, i + 1]));
-  return (accountId: string) =>
-    accountId === view.viewer ? 'You' : `Participant ${index.get(accountId) ?? '?'}`;
+  const index = new Map(view.participants.map((p, i) => [p.participantId, i + 1]));
+  return (participantId: string) =>
+    participantId === view.viewer ? 'You' : `Participant ${index.get(participantId) ?? '?'}`;
 }
 
 export const KIND_LABEL: Record<CommunicationKind, string> = {
@@ -82,11 +82,11 @@ export function ParticipantList({ view, isOwnerOf }: { view: RoleView; isOwnerOf
   return (
     <ul className="crisis-people" aria-label="Participants and roles">
       {view.participants.map((p) => (
-        <li key={p.accountId} className={p.active ? undefined : 'crisis-person-left'}>
-          <span className="crisis-person-name">{name(p.accountId)}</span>
+        <li key={p.participantId} className={p.active ? undefined : 'crisis-person-left'}>
+          <span className="crisis-person-name">{name(p.participantId)}</span>
           <span className="crisis-person-role">{ROLE_NAME[p.role]}</span>
           <span className="crisis-person-tags">
-            {p.accountId === isOwnerOf ? <StatusBadge tone="info">Owner</StatusBadge> : null}
+            {p.participantId === isOwnerOf ? <StatusBadge tone="info">Owner</StatusBadge> : null}
             {p.active ? null : <StatusBadge tone="unknown">Left</StatusBadge>}
           </span>
         </li>
