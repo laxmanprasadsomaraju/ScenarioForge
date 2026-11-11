@@ -93,3 +93,10 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 
 - Owner approved, in their own words, hand-creating exactly three synthetic fixtures (RB-AUTH-02 page, MC-INJ issue with link, SESSION-MINE) and running user-run Tests 5 to 12. Tests 13 and 16 BLOCKED; 14 and 15 need separate approval. No deploys, scopes, MCP or other environments.
 - Created ids are recorded in [M6_PHASE2_LIVE_TEST](M6_PHASE2_LIVE_TEST.md) as the owner reports them. Credit meter reading is a precondition for each group.
+
+## Update 2026-11-11 (lead, Lane 1 deep links)
+
+- `rovo-test/deeplinks` @ `850f363` (from `rovo-test/phase2-confluence-403`): absolute `appUrl` on find-recovery-risks, get-service-readiness and prepare-rehearsal; `explain-outcome` has none (no route for a stored outcome). **Automated tests passed** (968 root, 91 app, forge lint clean, manifest diff empty). Not deployed, not live verified.
+- URL format from the Forge docs (read 2026-11-11): `{site}/apps/full-page/{installation-id}/{route-prefix}/{app-route}`. The installation id comes from the runtime (`getAppContext()`), the site from `GET /rest/api/3/serverInfo` as the user, accepted only for `https://<label>.atlassian.net`. Unverified until a live call: that `getAppContext()` works inside a Rovo action, that query strings reach the in-app router. If any piece is missing, `appUrl` is null and `appPath` remains.
+- Sloplint was not run (no UI change). Not merged anywhere.
+- Deployment proposal (needs owner approval): `forge deploy -e rovo-test` from `rovo-test/deeplinks`; no install, variables or manifest change; then the owner checks the link on MC-62 after Tests 9 to 12.
