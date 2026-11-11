@@ -6,7 +6,7 @@ import { StatusBadge, type StatusTone } from '../Badge';
 import { EvidenceList } from '../simulation/Evidence';
 import { OBJECTIVE_LABEL } from '../simulation/Objectives';
 import type { CrisisRoomHandle } from '../../lib/useCrisisRoom';
-import { Communications, ROLE_NAME, Timeline, namer } from './parts';
+import { Communications, ParticipantList, ROLE_NAME, Timeline, namer } from './parts';
 
 const TONE: Record<ObjectiveProgress, StatusTone> = {
   pending: 'unknown',
@@ -65,7 +65,7 @@ export function Running({ room, handle }: { room: CrisisRoomSnapshot; handle: Cr
               Proposals for this step
             </h2>
             {view.openProposals.length ? (
-              <ul className="crisis-proposals">
+              <ul className="crisis-proposals" aria-label="Open proposals">
                 {view.openProposals.map((p) => (
                   <li key={p.proposalId} className="crisis-proposal">
                     <p className="crisis-proposal-head">
@@ -103,11 +103,17 @@ export function Running({ room, handle }: { room: CrisisRoomSnapshot; handle: Cr
         </section>
 
         <aside className="crisis-side" aria-label="Objectives, messages and evidence">
+          <section className="region" aria-labelledby="crisis-people">
+            <h2 id="crisis-people" className="section-title">
+              People in the room
+            </h2>
+            <ParticipantList view={view} isOwnerOf={room.isOwner ? view.viewer : null} />
+          </section>
           <section className="region" aria-labelledby="crisis-objectives">
             <h2 id="crisis-objectives" className="section-title">
               Objectives
             </h2>
-            <ul className="objectives">
+            <ul className="objectives" aria-label="Objectives">
               {view.objectives.map((o) => (
                 <li key={o.objectiveId} className={`objective objective-${o.progress}`}>
                   <span className="objective-label">{o.label}</span>

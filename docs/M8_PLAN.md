@@ -204,3 +204,11 @@ No edit, transition, delete, comment, attachment or Confluence call. No asApp ca
 7. Label duplicate: run again → adopted, no new item.
 8. Check the Jira audit log: only the three calls above, only by the approving user.
 9. Record the results in a dated `docs/M8_LIVE_TEST.md`; delete the demo items afterwards.
+
+## 13. Status 2026-11-11 (Lane 2)
+
+Browser path written (Code complete, Automated tests passed): review proposed fix, inspect exact draft, approve, second confirmation dialog, then `makeRemediationCreator` (`static/app/src/lib/remediationCreator.ts`) calls `prepareRemediationRequest` (server rebuild), refuses if the server draft hash differs from the approved one, binds the approval to the server request hash, then calls `createRemediationWorkItem`. The create button is enabled only with build flag `VITE_SF_REMEDIATION_CREATE=enabled` (off); the backend still has no writer and answers WRITE_NOT_PERMITTED. "Jira work item created", "Runbook updated" and "Verified retest" are separate stages; runbook-updated tracking is still "Not tracked yet". The duplicate state is shown only by the server check at create time, not before approval.
+
+### 13.1 Duplicate check before approval (Automated tests passed)
+
+`RemediationPreview` now takes an optional read-only `checker` (`makeDuplicateChecker`, server `prepareRemediationRequest`, GETs only). "Check for duplicates" shows No existing / Existing KEY / Ambiguous / Not assessed, and the result is forgotten when the draft changes. The exact draft was already shown above the approval controls. "Runbook updated" now reads "Not implemented: this build does not read runbook changes" (no stored state exists to support it). Creation stays hard-disabled.

@@ -3,6 +3,7 @@ import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { RemediationAction } from '@shared/domain/types';
 import type { ApiResult, CreateRemediationWorkItemResponse } from '@shared/api';
+import type { DuplicateCheck } from '@shared/remediation';
 import {
   approveDraft,
   buildWorkItemDraft,
@@ -33,7 +34,23 @@ export const RETEST_SUGGESTION = 'Retest after the runbook is updated';
 export type RemediationCreator = (
   draft: WorkItemDraft,
   approval: DraftApproval,
+  context: { fixId: string },
 ) => Promise<ApiResult<CreateRemediationWorkItemResponse>>;
+
+/**
+ * Read-only duplicate search (server `prepareRemediationRequest`, GETs only)
+ * for the draft on screen. Never creates anything.
+ */
+export type DuplicateChecker = (
+  draft: WorkItemDraft,
+  context: { fixId: string },
+) => Promise<ApiResult<DuplicateCheck>>;
+
+type DupPhase =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'done'; hash: string; check: DuplicateCheck }
+  | { kind: 'failed'; hash: string; message: string };
 
 type CreatePhase =
   | { kind: 'idle' }
@@ -56,6 +73,7 @@ export function RemediationPreview({
   defaultFixId,
   rehearsal,
   creator = null,
+  checker = null,
 }: {
   analysis: ChangeAnalysis;
   findingId: string;
@@ -65,6 +83,8 @@ export function RemediationPreview({
   rehearsal?: DraftRehearsalResult;
   /** Null in every build until `write:jira-work` is approved. */
   creator?: RemediationCreator | null;
+  /** Optional read-only duplicate search; without it the check shows as not run. */
+  checker?: DuplicateChecker | null;
 }) {
   const { siteUrl, accountId } = useSite();
   const ids = useId();
@@ -76,6 +96,7 @@ export function RemediationPreview({
   const [approval, setApproval] = useState<DraftApproval | null>(null);
   const [approveError, setApproveError] = useState<string | null>(null);
   const [phase, setPhase] = useState<CreatePhase>({ kind: 'idle' });
+  const [dup, setDup] = useState<DupPhase>({ kind: 'idle' });
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -145,8 +166,7 @@ export function RemediationPreview({
     },
     {
       label: 'Duplicate check',
-      value: 'Not run yet (runs before create)',
-      tone: 'unknown',
+      ...dupSummary(dup, hash),
     },
     {
       label: 'Approval',
@@ -175,11 +195,26 @@ export function RemediationPreview({
         ? CREATE_NEEDS_APPROVAL
         : '';
 
+  const runCheck = async () => {
+    if (!checker) return;
+    setDup({ kind: 'checking' });
+    try {
+      const result = await checker(draft, { fixId });
+      setDup(
+        result.ok
+          ? { kind: 'done', hash, check: result.data }
+          : { kind: 'failed', hash, message: result.error.message },
+      );
+    } catch {
+      setDup({ kind: 'failed', hash, message: 'Could not reach the ScenarioForge backend.' });
+    }
+  };
+
   const sendCreate = async () => {
     if (!creator || !approval) return;
     setPhase({ kind: 'sending' });
     try {
-      const result = await creator(draft, approval);
+      const result = await creator(draft, approval, { fixId });
       setPhase(
         result.ok
           ? { kind: 'done', result: result.data }
@@ -302,6 +337,27 @@ export function RemediationPreview({
               {summaryProblem ?? ' '}
             </span>
           </div>
+        </div>
+
+        <div className="debrief-actions">
+          <Button
+            variant="secondary"
+            isDisabled={!checker || problems.length > 0 || dup.kind === 'checking'}
+            onClick={() => void runCheck()}
+          >
+            Check for duplicates
+          </Button>
+          <span className="region-body" aria-live="polite">
+            {!checker
+              ? 'Duplicate search is not available in this view.'
+              : dup.kind === 'checking'
+                ? 'Searching Jira (read only)…'
+                : dup.kind === 'failed'
+                  ? `Duplicate search failed: ${dup.message}`
+                  : dup.kind === 'done' && dup.hash === hash
+                    ? dup.check.reason
+                    : ''}
+          </span>
         </div>
 
         <h3 className="remediation-subtitle">Exact draft</h3>
@@ -475,6 +531,20 @@ export function RemediationPreview({
   );
 }
 
+function dupSummary(dup: DupPhase, hash: string): { value: string; tone: StatusTone } {
+  if (dup.kind === 'checking') return { value: 'Searching…', tone: 'unknown' };
+  if (dup.kind === 'failed' && dup.hash === hash) return { value: 'Not assessed', tone: 'warning' };
+  if (dup.kind === 'done' && dup.hash === hash) {
+    const d = dup.check;
+    return d.decision === 'none'
+      ? { value: 'No existing work item found', tone: 'success' }
+      : d.decision === 'duplicate'
+        ? { value: `Existing ${d.issueKey ?? 'work item'} found`, tone: 'warning' }
+        : { value: 'Ambiguous: several matches', tone: 'warning' };
+  }
+  return { value: 'Not run yet (search before approving)', tone: 'unknown' };
+}
+
 function CreateOutcome({ phase, onCheckAgain }: { phase: CreatePhase; onCheckAgain: () => void }) {
   if (phase.kind === 'sending') {
     return (
@@ -558,7 +628,11 @@ function RemediationTracking({
       value: created ? (created.issueKey ?? 'Created') : 'Not created',
       tone: created ? 'success' : 'unknown',
     },
-    { label: 'Runbook updated', value: 'Not tracked yet', tone: 'unknown' },
+    {
+      label: 'Runbook updated',
+      value: 'Not implemented: this build does not read runbook changes',
+      tone: 'unknown',
+    },
     { label: 'Verified retest', value: RETEST_SUGGESTION, tone: 'unknown' },
   ];
   return (

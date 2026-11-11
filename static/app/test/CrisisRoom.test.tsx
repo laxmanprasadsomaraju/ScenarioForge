@@ -229,6 +229,16 @@ describe('Crisis room: running', () => {
     expect(screen.getByText(/Your role reads messages but does not post/)).toBeInTheDocument();
   });
 
+  it('names its lists and regions for assistive technology', async () => {
+    const { roomId } = await makeRoom('running');
+    renderAt(crisisRoomPath(roomId), ENG);
+    await screen.findByRole('heading', { name: 'Propose a decision' });
+    for (const name of ['Incident timeline', 'Participants and roles', 'Objectives']) {
+      expect(screen.getByRole('list', { name })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('complementary', { name: /Objectives, messages/ })).toBeInTheDocument();
+  });
+
   it('a responder proposes; the commander adopts the proposal', async () => {
     const user = userEvent.setup();
     const { roomId } = await makeRoom('running');

@@ -68,3 +68,7 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Devpost: all four pages HTTP 403 again; owner-confirm list unchanged.
 - M6 Phase 2 Block A passed (user-facing) 2026-11-11; AI activation still pending owner approval.
 - Next safe action: owner reviews F1–F9 and sends support questions 1–10.
+
+## Handoff 2026-11-11 (Lane 2, `m78/integration` from `release/judged-full` @ 13513d5)
+
+M8 browser create path and M7 lifecycle integration tests added; docs updated. No manifest, scope, entity, env, deploy or Jira/Confluence change. Not merged anywhere. Pending owner approvals (none given): `crisis-room` entity + `SF_STORAGE`/`SF_CRISIS` on a named test env; `write:jira-work` + `remediation-item` entity on a separate write-test env ([proposals/M8_TEST_DEPLOY.md](proposals/M8_TEST_DEPLOY.md)); Realtime. Next safe action: owner reviews [proposals/M7_STORAGE_SCHEMA.md](proposals/M7_STORAGE_SCHEMA.md).

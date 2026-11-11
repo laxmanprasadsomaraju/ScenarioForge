@@ -40,7 +40,7 @@ export function TeamDebrief({
           Result: {evaluation.metCount} of {evaluation.totalCount} objectives met in{' '}
           <span className="num">{evaluation.elapsedMinutes}</span> simulated minutes
         </h2>
-        <ul className="objectives">
+        <ul className="objectives" aria-label="Objectives">
           {evaluation.objectives.map((o) => (
             <li key={o.objectiveId} className={`objective objective-${o.status}`}>
               <span className="objective-label">
@@ -59,7 +59,7 @@ export function TeamDebrief({
         <h2 id="debrief-decisions" className="section-title">
           Who decided what
         </h2>
-        <ol className="crisis-decisions">
+        <ol className="crisis-decisions" aria-label="Decisions taken">
           {debrief.decisions.map((d) => {
             const a = ASSESSMENT[d.assessment] ?? { label: d.assessment, tone: 'info' as const };
             return (

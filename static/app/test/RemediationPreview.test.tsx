@@ -341,7 +341,7 @@ describe('RemediationPreview create step', () => {
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(stage('Approved (simulated)')).toContain('Approved in this tab');
     expect(stage('Jira work item created')).toContain('Not created');
-    expect(stage('Runbook updated')).toContain('Not tracked yet');
+    expect(stage('Runbook updated')).toContain('Not implemented');
     expect(stage('Verified retest')).toContain(RETEST_SUGGESTION);
     expectNoCalls();
   });
@@ -387,7 +387,7 @@ describe('RemediationPreview create step', () => {
     for (const link of links) expect(link).toHaveAttribute('href', `${SITE}/browse/OPS-7`);
     expect(screen.getByText(/Work item created:/)).toBeInTheDocument();
     expect(stage('Jira work item created')).toContain('OPS-7');
-    expect(stage('Runbook updated')).toContain('Not tracked yet');
+    expect(stage('Runbook updated')).toContain('Not implemented');
     expect(stage('Verified retest')).toContain(RETEST_SUGGESTION);
     expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
     expect(screen.getByText('Created as OPS-7')).toBeInTheDocument();
