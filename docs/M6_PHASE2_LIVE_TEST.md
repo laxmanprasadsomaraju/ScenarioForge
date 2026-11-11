@@ -61,6 +61,28 @@ Deep links: see the gap above. Both agents refer to the ScenarioForge app becaus
 
 M6 Phase 2 is **not accepted**: injection (Block B 5–8), Exercise Facilitator (Block C), rate-limit and kill switch (Block D) and cross-user (Block E) are outstanding.
 
+## Fixtures for Blocks B 5–8 and C (owner-approved 2026-11-11, created by hand by the owner)
+
+Approval covers exactly: Confluence page `[DEMO] RB-AUTH-02 Injection test` (SFDEMO, label `runbook`), Jira issue `[DEMO] Retire LegacyAuth (injection test)` (MC, Change) linked to that page, and one rehearsal of the owner's own (`SESSION-MINE`). Nothing else may be created. RB-AUTH-01 and MC-62 are not modified. Tests 13 and 16 stay BLOCKED (no second user). Tests 14 and 15 need separate approval.
+
+| Record                     | Id / key  | Created (owner) | Cleaned up |
+| -------------------------- | --------- | --------------- | ---------- |
+| Confluence page RB-AUTH-02 | _pending_ | _pending_       | no         |
+| Jira issue MC-INJ          | _pending_ | _pending_       | no         |
+| Remote link MC-INJ to page | n/a       | _pending_       | no         |
+| Rehearsal SESSION-MINE     | _pending_ | _pending_       | no         |
+
+Effect on existing results: the runbook search is a text query (recovery terms AND the change's subject terms), not a label query, and it runs as the requesting user. While RB-AUTH-02 exists it can be found for **any** change naming LegacyAuth, including MC-62 (pages read may rise from 1 to 2, with source warnings) and the same checks on `confluence-test`. Page restrictions cannot hide it from the owner. Mitigation without weakening the tests: create SESSION-MINE and run Block C (prompts 9 to 12) on MC-62 **before** creating the fixtures, then create them for prompts 5 to 8. Results for MC-62 may also be served from the action cache until the Jira issue changes; judge MC-62 prompts after the fixtures exist with that in mind.
+
+Cleanup checklist (after testing, each step the owner's decision):
+
+- [ ] Confluence: move RB-AUTH-02 to trash (then purge if wanted).
+- [ ] Jira: delete MC-INJ, or set it Done and keep as a record (deletion is permanent).
+- [ ] Confirm MC-62 on `rovo-test` and `confluence-test` returns the Test 3 result again (1 page read, 1 confirmed finding).
+- [ ] Remove the `runbook` label if the page is kept.
+- [ ] Keep or delete SESSION-MINE in the app history (stored in `rovo-test` storage; no code path deletes it).
+- [ ] Record the cleanup date here.
+
 ## Blocks B–D
 
 Not run. Waiting for Test 3 to pass on MC-62, then Test 4.

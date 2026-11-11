@@ -88,3 +88,8 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 
 - Test 4 (service impact on MC-62) passed live, owner-reported. Tests 3 and 4 are live verified for user-facing behaviour; M6 Phase 2 is not accepted.
 - Next: Blocks B 5–8, C, D, E. Block B needs two synthetic fixtures (a Confluence page and a Jira issue) that only the owner may create; approval requested in chat. Credit meter reading pending from the owner.
+
+## Update 2026-11-11 (lead, owner approval for fixtures)
+
+- Owner approved, in their own words, hand-creating exactly three synthetic fixtures (RB-AUTH-02 page, MC-INJ issue with link, SESSION-MINE) and running user-run Tests 5 to 12. Tests 13 and 16 BLOCKED; 14 and 15 need separate approval. No deploys, scopes, MCP or other environments.
+- Created ids are recorded in [M6_PHASE2_LIVE_TEST](M6_PHASE2_LIVE_TEST.md) as the owner reports them. Credit meter reading is a precondition for each group.
