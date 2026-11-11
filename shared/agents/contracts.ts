@@ -403,6 +403,8 @@ export interface ChangeRecoveryRisksOutput extends ActionOutputBase {
   coverage: AnalysisCoverage;
   /** In-app path to the readiness check for this change. */
   appPath: string;
+  /** Absolute link to the same page; null when the site or install is not verified. */
+  appUrl: string | null;
 }
 
 // get-service-readiness (GET) -> getReadinessGraph ----------------------------
@@ -433,6 +435,8 @@ export interface ImpactPathOutput extends ActionOutputBase {
   unassessed: UnassessedLink[];
   sources: SourceStatus[];
   appPath: string;
+  /** Absolute link to the same page; null when the site or install is not verified. */
+  appUrl: string | null;
 }
 
 // prepare-rehearsal (GET in M6) -> generateRehearsal, preview only ------------
@@ -465,6 +469,8 @@ export interface RehearsalPreviewOutput extends ActionOutputBase {
   evidence: ActionEvidenceQuote[];
   /** In-app path that regenerates the same rehearsal for participants. */
   rehearsalPath: string;
+  /** Absolute link to the same rehearsal; null when the site or install is not verified. */
+  appUrl: string | null;
 }
 
 // explain-outcome (GET) -> stored audit record ------------------------------
