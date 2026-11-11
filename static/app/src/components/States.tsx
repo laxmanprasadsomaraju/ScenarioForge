@@ -172,7 +172,7 @@ export function EmptyState({
   return (
     <div className="empty">
       <h3 className="empty-title">{title}</h3>
-      <p className="empty-body">{children}</p>
+      <div className="empty-body">{children}</div>
       {action ? (
         <Button variant="secondary" onClick={action.onClick}>
           {action.label}

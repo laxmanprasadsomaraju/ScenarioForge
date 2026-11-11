@@ -99,6 +99,23 @@ td.num {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/* First tab stop; hidden until focused so keyboard users can bypass the navigation (2.4.1). */
+.skip-link {
+  position: absolute;
+  inset-block-start: var(--space-xs);
+  inset-inline-start: var(--space-xs);
+  z-index: 20;
+  padding: var(--space-xs) var(--space-md);
+  background: var(--sf-surface);
+  color: var(--sf-accent-text);
+  border: var(--rule-hair) solid var(--sf-border);
+  border-radius: var(--radius-control);
+  font-weight: 650;
+  transform: translateY(-300%);
+}
+.skip-link:focus {
+  transform: none;
+}
 [data-slot] {
   position: relative;
   overflow: hidden;
