@@ -246,6 +246,21 @@ describe('createRemediationWorkItem', () => {
     expect(record?.audit[0]?.actorAccountId).toBe(ME);
   });
 
+  it('keeps the actor account id in storage only, never in a browser response', async () => {
+    const t = await setup();
+    const first = await createRemediationWorkItem(t.deps, t.request, ME);
+    const again = await createRemediationWorkItem(t.deps, t.request, ME);
+    const wrong = await createRemediationWorkItem(t.deps, t.request, '557058:someone-else');
+    expect((await t.record())?.audit[0]?.actorAccountId).toBe(ME);
+    for (const response of [first, again, wrong]) {
+      const text = JSON.stringify(response);
+      expect(text).not.toContain(ME);
+      expect(text).not.toContain('someone-else');
+      expect(text).not.toContain('actorAccountId');
+      expect(text).not.toContain('audit');
+    }
+  });
+
   it('never creates twice: a second call returns the stored work item', async () => {
     const t = await setup();
     await createRemediationWorkItem(t.deps, t.request, ME);

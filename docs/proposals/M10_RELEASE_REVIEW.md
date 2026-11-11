@@ -60,14 +60,16 @@ All four have the same shape: attributes `version: integer` (32-bit signed, used
 
 ## 5. Flag matrix (Forge environment variables)
 
-| Variable                | Default (unset) | Allowed value  | Effect when set                                                                                                | Depends on                                          |
-| ----------------------- | --------------- | -------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `SF_STORAGE`            | off             | `enabled`      | Storage factories return Forge adapters. Enables history, the governance ledger and the cache.                 | —                                                   |
-| `SF_AI`                 | off             | `enabled`      | Site AI opt-in. Without it every agent or MCP action answers USAGE_LIMITED, spends nothing and makes no calls. | `SF_STORAGE` (the governor is null without storage) |
-| `SF_USER_DAILY_CAP`     | 50              | integer 50–300 | Per-user daily cap. Out-of-range or malformed values fall back to 50.                                          | `SF_AI`                                             |
-| `SF_CRISIS`             | off             | `enabled`      | Crisis rooms get the `crisis-room` entity. Otherwise every crisis resolver answers UNAVAILABLE.                | `SF_STORAGE`                                        |
-| `SF_TWG` (+ `TWG_QK_*`) | off             | `enabled`      | Teamwork Graph enrichment. **Must stay unset.** The scopes are not in the manifest.                            | not shippable                                       |
-| (none)                  | M8 writer null  | —              | Code constant. Creation always answers WRITE_NOT_PERMITTED.                                                    | needs code change + `write:jira-work`               |
+| Variable                | Default (unset) | Allowed value  | Effect when set                                                                                                            | Depends on                                                |
+| ----------------------- | --------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `SF_STORAGE`            | off             | `enabled`      | Storage factories return Forge adapters. Enables history, the governance ledger and the cache.                             | —                                                         |
+| `SF_AI`                 | off             | `enabled`      | Site AI opt-in. Without it every agent or MCP action answers USAGE_LIMITED, spends nothing and makes no calls.             | `SF_STORAGE` (the governor is null without storage)       |
+| `SF_USER_DAILY_CAP`     | 50              | integer 50–300 | Per-user daily cap. Out-of-range or malformed values fall back to 50.                                                      | `SF_AI`                                                   |
+| `SF_CRISIS`             | off             | `enabled`      | Crisis rooms get the `crisis-room` entity. Otherwise every crisis resolver answers UNAVAILABLE.                            | `SF_STORAGE`                                              |
+| `SF_TWG` (+ `TWG_QK_*`) | off             | `enabled`      | Teamwork Graph enrichment. **Must stay unset.** The scopes are not in the manifest.                                        | not shippable                                             |
+| `SF_REMEDIATION_WRITE`  | off             | `enabled`      | Builds the M8 write gateway and approval store. Without it, or without `SF_STORAGE`, creation answers WRITE_NOT_PERMITTED. | `SF_STORAGE`, and `write:jira-work` (not in the manifest) |
+
+Upgrade note (flag names). The `rovo-test` branches read `SF_ROVO_TEST_STORAGE`, `SF_ROVO_TEST_AI` and `SF_ROVO_TEST_USER_DAILY_CAP`. This release code reads `SF_STORAGE`, `SF_AI`, `SF_USER_DAILY_CAP`, `SF_CRISIS`, `SF_TWG` and `SF_REMEDIATION_WRITE`. Variables set on `rovo-test` do not carry over by name: a release environment starts with every flag off until the owner sets the new names. `test/flagsUnset.test.ts` covers the all-unset behaviour.
 
 ## 6. Capability evidence
 

@@ -2,7 +2,7 @@
 
 Date: 2026-11-11. Base: `release/judged-full` @ `13513d5`. **Offline validation only.** No deploy, install, variable, scope, Jira/Confluence write or Rovo call was made. Status words: Automated tests passed / Code complete. Nothing here is Live verified.
 
-## Gates
+## Gates (superseded on `release/judged-full-integrate2`, see the section at the end)
 
 | Gate                                                                 | Result                                                                                                                |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -99,3 +99,20 @@ Upgrade consequences:
 - confluence-test to judged-full: adds `storage:app` (major version, re-consent), agents, MCP and four permanent entities.
 - rovo-test to judged-full: no scope change, so no scope-driven re-consent; adds `rovo:mcp` and two entities that cannot be removed later. The renamed flags matter: judged-full ignores `SF_ROVO_TEST_*`, so history and the usage cap silently fall back to "not enabled" and defaults on rovo-test until `SF_STORAGE` is set (owner action).
 - No environment currently has `crisis-room` or `remediation-item`; see the entity table above for the recommendation to drop them.
+
+## Integration 2 (release/judged-full-integrate2, 2026-11-11; offline, not live)
+
+Base `release/judged-full` @ 606347c (rollback point) plus `m8/write-gateway` (0dbb5c1), `sec/hardening` (5bfd27d), `release/quality` (96713e7), merged with merge commits; no textual conflicts. Diff of `manifest.yml` and all `package*.json` vs 606347c is empty. Status: Automated tests passed. Nothing here is Live verified.
+
+| Gate                           | Result                                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `npm run verify`               | pass; root 42 files, 1157 tests                                                                    |
+| `npm test --prefix static/app` | 24 files, 199 tests pass                                                                           |
+| `npx prettier --check .`       | pass                                                                                               |
+| sloplint (app scope)           | clean, 0 FAIL / 0 REFLEX / 0 WARN, 80 files                                                        |
+| `npm audit` (root and app)     | 0 vulnerabilities                                                                                  |
+| `forge lint`                   | 0 errors, 1 approval item: MAJOR_VERSION_RULE (manifest unchanged vs 606347c; same item as before) |
+| build fixture grep             | no `previewFixtures`, `PREVIEW-14`, `bridgeStub`, `crisisPreview` in `static/app/build`            |
+| Node                           | v24.22.2; a child `node -v` also prints v24.22.2                                                   |
+
+Cross-lane checks: (1) history never lists, reads, prunes or overwrites `remediation-item:` records and key spaces are disjoint (new `test/historyRemediationIsolation.test.ts`); (2) the AST log-hygiene checker passes on `writeGateway.ts`, `forgeWrite.ts`, `gateways.ts` with no change to the checker; (3) no account id reaches a browser response from the create path (new assertion in `test/remediationCreate.test.ts`; audit keeps ids in storage only), crisis lifecycle leak test and crisis component tests pass; (4) link-base cache uses an injected clock, no wall-clock dependence; (5) removed a stray backup file `src/agents/actions.ts-E` that `sec/hardening` had committed.
