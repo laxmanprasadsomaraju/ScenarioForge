@@ -680,7 +680,8 @@ describe('no write path', () => {
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
       expect(source).not.toMatch(/\bfetch\(/);
-      expect(source).not.toMatch(/requestJira\([^)]*,/);
+      // forgeWrite.ts is the one M8 write transport (asUser, POST, three fixed routes).
+      if (!file.endsWith('forgeWrite.ts')) expect(source).not.toMatch(/requestJira\([^)]*,/);
       expect(source).not.toMatch(/requestConfluence/);
       expect(source).not.toMatch(/method:\s*['"](PUT|DELETE|PATCH)['"]/);
     }
@@ -700,7 +701,7 @@ describe('no write path', () => {
     expect(defined.filter((name) => /create|post|write|submit/i.test(name!))).toEqual([
       'createRemediationWorkItem',
     ]);
-    expect(index).toMatch(/writer: productionRemediationWriter\(\)/);
+    expect(index).toMatch(/\.\.\.remediationCreateWiring\(\)/);
     const gateways = readFileSync(join(ROOT, 'src/remediation/gateways.ts'), 'utf8');
     expect(gateways).not.toMatch(/@forge\/api|requestJira/);
   });

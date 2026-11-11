@@ -37,6 +37,10 @@ Each has an APPROVAL REQUEST block for the owner. None is approved.
 
 Observed: `forge environments list` shows `confluence-test` last deployed 2026-11-11T15:41:53Z (newer than ENVIRONMENTS.md records).
 
+## M8 write gateway (Lane A, branch `m8/write-gateway`, from `606347c`)
+
+Code complete, Automated tests passed (see [M8_PLAN.md](M8_PLAN.md) section 14). Owner approved code, mock tests and local integration only. Flag `SF_REMEDIATION_WRITE` (off) plus `SF_STORAGE`; manifest and package files unchanged; no deploy, no real Jira call. Next safe action: lead review and merge; real writes need the separately approved `write-test` environment.
+
 ## Pending owner approvals
 
 1. Turn AI on for rovo-test (`SF_ROVO_TEST_AI=enabled`) and spend Rovo credits for the Phase 2 live test (RT2 `M6_PHASE2_TEST_SCRIPT.md`).

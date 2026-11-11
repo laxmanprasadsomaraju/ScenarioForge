@@ -1,4 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { fakeStore } from './helpers/fakeKvs';
 import { InMemoryStorage } from '../shared/agents/storage';
 import type { CreateRemediationWorkItemRequest, PrepareRemediationRequest } from '../shared/api';
 import {
@@ -12,6 +14,7 @@ import type { ConfluenceGateway, ConfluenceResponse } from '../src/confluence/cl
 import type { JiraResponse } from '../src/jira/client';
 import {
   createRemediationWorkItem,
+  LOCK_EXPIRY_MS,
   handleCreateRemediationWorkItem,
   remediationRecordKey,
   WRITE_NOT_PERMITTED_MESSAGE,
@@ -23,7 +26,9 @@ import {
 import {
   productionRemediationStorage,
   productionRemediationWriter,
+  remediationCreateWiring,
 } from '../src/remediation/gateways';
+import { createJiraWriteGateway, type WriteTransportInit } from '../src/remediation/writeGateway';
 import { prepareRemediationRequest, type RemediationJiraGateway } from '../src/remediation/prepare';
 import { RB_AUTH_STEPS } from './fixtures/analysis/cases';
 
@@ -433,5 +438,290 @@ describe('createRemediationWorkItem', () => {
     expect(writeErrorFromStatus(404, 'create-issue').message).toBe(
       'The project or work item was not found, or you cannot see it.',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// M8 write gateway (code only; no real Jira, no write scope in the manifest).
+// ---------------------------------------------------------------------------
+
+type Transport = (path: string, init: WriteTransportInit) => Promise<JiraResponse>;
+
+/** Wires a gateway over a fake transport into a prepared setup. */
+async function gatewaySetup(transport: Transport, timeoutMs?: number) {
+  const t = await setup();
+  const calls: { path: string; init: WriteTransportInit }[] = [];
+  const writer = createJiraWriteGateway({
+    transport: async (path, init) => {
+      calls.push({ path, init });
+      return transport(path, init);
+    },
+    ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+  });
+  return { ...t, calls, deps: { ...t.deps, writer } };
+}
+
+const okTransport: Transport = async (path) =>
+  path === '/rest/api/3/issue' ? respond(201, { id: '1', key: 'OPS-7' }) : respond(201);
+
+describe('write gateway over a fake Jira', () => {
+  it('sends exactly the three approved bodies as POST JSON', async () => {
+    const t = await gatewaySetup(okTransport);
+    const result = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(result).toMatchObject({ ok: true, data: { outcome: 'created', issueKey: 'OPS-7' } });
+    const follow = resolveFollowUpRequests(t.prepared.request, 'OPS-7');
+    if (!follow.ok) throw new Error('follow-up');
+    expect(t.calls.map((c) => c.path)).toEqual([
+      '/rest/api/3/issue',
+      '/rest/api/3/issueLink',
+      '/rest/api/3/issue/OPS-7/remotelink',
+    ]);
+    expect(t.calls.map((c) => JSON.parse(c.init.body))).toEqual([
+      t.prepared.request.createIssue.body,
+      follow.issueLink.body,
+      follow.remoteLink!.body,
+    ]);
+    for (const c of t.calls) {
+      expect(c.init.method).toBe('POST');
+      expect(c.init.headers['Content-Type']).toBe('application/json');
+      expect(c.init.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
+
+  it('refuses any call outside the three permitted ones before a request', async () => {
+    const calls: string[] = [];
+    const gw = createJiraWriteGateway({
+      transport: async (p) => (calls.push(p), respond(200)),
+    });
+    const bad = [
+      { method: 'PUT', path: '/rest/api/3/issue/OPS-1', body: {} },
+      { method: 'DELETE', path: '/rest/api/3/issue/OPS-1', body: {} },
+      { method: 'POST', path: '/rest/api/3/issue/OPS-1/comment', body: {} },
+      { method: 'POST', path: '/rest/api/3/issue/ops-1/remotelink', body: {} },
+      { method: 'POST', path: '/rest/api/3/issue/../x/remotelink', body: {} },
+    ];
+    for (const call of bad) {
+      await expect(gw.send(call as unknown as JiraWriteCall<unknown>)).rejects.toThrow();
+    }
+    expect(calls).toEqual([]);
+  });
+
+  it.each([
+    [400, 'INVALID_REQUEST'],
+    [401, 'UNAUTHENTICATED'],
+    [403, 'FORBIDDEN'],
+    [404, 'NOT_FOUND'],
+    [429, 'RATE_LIMITED'],
+  ])('maps a %i on create and records a failed state', async (status, code) => {
+    const t = await gatewaySetup(async () => respond(status, { errorMessages: ['secret'] }));
+    const result = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(result).toMatchObject({ ok: false, error: { code, upstreamStatus: status } });
+    expect(JSON.stringify(result)).not.toContain('secret');
+    expect((await t.record())?.state.status).toBe('failed');
+    expect(t.calls).toHaveLength(1);
+  });
+
+  it('treats a 5xx on create as unknown and never sends a second create', async () => {
+    const t = await gatewaySetup(async () => respond(503));
+    const first = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(first).toMatchObject({ ok: true, data: { outcome: 'unknown' } });
+    await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(t.calls.filter((c) => c.path === '/rest/api/3/issue')).toHaveLength(1);
+  });
+
+  it('times out with an abort signal and records unknown', async () => {
+    const t = await gatewaySetup(
+      (_p, init) =>
+        new Promise((_, reject) => {
+          init.signal.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+      20,
+    );
+    const result = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(result).toMatchObject({ ok: true, data: { outcome: 'unknown' } });
+    expect(t.calls[0]!.init.signal.aborted).toBe(true);
+    expect((await t.record())?.state.status).toBe('unknown');
+  });
+
+  it('treats a malformed or unexpected create answer as unknown', async () => {
+    for (const bad of [
+      async () => ({ ok: true, status: 201, json: async () => ({ key: 'not a key' }) }),
+      async () => ({
+        ok: true,
+        status: 201,
+        json: async () => {
+          throw new SyntaxError('bad json');
+        },
+      }),
+      async () => respond(200, { key: 'OPS-7' }),
+      async () => respond(204),
+    ] as Transport[]) {
+      const t = await gatewaySetup(bad);
+      const result = await createRemediationWorkItem(t.deps, t.request, ME);
+      expect(result).toMatchObject({ ok: true, data: { outcome: 'unknown' } });
+      expect(t.calls).toHaveLength(1);
+    }
+  });
+
+  it('records created-with-follow-up when links fail, then never creates again', async () => {
+    const t = await gatewaySetup(async (path) =>
+      path === '/rest/api/3/issue'
+        ? respond(201, { key: 'OPS-7' })
+        : path === '/rest/api/3/issueLink'
+          ? respond(403)
+          : respond(202),
+    );
+    const first = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(first).toMatchObject({
+      ok: true,
+      data: {
+        outcome: 'created-with-follow-up',
+        issueKey: 'OPS-7',
+        issueLink: { status: 'failed', upstreamStatus: 403 },
+        remoteLink: { status: 'failed', upstreamStatus: 502 },
+      },
+    });
+    const again = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(again).toMatchObject({ ok: true, data: { issueKey: 'OPS-7' } });
+    expect(t.calls.filter((c) => c.path === '/rest/api/3/issue')).toHaveLength(1);
+    expect(t.calls).toHaveLength(3);
+  });
+
+  it('a link that errors is a recorded failure, not a second issue', async () => {
+    const t = await gatewaySetup(async (path) => {
+      if (path === '/rest/api/3/issue') return respond(201, { key: 'OPS-7' });
+      throw new Error('network');
+    });
+    const result = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(result).toMatchObject({ ok: true, data: { outcome: 'created-with-follow-up' } });
+  });
+
+  it('audit steps hold ids only, no draft text', async () => {
+    const t = await gatewaySetup(okTransport);
+    await createRemediationWorkItem(t.deps, t.request, ME);
+    const record = (await t.record())!;
+    const audit = JSON.stringify(record.audit);
+    expect(audit).not.toContain(t.prepared.draft.summary);
+    expect(audit).not.toContain('LegacyAuth');
+    for (const e of record.audit) {
+      expect(Object.keys(e).every((k) => k !== 'summary' && k !== 'description')).toBe(true);
+    }
+  });
+});
+
+describe('lock expiry and recovery', () => {
+  async function stuck() {
+    const t = await setup(async () => {
+      throw new Error('crash');
+    });
+    await createRemediationWorkItem(t.deps, t.request, ME);
+    return t;
+  }
+
+  it('keeps a fresh lock checking without a second create', async () => {
+    const t = await stuck();
+    const later = { ...t.deps, now: () => new Date(Date.parse(AT) + LOCK_EXPIRY_MS - 1000) };
+    const r = await createRemediationWorkItem(later, t.request, ME);
+    expect(r).toMatchObject({ ok: true, data: { outcome: 'unknown' } });
+    expect(creates(t.sent)).toHaveLength(1);
+  });
+
+  it('releases an expired lock when no labelled item exists, then a retry creates once', async () => {
+    const t = await stuck();
+    const later = { ...t.deps, now: () => new Date(Date.parse(AT) + LOCK_EXPIRY_MS + 1000) };
+    const released = await createRemediationWorkItem(later, t.request, ME);
+    expect(released).toMatchObject({ ok: false, error: { code: 'CONFLICT' } });
+    expect((await t.record())?.state.status).toBe('failed');
+    const { writer, sent } = fakeWriter(async (call) =>
+      call.path === '/rest/api/3/issue' ? created('OPS-9')(call) : respond(201),
+    );
+    const retry = await createRemediationWorkItem({ ...later, writer }, t.request, ME);
+    expect(retry).toMatchObject({ ok: true, data: { outcome: 'created', issueKey: 'OPS-9' } });
+    expect(creates(sent)).toHaveLength(1);
+  });
+
+  it('adopts instead of releasing when the labelled item exists', async () => {
+    const t = await stuck();
+    t.s.state.existing = [{ key: 'OPS-12', labels: [REMEDIATION_LABEL, t.label] }];
+    const later = { ...t.deps, now: () => new Date(Date.parse(AT) + LOCK_EXPIRY_MS + 1000) };
+    const r = await createRemediationWorkItem(later, t.request, ME);
+    expect(r).toMatchObject({ ok: true, data: { issueKey: 'OPS-12', adopted: true } });
+  });
+});
+
+describe('disabled by default', () => {
+  const never = async (): Promise<JiraResponse> => {
+    throw new Error('network must not be touched');
+  };
+
+  it('returns no writer or store unless the flag and SF_STORAGE are both exact', () => {
+    const { clientFor } = fakeStore();
+    for (const env of [
+      {},
+      { SF_STORAGE: 'enabled' },
+      { SF_REMEDIATION_WRITE: 'enabled' },
+      { SF_REMEDIATION_WRITE: 'true', SF_STORAGE: 'enabled' },
+      { SF_REMEDIATION_WRITE: 'enabled ', SF_STORAGE: 'enabled' },
+    ]) {
+      expect(remediationCreateWiring({ env, clientFor, transport: never })).toEqual({
+        writer: null,
+        storage: null,
+      });
+    }
+    const both = remediationCreateWiring({
+      env: { SF_REMEDIATION_WRITE: 'enabled', SF_STORAGE: 'enabled' },
+      clientFor,
+      transport: never,
+    });
+    expect(both.writer).not.toBeNull();
+    expect(both.storage).not.toBeNull();
+  });
+
+  it('makes no network call with the flag off', async () => {
+    let calls = 0;
+    const transport: Transport = async () => {
+      calls += 1;
+      return respond(201);
+    };
+    const wiring = remediationCreateWiring({ env: {}, transport });
+    const t = await setup();
+    const result = await handleCreateRemediationWorkItem({ ...t.deps, ...wiring }, t.request, ME);
+    expect(result).toMatchObject({ ok: false, error: { code: 'WRITE_NOT_PERMITTED' } });
+    expect(calls).toBe(0);
+    expect(t.sent).toEqual([]);
+  });
+
+  it('stores records in the existing rehearsal-history entity, no new entity', async () => {
+    const { clientFor, entities } = fakeStore();
+    const storage = remediationCreateWiring({
+      env: { SF_REMEDIATION_WRITE: 'enabled', SF_STORAGE: 'enabled' },
+      clientFor,
+      transport: never,
+    }).storage!;
+    expect(await storage.set('remediation-item:sf-rem-x', { a: 1 }, null)).toMatchObject({
+      ok: true,
+    });
+    expect([...entities.keys()]).toEqual(['rehearsal-history']);
+  });
+
+  it('src/remediation has no PUT, DELETE, PATCH or asApp', () => {
+    const dir = new URL('../src/remediation/', import.meta.url);
+    for (const file of readdirSync(dir)) {
+      const code = readFileSync(new URL(file, dir), 'utf8')
+        .split('\n')
+        .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+        .join('\n');
+      expect(code, file).not.toMatch(/asApp/);
+      expect(code, file).not.toMatch(/['"`](PUT|DELETE|PATCH)['"`]/);
+    }
+  });
+
+  // Defence in depth: even if SF_REMEDIATION_WRITE were mis-set in a deployed
+  // environment, the manifest requests no Jira write scope, so Jira refuses.
+  it('manifest has no Jira write scope', () => {
+    const manifest = readFileSync(new URL('../manifest.yml', import.meta.url), 'utf8');
+    expect(manifest).not.toMatch(/write:jira-work/);
+    expect(manifest).not.toMatch(/^\s*-\s*write:/m);
+    expect(manifest).not.toMatch(/delete:jira/);
   });
 });
