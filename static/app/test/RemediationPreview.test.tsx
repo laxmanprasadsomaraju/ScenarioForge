@@ -18,9 +18,13 @@ import { buildRetest, compareRetest } from '@shared/simulation/retest';
 import { api } from '../src/lib/api';
 import type { CompletedExercise } from '../src/lib/exercises';
 import { Debrief } from '../src/components/simulation/Debrief';
+import type { CreateRemediationWorkItemResponse } from '@shared/api';
 import {
   CREATE_BLOCKED_REASON,
+  CREATE_NEEDS_APPROVAL,
   RemediationPreview,
+  RETEST_SUGGESTION,
+  type RemediationCreator,
 } from '../src/components/simulation/RemediationPreview';
 import { renderInApp } from './helpers';
 
@@ -286,6 +290,183 @@ describe('RemediationPreview', () => {
       'Approval needs your Atlassian account, which this view could not read.',
     );
     expectNoCalls();
+  });
+});
+
+function createdResponse(
+  overrides: Partial<CreateRemediationWorkItemResponse> = {},
+): CreateRemediationWorkItemResponse {
+  return {
+    outcome: 'created',
+    issueKey: 'OPS-7',
+    issueUrl: `${SITE}/browse/OPS-7`,
+    adopted: false,
+    issueLink: { status: 'added' },
+    remoteLink: { status: 'added' },
+    idempotencyLabel: expectedDraft('OPS', 'Task').labels[1]!,
+    message: 'OPS-7 was created.',
+    ...overrides,
+  };
+}
+
+describe('RemediationPreview create step', () => {
+  async function approveAs(user: User) {
+    await screen.findByText(`${SITE}/browse/MC-62`);
+    await chooseDestination(user);
+    await user.click(screen.getByRole('checkbox', { name: 'I have reviewed this exact draft' }));
+    await user.click(screen.getByRole('button', { name: 'Approve this exact draft' }));
+  }
+
+  function renderWith(creator: RemediationCreator | null) {
+    renderInApp(
+      <RemediationPreview
+        analysis={analysis}
+        findingId={finding.id}
+        fixes={fixes}
+        creator={creator}
+      />,
+    );
+  }
+
+  const stage = (label: string) =>
+    within(screen.getByLabelText('Remediation stages')).getByText(label).closest('.review-item')
+      ?.textContent;
+
+  it('stays disabled with its reason after approval when writing is not permitted', async () => {
+    const user = userEvent.setup();
+    renderWith(null);
+    await approveAs(user);
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
+    expect(screen.getByText(CREATE_BLOCKED_REASON)).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(stage('Approved (simulated)')).toContain('Approved in this tab');
+    expect(stage('Jira work item created')).toContain('Not created');
+    expect(stage('Runbook updated')).toContain('Not tracked yet');
+    expect(stage('Verified retest')).toContain(RETEST_SUGGESTION);
+    expectNoCalls();
+  });
+
+  it('needs approval before the create step, then asks for a second confirmation', async () => {
+    const user = userEvent.setup();
+    const creator = vi.fn<RemediationCreator>(async () => ({ ok: true, data: createdResponse() }));
+    renderWith(creator);
+    await screen.findByText(`${SITE}/browse/MC-62`);
+    await chooseDestination(user);
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
+    expect(screen.getByText(CREATE_NEEDS_APPROVAL)).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'I have reviewed this exact draft' }));
+    await user.click(screen.getByRole('button', { name: 'Approve this exact draft' }));
+    await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
+
+    const dialog = screen.getByRole('alertdialog', { name: 'Create 1 work item in OPS as you?' });
+    const draft = expectedDraft('OPS', 'Task');
+    const items = within(within(dialog).getByRole('list', { name: 'Will be created' }))
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+    expect(items).toEqual([
+      `Work item: Task in OPS, “${draft.summary}”`,
+      `Labels: ${draft.labels.join(', ')}`,
+      'Issue link: relates to MC-62',
+      `Runbook page link: “${draft.links.remoteLink!.title}”`,
+    ]);
+    expect(creator).not.toHaveBeenCalled();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(creator).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
+    await user.click(screen.getByRole('button', { name: 'Create 1 work item' }));
+    expect(creator).toHaveBeenCalledTimes(1);
+    const [sentDraft, sentApproval] = creator.mock.calls[0]!;
+    expect(sentDraft).toEqual(draft);
+    expect(sentApproval.approverAccountId).toBe(ACCOUNT);
+
+    const links = await screen.findAllByRole('link', { name: 'OPS-7' });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute('href', `${SITE}/browse/OPS-7`);
+    expect(screen.getByText(/Work item created:/)).toBeInTheDocument();
+    expect(stage('Jira work item created')).toContain('OPS-7');
+    expect(stage('Runbook updated')).toContain('Not tracked yet');
+    expect(stage('Verified retest')).toContain(RETEST_SUGGESTION);
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
+    expect(screen.getByText('Created as OPS-7')).toBeInTheDocument();
+  });
+
+  it('shows created with follow-up when a link was not added', async () => {
+    const user = userEvent.setup();
+    renderWith(async () => ({
+      ok: true,
+      data: createdResponse({
+        outcome: 'created-with-follow-up',
+        issueLink: {
+          status: 'failed',
+          message: 'You do not have permission to add the link in this project.',
+        },
+      }),
+    }));
+    await approveAs(user);
+    await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
+    await user.click(screen.getByRole('button', { name: 'Create 1 work item' }));
+    expect(await screen.findByText(/Follow-up needed\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Issue link not added: You do not have permission to add the link in this project.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the failure reason and allows another attempt', async () => {
+    const user = userEvent.setup();
+    renderWith(async () => ({
+      ok: false,
+      error: {
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to create the work item in this project.',
+      },
+    }));
+    await approveAs(user);
+    await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
+    await user.click(screen.getByRole('button', { name: 'Create 1 work item' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Not created: You do not have permission to create the work item in this project.',
+    );
+    expect(stage('Jira work item created')).toContain('Not created');
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeEnabled();
+  });
+
+  it('shows an unknown outcome as checking, and checking again can adopt', async () => {
+    const user = userEvent.setup();
+    const creator = vi
+      .fn<RemediationCreator>()
+      .mockResolvedValueOnce({
+        ok: true,
+        data: createdResponse({
+          outcome: 'unknown',
+          issueKey: undefined,
+          issueUrl: undefined,
+          issueLink: { status: 'skipped', reason: 'Not attempted.' },
+          remoteLink: { status: 'skipped', reason: 'Not attempted.' },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        data: createdResponse({
+          issueKey: 'OPS-9',
+          issueUrl: `${SITE}/browse/OPS-9`,
+          adopted: true,
+        }),
+      });
+    renderWith(creator);
+    await approveAs(user);
+    await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
+    await user.click(screen.getByRole('button', { name: 'Create 1 work item' }));
+    expect(await screen.findByText(/Outcome unknown: checking Jira/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create in Jira' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Check again' }));
+    expect(await screen.findByText(/Existing work item adopted:/)).toBeInTheDocument();
+    expect(creator).toHaveBeenCalledTimes(2);
+    expect(stage('Jira work item created')).toContain('OPS-9');
   });
 });
 

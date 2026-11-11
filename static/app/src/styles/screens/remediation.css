@@ -97,3 +97,16 @@
     gap: var(--space-2xs);
   }
 }
+.create-confirm {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border: var(--rule-hair) solid var(--sf-border-bold);
+  border-radius: var(--radius-control);
+  background: var(--sf-surface-sunken);
+}
+.remediation-tracking {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}

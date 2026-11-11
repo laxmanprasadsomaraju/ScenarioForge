@@ -75,7 +75,7 @@ Each is a major version with admin re-approval. Test first in a separate environ
 
 ## 9. As built: exact request and fingerprint (Lane A3, 2026-11-10)
 
-Read-only preparation is built; **nothing is created**. There is no create resolver, no POST/PUT/DELETE call, no new scope. Sources read 2026-11-10: Jira platform v3 OpenAPI (`https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json`), ADF reference (`https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/` and the `blockquote`, `paragraph`, `text`, `hardBreak` node and `link` mark pages), ADF JSON schema `@atlaskit/adf-schema` 57.7.39 `dist/json-schema/v1/full.json`, Forge resolver context (`https://developer.atlassian.com/platform/forge/runtime-reference/custom-ui-resolver/`).
+Read-only preparation is built; **nothing is created**. No POST/PUT/DELETE call is made and no scope is added. (Since §11 a create resolver exists but is hard-disabled.) Sources read 2026-11-10: Jira platform v3 OpenAPI (`https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json`), ADF reference (`https://developer.atlassian.com/cloud/jira/platform/apis/document/structure/` and the `blockquote`, `paragraph`, `text`, `hardBreak` node and `link` mark pages), ADF JSON schema `@atlaskit/adf-schema` 57.7.39 `dist/json-schema/v1/full.json`, Forge resolver context (`https://developer.atlassian.com/platform/forge/runtime-reference/custom-ui-resolver/`).
 
 **Description as ADF** (`shared/remediation/adf.ts`). `{ version: 1, type: 'doc', content }`. Each blank-line-separated block is a `paragraph`; line breaks inside a block are `hardBreak`. A block starting `Quoted exactly from …:` is that line as a paragraph plus a `blockquote` holding the quoted lines verbatim (no trimming, no smart quotes, never linked). A line `Link: <url>` gets a `link` mark (`attrs.href` = the URL text) only when the URL is absolute https on the trusted site origin; any other URL stays plain text. The footer is a plain paragraph. Flattening with `src/jira/adf.ts` reproduces the normalised description and each quote exactly (tested).
 
@@ -140,3 +140,67 @@ Until approvals are stored server-side (`storage:app`), the approval record come
 - Search-index delay for the label duplicate check.
 - Whether `write:jira-work` alone is accepted for `POST /rest/api/3/issueLink` when issue linking is disabled on a site (the API requires linking to be active).
 - Required custom fields on the chosen project's create screen; the draft must fail with a clear message rather than guess values.
+
+## 11. As built: creation adapter, hard-disabled (Lane M8, 2026-11-11)
+
+Status: **Code complete, Automated tests passed. Disabled in every build.** No write scope, no manifest change, no deploy, nothing sent to Jira or Confluence.
+
+**Disabled by construction.** `src/remediation/create.ts` takes an injected `JiraWriteGateway | null` and `StorageAdapter | null`. Production wiring (`src/remediation/gateways.ts`) returns `null` for both, and no Forge write implementation exists anywhere in the codebase. The resolver `createRemediationWorkItem` (registered in `src/index.ts`) checks the writer first and answers `WRITE_NOT_PERMITTED` before parsing the payload or reading anything. Tests assert both factories return null and that no read happens.
+
+**Order when a writer and a store are injected (tests only):**
+
+1. No store → `STORAGE_UNAVAILABLE`, nothing read or sent.
+2. Server-side re-run of `prepareRemediationRequest` (serverInfo, analysis, draft, exact request, label search). The browser's draft is never used.
+3. Approval re-check (`verifyApproval`): approval carries `requestHash`; `checkRequestApproval` against the fresh request (missing → wrong-approver → stale); the hash the person saw equals the fresh hash; approver = Forge `context.accountId`; `approvedAt` readable, not more than 5 min in the future, not older than 24 h. Any failure → `APPROVAL_INVALID`.
+4. Stored record `remediation-item:<sf-rem-…>` (one per idempotency label): `created` → returned as is; `creating`/`unknown` → label search only (adopt, or stay `unknown`); `failed` (a definite refusal, nothing created) → may be retried.
+5. Duplicate from step 2: `ambiguous` → `CONFLICT`; `duplicate` → adopt without creating or linking.
+6. Conditional state move `approved → creating` (`StorageAdapter.set` with `expectedVersion`, via the shared state machine `transition`). Losing the race → `CONFLICT`. Two concurrent calls create once (tested).
+7. Label search again immediately before the create (`duplicate` → adopt; `ambiguous`/error → `failed`).
+8. `POST /rest/api/3/issue` with `request.createIssue` exactly as fingerprinted; then `resolveFollowUpRequests(request, key)`; `POST /rest/api/3/issueLink`; `POST /rest/api/3/issue/{key}/remotelink` (skipped when there is no page link). Tests compare every sent call to the approved request with only the key filled in.
+9. Outcomes: throw/timeout, 5xx, unreadable 2xx body → `unknown` → label search → adopt (then links) or stay `unknown` ("checking"); never a second create. 4xx on create → `failed` with a permission-safe message. A failed link after a created work item → `created-with-follow-up`; the create is never retried.
+10. Audit: each step appends `{ step, outcome, at, actorAccountId | null, issueKey?, upstreamStatus?, transition? }` to the record (`approval-check`, `lock`, `duplicate-check`, `create-issue`, `issue-link`, `remote-link`, `adopt`). Ids only; no summary or description text.
+
+**Error mapping (writes)** `writeErrorFromStatus`: 400 `INVALID_REQUEST` ("the project may need fields this draft does not fill in"), 401 `UNAUTHENTICATED`, 403 `FORBIDDEN` ("You do not have permission to create the work item in this project."), 404 `NOT_FOUND` ("The project or work item was not found, or you cannot see it." — does not reveal whether the project exists), 429 `RATE_LIMITED`, other `UPSTREAM_ERROR`. Jira's error text is never echoed. New `ApiErrorCode`s: `WRITE_NOT_PERMITTED`, `APPROVAL_INVALID`, `CONFLICT`, `STORAGE_UNAVAILABLE`.
+
+**UI** (`RemediationPreview`): an optional `creator` prop, passed by no screen, so "Create in Jira" stays disabled with "Creating work items needs the write:jira-work permission (not granted)". With a creator (component tests only): disabled until the exact draft is approved; then a second confirmation (`alertdialog` "Create 1 work item in <project> as you?") lists exactly the work item, labels, issue link and runbook page link; outcomes shown: created (key link), created with follow-up (which link failed and why), not created (reason; retry allowed), unknown ("checking", with "Check again", which never creates twice). A "Remediation tracking" card keeps the stages separate: Proposed / Approved (simulated) / Jira work item created / Runbook updated / Verified retest ("Retest after the runbook is updated"), and links the created key to the finding id.
+
+Tests: `test/remediationCreate.test.ts` (18), `static/app/test/RemediationPreview.test.tsx` (5 new). The browser-side creator (prepare → `approveRequest` → create) is not written; it is the first step after approval.
+
+## 12. Approval request: `write:jira-work` (not granted; owner decision needed)
+
+**Ask.** Add `write:jira-work` to `manifest.yml` permissions and deploy to **`confluence-test` only**, to test work item creation against a synthetic `[DEMO]` project. `storage:app` (D17) is a prerequisite for the approval store and conditional `creating` write. No production or development deploy, no Confluence write scope.
+
+**What the scope allows.** Classic scope `write:jira-work`: create and edit issues, comments, worklogs, issue links and remote links, transitions and attachments **wherever the acting user may**. Forge cannot narrow it to endpoints; the app narrows it in code. Calls are made `asUser()` only, so Jira enforces the user's own project permissions (Browse projects, Create issues, Link issues).
+
+**Endpoints ScenarioForge would call with it (and only these):**
+
+| Call                                      | When                                         | Body                                          |
+| ----------------------------------------- | -------------------------------------------- | --------------------------------------------- |
+| `POST /rest/api/3/issue`                  | once per idempotency label, after approval   | `request.createIssue.body` as fingerprinted   |
+| `POST /rest/api/3/issueLink`              | after create, "Relates" to the change        | `request.issueLink.body`, key filled in       |
+| `POST /rest/api/3/issue/{key}/remotelink` | after create, when the runbook page is known | `request.remoteLink.body` (`globalId` upsert) |
+
+No edit, transition, delete, comment, attachment or Confluence call. No asApp call. No trigger, schedule, Automation or Rovo/MCP action can reach the create resolver.
+
+**Risks.**
+
+- Scope breadth: a code defect could write elsewhere the user can. Mitigation: one gateway with a `send(call)` that only receives calls from the fingerprinted request; tests assert the exact calls; a source test fails if `src/remediation` contains PUT/DELETE/PATCH or another write call.
+- Duplicate work items on timeout or double click. Mitigation: conditional `creating` write, label search before create, adopt-by-label on unknown outcome; tested.
+- Search-index delay after create (unverified): an `unknown` may stay `unknown` until the item is searchable; the UI says "checking" and never re-creates.
+- Required custom fields on the target project's create screen → 400, shown as "not created", no retry loop.
+- Admin re-consent: adding the scope is a major version; every install must re-approve.
+- Marketplace/contest: a write scope increases review scrutiny; the demo must state that creation happens only after explicit approval.
+
+**Rollback.** Remove the scope from `manifest.yml` and redeploy to `confluence-test`; the production factory already returns null, so the resolver answers `WRITE_NOT_PERMITTED` regardless. Work items created in the `[DEMO]` project are deleted by hand by the owner. No data migration: records live only in `storage:app` on that environment.
+
+**Test plan on `confluence-test` (synthetic only).**
+
+1. Owner creates a `[DEMO]` Jira project (e.g. `SFDEMO`) and uses the existing `[DEMO]` change `MC-62` and runbook `RB-AUTH-01`.
+2. Swap the null writer for a Forge `asUser().requestJira(route…, { method: 'POST', body })` gateway on a `m8/*` branch built only for `confluence-test`.
+3. Happy path: prepare → review → approve → confirm → one work item; compare its fields in Jira with the preview byte for byte (summary, ADF description, labels, "Relates" link, remote link).
+4. Double click / two tabs: exactly one work item.
+5. Stale: edit the runbook step after approval → `APPROVAL_INVALID`.
+6. Permission: a user without Create issues in `SFDEMO` → `FORBIDDEN`, nothing created.
+7. Label duplicate: run again → adopted, no new item.
+8. Check the Jira audit log: only the three calls above, only by the approving user.
+9. Record the results in a dated `docs/M8_LIVE_TEST.md`; delete the demo items afterwards.

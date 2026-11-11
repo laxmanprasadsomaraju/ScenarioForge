@@ -1,4 +1,8 @@
-import type { CheckRemediationApprovalRequest, PrepareRemediationRequest } from '../../shared/api';
+import type {
+  CheckRemediationApprovalRequest,
+  CreateRemediationWorkItemRequest,
+  PrepareRemediationRequest,
+} from '../../shared/api';
 import {
   FIXED_ISSUE_TYPES,
   MAX_SUMMARY_LENGTH,
@@ -122,4 +126,19 @@ export function parseCheckRemediationApprovalRequest(
     ok: true,
     value: { ...prepared.value, requestHash: record.requestHash, approval },
   };
+}
+
+/**
+ * Create payload: the approval check fields, and the approval must carry a
+ * `requestHash` (a draft-only approval never covers a create).
+ */
+export function parseCreateRemediationWorkItemRequest(
+  payload: unknown,
+): Validated<CreateRemediationWorkItemRequest> {
+  const parsed = parseCheckRemediationApprovalRequest(payload);
+  if (!parsed.ok) return parsed;
+  if (parsed.value.approval.requestHash === undefined) {
+    return { ok: false, message: 'approval must cover the exact request (requestHash).' };
+  }
+  return parsed;
 }

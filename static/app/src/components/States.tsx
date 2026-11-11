@@ -125,6 +125,14 @@ function errorTitle(code: ApiError['code'], product: Product): string {
       return `${product} could not be reached`;
     case 'UNEXPECTED_RESPONSE':
       return `${product} sent an unreadable response`;
+    case 'WRITE_NOT_PERMITTED':
+      return 'Creating work items is not enabled';
+    case 'APPROVAL_INVALID':
+      return 'The approval no longer applies';
+    case 'CONFLICT':
+      return 'Another request is already in progress';
+    case 'STORAGE_UNAVAILABLE':
+      return 'Saved state is not enabled in this environment';
   }
 }
 

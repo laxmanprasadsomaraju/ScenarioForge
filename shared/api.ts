@@ -34,7 +34,15 @@ export type ApiErrorCode =
   | 'NOT_FOUND'
   | 'RATE_LIMITED'
   | 'UPSTREAM_ERROR'
-  | 'UNEXPECTED_RESPONSE';
+  | 'UNEXPECTED_RESPONSE'
+  /** M8: creating work items is not enabled in this build (no write gateway). */
+  | 'WRITE_NOT_PERMITTED'
+  /** M8: the approval is missing, by someone else, stale or too old. */
+  | 'APPROVAL_INVALID'
+  /** M8: another create for the same fix is in progress, or the duplicate check is ambiguous. */
+  | 'CONFLICT'
+  /** M8: no server-side store for approvals and create state. */
+  | 'STORAGE_UNAVAILABLE';
 
 export interface ApiError {
   code: ApiErrorCode;
@@ -193,6 +201,34 @@ export interface CheckRemediationApprovalResponse {
   requestHash: string;
   duplicate: DuplicateCheck;
   checkedAt: string;
+}
+
+/** M8 create: the approval must carry `requestHash` (from `approveRequest`). */
+export type CreateRemediationWorkItemRequest = CheckRemediationApprovalRequest;
+
+/** Result of one follow-up call after the work item exists. */
+export type RemediationLinkOutcome =
+  | { status: 'added' }
+  | { status: 'skipped'; reason: string }
+  | { status: 'failed'; message: string; upstreamStatus?: number };
+
+export interface CreateRemediationWorkItemResponse {
+  /**
+   * `created`: work item and every link in place. `created-with-follow-up`:
+   * the work item exists but a link was not added (never re-created).
+   * `unknown`: the create was sent with no clear answer and no work item
+   * carries the label yet; checking again never sends a second create.
+   */
+  outcome: 'created' | 'created-with-follow-up' | 'unknown';
+  issueKey?: string;
+  /** `<trusted site>/browse/<key>`, built server-side. */
+  issueUrl?: string;
+  /** True when an existing work item with the idempotency label was adopted. */
+  adopted: boolean;
+  issueLink: RemediationLinkOutcome;
+  remoteLink: RemediationLinkOutcome;
+  idempotencyLabel: string;
+  message: string;
 }
 
 /*
