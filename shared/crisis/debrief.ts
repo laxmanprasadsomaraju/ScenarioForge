@@ -8,6 +8,7 @@ import type {
   CrisisDebrief,
   CrisisEvent,
   CrisisRole,
+  ParticipantAlias,
   RoleContribution,
   TimelineEntry,
 } from './types';
@@ -17,7 +18,13 @@ import type {
  * log. Nothing here is typed in by participants after the fact.
  */
 
-export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
+/** Server-only: the report stored in the owner's own history keeps real ids. */
+export const identityAlias: ParticipantAlias = (accountId) => accountId;
+
+export function buildDebrief(
+  events: readonly CrisisEvent[],
+  alias: ParticipantAlias,
+): CrisisDebrief {
   const state = rebuildRoom(events);
   if (!state.session || state.session.status !== 'completed') {
     throw new CrisisLogError('The debrief needs a completed session.');
@@ -28,7 +35,8 @@ export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
   // Walk the log once more to attribute each event to the role held at that moment.
   const roles = new Map<string, CrisisRole>();
   const history = new Map<string, CrisisRole[]>();
-  const contributions = new Map<string, RoleContribution>();
+  type Internal = Omit<RoleContribution, 'participantId'> & { accountId: string };
+  const contributions = new Map<string, Internal>();
   const contribution = (id: string) => {
     let c = contributions.get(id);
     if (!c) {
@@ -79,14 +87,14 @@ export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
         break;
       case 'role-assigned':
         setRole(e.accountId, e.role);
-        summary = `Role of ${e.accountId} set to ${e.role}.`;
+        summary = `A participant is now ${e.role}.`;
         break;
       case 'command-handed-off': {
         const from = [...roles].find(([, r]) => r === 'incident-commander')?.[0];
         const incoming = roles.get(e.to)!;
         if (from) setRole(from, incoming);
         setRole(e.to, 'incident-commander');
-        summary = `Command handed to ${e.to}.`;
+        summary = 'Command handed to another participant.';
         break;
       }
       case 'session-started':
@@ -124,7 +132,7 @@ export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
     timeline.push({
       seq: e.seq,
       at: e.at,
-      actor: e.actor,
+      actor: alias(e.actor),
       role: roles.get(e.actor) ?? null,
       type: e.type,
       atMinute,
@@ -149,14 +157,16 @@ export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
     scenarioId: state.scenario.id,
     scenarioFingerprint: state.scenarioFingerprint,
     evaluation,
-    contributions: [...contributions.values()].map((c) => ({
+    contributions: [...contributions.values()].map(({ accountId, ...c }) => ({
       ...c,
-      roles: history.get(c.accountId) ?? [],
+      participantId: alias(accountId),
+      roles: history.get(accountId) ?? [],
     })),
     timeline,
     evidence,
     decisions: state.decisions.map((d, i) => ({
       ...d,
+      actor: alias(d.actor),
       label: trail[i]!.decision.label,
       assessment: trail[i]!.decision.consequence.assessment,
       narrative: trail[i]!.decision.consequence.narrative,
@@ -171,7 +181,7 @@ export function buildDebrief(events: readonly CrisisEvent[]): CrisisDebrief {
  */
 export function buildAfterActionReport(events: readonly CrisisEvent[]): CrisisAfterActionReport {
   const state = rebuildRoom(events);
-  const debrief = buildDebrief(events);
+  const debrief = buildDebrief(events, identityAlias);
   const session = state.session!;
   const audit = createAuditRecord(state.scenario, session);
   const submission: RunSubmission = {

@@ -294,7 +294,7 @@ describe('crisis resolvers: rooms', () => {
         proposalId,
       }),
     );
-    expect(committed.view.decisions[0]).toMatchObject({ actor: OWNER, proposalId });
+    expect(committed.view.decisions[0]).toMatchObject({ actor: committed.view.viewer, proposalId });
     expect(committed.timeline.at(-1)!.summary).toContain('adopted proposal');
   });
 });
@@ -334,7 +334,7 @@ describe('crisis resolvers: debrief', () => {
   it('serves the debrief once the session completes', async () => {
     const { current } = await finished(null);
     expect(current.view.status).toBe('debrief');
-    expect(current.debrief?.contributions[0]).toMatchObject({ accountId: OWNER });
+    expect(current.debrief?.contributions[0]).toMatchObject({ participantId: current.view.viewer });
   });
 
   it('save says history is not enabled when history storage is null', async () => {

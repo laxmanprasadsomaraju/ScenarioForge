@@ -334,10 +334,7 @@ export function denialToFailure(denial: Extract<ReserveResult, { ok: false }>): 
   }
 }
 
-function logSettleProblem(what: string): void {
-  // Ids and text stay out of logs; an unsettled reservation is charged at its estimate.
-  console.error('Usage governor', what);
-}
+// Ids and text stay out of logs; an unsettled reservation is charged at its estimate.
 
 async function governed<T extends ActionSuccess>(
   deps: AgentActionDeps,
@@ -358,9 +355,9 @@ async function governed<T extends ActionSuccess>(
   const settle = async (outcome: CallOutcome) => {
     try {
       const settled = await deps.governor.settle(reservationId, outcome);
-      if (!settled.ok) logSettleProblem('settle failed');
+      if (!settled.ok) console.error('Usage governor', 'settle failed');
     } catch {
-      logSettleProblem('settle threw');
+      console.error('Usage governor', 'settle threw');
     }
   };
 
@@ -375,9 +372,9 @@ async function governed<T extends ActionSuccess>(
     if (cached.hit) {
       try {
         const released = await deps.governor.release(reservationId);
-        if (!released.ok) logSettleProblem('release failed');
+        if (!released.ok) console.error('Usage governor', 'release failed');
       } catch {
-        logSettleProblem('release threw');
+        console.error('Usage governor', 'release threw');
       }
       return cached.value as T;
     }

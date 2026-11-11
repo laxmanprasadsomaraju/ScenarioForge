@@ -10,7 +10,7 @@ import type {
 
 /**
  * Resolver contract for the Crisis Room (docs/M7_PLAN.md §2). The browser
- * never sends an account id, a scenario, a timestamp, an invite id or a
+ * never sends or receives an account id (participants are opaque per-room ids), a scenario, a timestamp, an invite id or a
  * proposal id: identity comes from the Forge context and every id and secret
  * is generated on the server.
  */
@@ -98,8 +98,8 @@ export type CrisisClientCommand =
   | { type: 'join'; token: string }
   | { type: 'revoke-invite'; inviteId: string }
   | { type: 'leave' }
-  | { type: 'assign-role'; accountId: string; role: CrisisRole }
-  | { type: 'hand-off-command'; to: string }
+  | { type: 'assign-role'; participantId: string; role: CrisisRole }
+  | { type: 'hand-off-command'; toParticipantId: string }
   | { type: 'start' }
   | { type: 'propose'; decisionId: string; rationale: string }
   | { type: 'commit-decision'; decisionId: string; proposalId?: string }

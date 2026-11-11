@@ -82,6 +82,12 @@ export type CrisisEvent = EventBase &
     | { type: 'room-closed' }
   );
 
+/**
+ * Maps a real Atlassian account id to the opaque id clients see. Stable within
+ * one room, unlinkable across rooms, not reversible by a client.
+ */
+export type ParticipantAlias = (accountId: string) => string;
+
 export type CrisisEventType = CrisisEvent['type'];
 
 /** An event before the engine assigns `seq`, `at` and `actor`. */
@@ -202,10 +208,11 @@ export interface RoleView {
   roomId: string;
   version: number;
   status: RoomStatus;
+  /** Opaque per-room participant ids (see ParticipantAlias), never account ids. */
   viewer: string;
   role: CrisisRole;
   commander: string;
-  participants: { accountId: string; role: CrisisRole; active: boolean }[];
+  participants: { participantId: string; role: CrisisRole; active: boolean }[];
   step: { id: string; title: string; situation: string } | null;
   /** Decision options; empty for roles that cannot propose or commit. */
   options: { id: string; label: string; detail?: string }[];
@@ -231,7 +238,8 @@ export interface TimelineEntry {
 }
 
 export interface RoleContribution {
-  accountId: string;
+  /** Opaque per-room participant id. */
+  participantId: string;
   /** Roles held over the room's life, in order. */
   roles: CrisisRole[];
   proposals: number;

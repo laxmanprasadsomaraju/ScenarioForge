@@ -11,7 +11,7 @@ import type {
 import { HistoryStore } from '../shared/history';
 import { authBackupRetiredScenario } from '../shared/simulation/scenarios/authBackupRetired';
 import { authBackupRetiredRemediation } from '../shared/simulation/scenarios/authBackupRetiredRemediation';
-import { createCrisisResolvers } from '../src/crisis/resolvers';
+import { createCrisisResolvers, parseClientCommand, roomKey } from '../src/crisis/resolvers';
 
 /**
  * M7 end-to-end through the resolvers over the in-memory storage adapter: five
@@ -173,11 +173,14 @@ describe('crisis lifecycle over the in-memory adapter', () => {
     expect(committed.view.openProposals).toHaveLength(0);
     // Hand-off to the engineering responder, who then commits to completion.
     let cur = snap(
-      await t.run(A.owner, committed.view.version, { type: 'hand-off-command', to: A.eng }),
+      await t.run(A.owner, committed.view.version, {
+        type: 'hand-off-command',
+        toParticipantId: snap(await t.view(A.eng)).view.viewer,
+      }),
     );
-    expect(cur.view.commander).toBe(A.eng);
+    expect(cur.view.commander).toBe(snap(await t.view(A.eng)).view.viewer);
     while (cur.view.status === 'running') {
-      const viewer = cur.view.commander;
+      const viewer = A.eng; // commander since the hand-off
       const mine = snap(await t.view(viewer));
       cur = snap(
         await t.run(viewer, mine.view.version, {
@@ -187,9 +190,9 @@ describe('crisis lifecycle over the in-memory adapter', () => {
       );
     }
     expect(cur.view.status).toBe('debrief');
-    const owners = new Set(cur.debrief?.contributions.map((c) => c.accountId));
-    expect(owners.has(A.owner)).toBe(true);
-    expect(owners.has(A.eng)).toBe(true);
+    const owners = new Set(cur.debrief?.contributions.map((c) => c.participantId));
+    expect(owners.has(snap(await t.view(A.owner)).view.viewer)).toBe(true);
+    expect(owners.has(snap(await t.view(A.eng)).view.viewer)).toBe(true);
     // Reconnect: a fresh read equals what the last writer saw, and an unchanged version is cheap.
     const again = snap(await t.view(A.sec));
     expect(again.view.version).toBe(cur.view.version);
@@ -226,5 +229,110 @@ describe('crisis lifecycle over the in-memory adapter', () => {
     const sa = snap(await a.view(A.owner));
     const sb = snap(await b.view(A.owner));
     expect(sa.timeline.map((e) => e.summary)).toEqual(sb.timeline.map((e) => e.summary));
+  });
+
+  describe('participant identifiers', () => {
+    const ids = Object.values(A);
+    const leaks = (value: unknown) => {
+      const text = JSON.stringify(value);
+      return ids.filter((id) => text.includes(id));
+    };
+
+    it('no account id appears in any client payload, for any role, through the whole run', async () => {
+      const t = await fullRoom();
+      const seen: unknown[] = [];
+      const everyone = async () => {
+        for (const who of ids) seen.push(await t.view(who));
+      };
+      await everyone();
+      const engPid = snap(await t.view(A.eng)).view.viewer;
+      const secPid = snap(await t.view(A.sec)).view.viewer;
+      seen.push(
+        await t.run(A.owner, t.version(), {
+          type: 'assign-role',
+          participantId: secPid,
+          role: 'observer',
+        }),
+      );
+      let cur = snap(await t.view(A.owner));
+      seen.push(await t.run(A.owner, cur.view.version, { type: 'start' }));
+      cur = snap(await t.view(A.owner));
+      const first = snap(await t.view(A.eng)).view.options[0]!.id;
+      seen.push(
+        await t.run(A.eng, cur.view.version, {
+          type: 'propose',
+          decisionId: first,
+          rationale: 'r',
+        }),
+      );
+      cur = snap(await t.view(A.owner));
+      seen.push(
+        await t.run(A.owner, cur.view.version, {
+          type: 'hand-off-command',
+          toParticipantId: engPid,
+        }),
+      );
+      await everyone();
+      for (let guard = 0; guard < 20; guard++) {
+        const c = snap(await t.view(A.eng));
+        if (c.view.status !== 'running') break;
+        seen.push(
+          await t.run(A.eng, c.view.version, {
+            type: 'commit-decision',
+            decisionId: c.view.options[0]!.id,
+          }),
+        );
+      }
+      await everyone();
+      const last = snap(await t.view(A.obs));
+      expect(last.debrief).not.toBeNull();
+      expect(leaks(seen)).toEqual([]);
+      expect(JSON.stringify(seen)).not.toMatch(/acc-/);
+    });
+
+    it('opaque ids are stable in a room, differ between rooms, and show you/roles/proposer', async () => {
+      const a = await fullRoom();
+      const va = snap(await a.view(A.eng)).view;
+      expect(snap(await a.view(A.eng)).view.viewer).toBe(va.viewer);
+      // A second room with the same people gets different ids (unlinkable across rooms).
+      const other = snap(
+        ok(await a.resolvers.crisisOpenRoom({ payload: { source: DEMO }, context: ctx(A.eng) })),
+      );
+      expect(other.view.viewer).not.toBe(va.viewer);
+      expect(va.viewer).toMatch(/^p_[A-Za-z0-9_-]{16}$/);
+      expect(va.participants.find((p) => p.participantId === va.viewer)?.role).toBe(
+        'engineering-responder',
+      );
+      expect(va.participants.find((p) => p.participantId === va.commander)?.role).toBe(
+        'incident-commander',
+      );
+    });
+
+    it('refuses a raw account id or unknown participant as a command target', async () => {
+      const t = await fullRoom();
+      const parsed = parseClientCommand({
+        type: 'assign-role',
+        participantId: A.eng,
+        role: 'observer',
+      });
+      expect(parsed.ok).toBe(false);
+      const unknown = await t.run(A.owner, t.version(), {
+        type: 'assign-role',
+        participantId: 'p_AAAAAAAAAAAAAAAA',
+        role: 'observer',
+      });
+      expect(unknown).toMatchObject({ status: 'REJECTED', reason: 'INVALID_INPUT' });
+    });
+
+    it('rooms stored before aliasKey existed still serve opaque ids', async () => {
+      const t = await fullRoom();
+      const key = roomKey(INSTALL, t.roomId);
+      const stored = await t.storage.get<{ aliasKey?: string }>(key);
+      delete stored!.value.aliasKey;
+      await t.storage.set(key, stored!.value, stored!.version);
+      const v = snap(await t.view(A.eng));
+      expect(leaks(v)).toEqual([]);
+      expect(v.view.viewer).toMatch(/^p_/);
+    });
   });
 });

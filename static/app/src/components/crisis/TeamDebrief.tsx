@@ -96,8 +96,8 @@ export function TeamDebrief({
           </thead>
           <tbody>
             {debrief.contributions.map((c) => (
-              <tr key={c.accountId}>
-                <th scope="row">{name(c.accountId)}</th>
+              <tr key={c.participantId}>
+                <th scope="row">{name(c.participantId)}</th>
                 <td data-label="Roles held">{c.roles.map((r) => ROLE_NAME[r]).join(', ')}</td>
                 <td data-label="Proposals (adopted)" className="num">
                   {c.proposals} ({c.proposalsAdopted})

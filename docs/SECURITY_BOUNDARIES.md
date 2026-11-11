@@ -27,7 +27,9 @@ What ScenarioForge may do, per environment, and what it must never do. Design de
 
 ## Logging and secrets
 
-- No account ids, emails, names or page bodies in logs.
+- No account ids, emails, names or page bodies in logs. `test/logHygiene.test.ts` parses `src/` and `shared/` with the TypeScript compiler API and fails on any console or `log`/`logger` call whose argument is not a literal, a template of safe parts, `.name`/`.status`/`.code`/`.length`, `Number(...)`, or an object literal of those; aliasing `console` also fails. `src/probes/` (rovo-test diagnostics) is exempt. Automated tests passed.
+- Crisis Room payloads carry no Atlassian account ids. Clients see opaque per-room participant ids (HMAC-SHA-256 under a server-only per-room key; rooms created before the key existed derive one from installation and room id). Identity and role checks use the real account id from the invocation context. Automated tests passed (leak test over all roles); not live verified.
+- Deep-link base (`forgeLinkBase`) caches the validated `https://*.atlassian.net` origin per installation for 10 min (failures 5 s, max 32 entries); `appUrl` stays null on any failure.
 - No credentials in the repo; Forge CLI credentials in the OS keychain. An API token exposed in chat on 2026-11-09 must be revoked by the owner (open).
 
 ## Approval boundary

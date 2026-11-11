@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { buildAppUrl } from '../shared/links/absoluteLink';
-import { forgeLinkBase, withAppUrl } from '../src/agents/forge';
+import {
+  createLinkBaseResolver,
+  forgeLinkBase,
+  LINK_BASE_FAILURE_TTL_MS,
+  LINK_BASE_MAX_ENTRIES,
+  LINK_BASE_TTL_MS,
+  withAppUrl,
+} from '../src/agents/forge';
 import { readinessAppPath, rehearsalAppPath } from '../src/agents/output';
 
 vi.mock('@forge/api', () => ({
@@ -138,5 +145,92 @@ describe('buildAppUrl canonical form', () => {
 describe('forgeLinkBase', () => {
   it('returns null when the runtime context is unavailable', async () => {
     expect(await forgeLinkBase()).toBeNull();
+  });
+});
+
+describe('createLinkBaseResolver cache', () => {
+  function make(sites: Array<{ ok: true; data: string } | { ok: false } | 'throw'>, id = INSTALL) {
+    let t = 1_000;
+    let calls = 0;
+    let installation = id;
+    const resolve = createLinkBaseResolver({
+      installationId: () => installation,
+      readSite: async () => {
+        const next = sites[Math.min(calls++, sites.length - 1)]!;
+        if (next === 'throw') throw new Error('boom');
+        return next;
+      },
+      now: () => t,
+    });
+    return {
+      resolve,
+      calls: () => calls,
+      advance: (ms: number) => (t += ms),
+      as: (next: string) => (installation = next),
+    };
+  }
+
+  it('hits the cache within the TTL and refetches after expiry', async () => {
+    const m = make([{ ok: true, data: SITE }]);
+    expect(await m.resolve()).toEqual({ siteUrl: SITE, installationId: INSTALL });
+    await m.resolve();
+    expect(m.calls()).toBe(1);
+    m.advance(LINK_BASE_TTL_MS - 1);
+    await m.resolve();
+    expect(m.calls()).toBe(1);
+    m.advance(2);
+    await m.resolve();
+    expect(m.calls()).toBe(2);
+  });
+
+  it('caches failures only for a few seconds and returns null', async () => {
+    const m = make([{ ok: false }, 'throw', { ok: true, data: SITE }]);
+    expect(await m.resolve()).toBeNull();
+    expect(await m.resolve()).toBeNull();
+    expect(m.calls()).toBe(1);
+    m.advance(LINK_BASE_FAILURE_TTL_MS + 1);
+    expect(await m.resolve()).toBeNull(); // throw
+    m.advance(LINK_BASE_FAILURE_TTL_MS + 1);
+    expect(await m.resolve()).toEqual({ siteUrl: SITE, installationId: INSTALL });
+  });
+
+  it('never caches or returns hostile site values', async () => {
+    for (const bad of [
+      'http://example.atlassian.net',
+      'https://evil.example.com',
+      'https://example.atlassian.net.evil.com',
+      'https://user@example.atlassian.net',
+      'https://example.atlassian.net/path',
+      'https://example.atlassian.net/',
+      'https://EXAMPLE.atlassian.net',
+      '',
+    ]) {
+      const m = make([{ ok: true, data: bad }]);
+      expect(await m.resolve(), bad).toBeNull();
+    }
+  });
+
+  it('refuses malformed installation ids and keys the cache per installation', async () => {
+    const m = make([{ ok: true, data: SITE }], 'bad id!');
+    expect(await m.resolve()).toBeNull();
+    expect(m.calls()).toBe(0);
+    m.as(INSTALL);
+    await m.resolve();
+    m.as('1111aaaa-1111-4222-8333-944455556666');
+    expect((await m.resolve())?.installationId).toBe('1111aaaa-1111-4222-8333-944455556666');
+    expect(m.calls()).toBe(2);
+  });
+
+  it('is bounded and shares concurrent misses', async () => {
+    const m = make([{ ok: true, data: SITE }]);
+    await Promise.all([m.resolve(), m.resolve(), m.resolve()]);
+    expect(m.calls()).toBe(1);
+    for (let i = 0; i < LINK_BASE_MAX_ENTRIES + 3; i++) {
+      m.as(`aaaaaaaa-${String(i).padStart(4, '0')}`);
+      await m.resolve();
+    }
+    m.as(INSTALL); // oldest, evicted
+    await m.resolve();
+    expect(m.calls()).toBe(1 + LINK_BASE_MAX_ENTRIES + 3 + 1);
   });
 });
