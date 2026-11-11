@@ -26,6 +26,17 @@ Older lane branches (`lane-*`, `ui/c1…ui/e-polish`, `ui/redesign*`) are merged
 - Lane QA review on `qa/review-1`.
 - M6 Phase 2 live test waiting on owner.
 
+## Approval proposals (docs lane, 2026-11-11, branch `docs/approval-proposals`)
+
+Each has an APPROVAL REQUEST block for the owner. None is approved.
+
+- [proposals/M10_JUDGING_RELEASE.md](proposals/M10_JUDGING_RELEASE.md): production deploy of `integration/lanes-1` (four scopes), Sharing link, second-site test, tag, rollback.
+- [proposals/M7_TEST_DEPLOY.md](proposals/M7_TEST_DEPLOY.md): `crisis-room` entity + Realtime on `rovo-test`.
+- [proposals/M8_TEST_DEPLOY.md](proposals/M8_TEST_DEPLOY.md): `storage:app` + `write:jira-work` on a new isolated `write-test` env (supersedes `confluence-test` in M8_PLAN §12).
+- [proposals/M9_MARKETPLACE_ELIGIBILITY.md](proposals/M9_MARKETPLACE_ELIGIBILITY.md): support questions, two app ids, listing gaps, timeline.
+
+Observed: `forge environments list` shows `confluence-test` last deployed 2026-11-11T15:41:53Z (newer than ENVIRONMENTS.md records).
+
 ## Pending owner approvals
 
 1. Turn AI on for rovo-test (`SF_ROVO_TEST_AI=enabled`) and spend Rovo credits for the Phase 2 live test (RT2 `M6_PHASE2_TEST_SCRIPT.md`).
