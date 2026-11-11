@@ -5,6 +5,8 @@ import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { Consequence, EvidenceReference, SimulationScenario } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
 import type { CompletedExercise } from '../../lib/exercises';
+import { useSite } from '../../lib/site';
+import { makeRemediationCreator, remediationCreateUiEnabled } from '../../lib/remediationCreator';
 import { approvedFor, useFixApprovals } from '../../lib/fixApprovals';
 import { EvidenceList } from './Evidence';
 import { Correction, FixStateList, fixStates } from './FixReview';
@@ -56,6 +58,7 @@ export function Debrief({
   workItemSource?: { analysis: ChangeAnalysis; findingId: string };
 }) {
   const { evaluation, session } = exercise;
+  const { accountId } = useSite();
   const trail = decisionTrail(scenario, session);
   const evidence = evidenceByDecision(
     scenario,
@@ -331,6 +334,15 @@ export function Debrief({
           findingId={workItemSource.findingId}
           fixes={scenario.remediation}
           defaultFixId={applied[0]}
+          creator={
+            remediationCreateUiEnabled()
+              ? makeRemediationCreator({
+                  changeKey: workItemSource.analysis.change.key,
+                  findingId: workItemSource.findingId,
+                  accountId,
+                })
+              : null
+          }
           rehearsal={
             exercise.retest
               ? { comparison: exercise.retest.comparison, objectiveLabels }

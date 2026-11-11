@@ -11,6 +11,10 @@ import type {
   ListRehearsalHistoryResponse,
   SaveRehearsalResponse,
   SaveRehearsalRunRequest,
+  PrepareRemediationRequest,
+  PrepareRemediationResponse,
+  CreateRemediationWorkItemRequest,
+  CreateRemediationWorkItemResponse,
   SaveRetestRequest,
   ListChangesRequest,
   ListChangesResponse,
@@ -88,6 +92,11 @@ export const api = {
   saveRehearsalRun: (request: SaveRehearsalRunRequest) =>
     call<SaveRehearsalResponse>('saveRehearsalRun', request),
   saveRetest: (request: SaveRetestRequest) => call<SaveRehearsalResponse>('saveRetest', request),
+  // Remediation (M8). The server rebuilds the draft and request; the browser copy is never trusted.
+  prepareRemediationRequest: (request: PrepareRemediationRequest) =>
+    call<PrepareRemediationResponse>('prepareRemediationRequest', request),
+  createRemediationWorkItem: (request: CreateRemediationWorkItemRequest) =>
+    call<CreateRemediationWorkItemResponse>('createRemediationWorkItem', request),
   // Crisis room. Identity, ids, tokens and clocks are all server-side.
   crisisStatus: () => call<{ status: 'AVAILABLE' } | CrisisGate>('crisisStatus'),
   crisisOpenRoom: (request: CrisisCreateRoomRequest) =>

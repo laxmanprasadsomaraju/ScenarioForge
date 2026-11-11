@@ -33,6 +33,7 @@ export const RETEST_SUGGESTION = 'Retest after the runbook is updated';
 export type RemediationCreator = (
   draft: WorkItemDraft,
   approval: DraftApproval,
+  context: { fixId: string },
 ) => Promise<ApiResult<CreateRemediationWorkItemResponse>>;
 
 type CreatePhase =
@@ -179,7 +180,7 @@ export function RemediationPreview({
     if (!creator || !approval) return;
     setPhase({ kind: 'sending' });
     try {
-      const result = await creator(draft, approval);
+      const result = await creator(draft, approval, { fixId });
       setPhase(
         result.ok
           ? { kind: 'done', result: result.data }
