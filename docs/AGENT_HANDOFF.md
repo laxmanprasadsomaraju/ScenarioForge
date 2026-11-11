@@ -100,3 +100,7 @@ Done: AST log-hygiene checker (`test/helpers/logCheck.ts`) replacing the regex t
 ## Handoff 2026-11-11 (integration lane, `release/judged-full-integrate2`)
 
 Base `release/judged-full` @ 606347c (unmoved rollback point). Merged `m8/write-gateway` (0dbb5c1), `sec/hardening` (5bfd27d), `release/quality` (96713e7); no conflicts. Added `test/historyRemediationIsolation.test.ts` and a no-account-id assertion in `test/remediationCreate.test.ts`; removed stray `src/agents/actions.ts-E`. Status: Automated tests passed (see [proposals/M10_RELEASE_VALIDATION.md](proposals/M10_RELEASE_VALIDATION.md)). No deploy, install, variable, scope, entity or manifest change. Flag-rename upgrade note: rovo-test reads `SF_ROVO_TEST_*`; this code reads `SF_STORAGE`/`SF_AI`/`SF_CRISIS`/`SF_TWG`/`SF_REMEDIATION_WRITE`, so rovo-test variables do not carry over. No owner approvals given or inferred. Next safe action: lead review.
+
+## Integration lane 2026-11-11 (`release/judged-full-integrate3`, from `054195d`)
+
+Merged `m8/server-approvals` (8564c8c) and `release/manifest-variants` (4a14e75); no conflicts. Added isolation tests for `remediation-approval:` keys. No new storage entity needed: approvals live in `rehearsal-history`. Root `manifest.yml` and all `package*.json` unchanged vs 054195d. Not deployed, not merged to main/integration, no approvals granted or inferred. Docs updated: ENVIRONMENTS, CURRENT_STATUS, DECISIONS D21-D24. Next safe action: lead reviews; any deploy needs owner approval per environment.

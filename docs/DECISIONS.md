@@ -83,3 +83,19 @@ A change with no recognised retirement, replacement, migration, rename, disable 
 ## D20. Saved generated rehearsals compare content, not retrieval time (2026-11-10)
 
 The server rebuilds a generated rehearsal as the user before saving it. Its exact fingerprint includes each evidence `retrievedAt`, which always differs from the browser's copy, so browser and server compare `rehearsalContentFingerprint` (the scenario without `retrievedAt`). If the content matches, the server stores its own rebuilt scenario with its exact fingerprint; any change to the change text or runbook step is rejected (SCENARIO_MISMATCH). Reads re-check, as the user, that the change is still visible; a 403/404 hides the record.
+
+## D21. Remediation-item is a key prefix, not an entity (2026-11-11)
+
+The planned `remediation-item` storage entity is dropped. Remediation records use the key prefix `remediation-item:` inside the existing `rehearsal-history` entity, so no manifest entity change is needed. Tests (`test/historyRemediationIsolation.test.ts`, `test/manifestVariants.test.ts`) prove history cannot read, list, prune or overwrite these keys.
+
+## D22. Approvals are server-issued (2026-11-11)
+
+The browser no longer sends approver, approval time or approval age. `approveRemediation` takes the approver from the Forge invocation context, stamps the server clock, rebuilds the draft server-side and stores the approval under `remediation-approval:<sfa-id>` in `rehearsal-history`, bound to request hash, project and source state, valid 24 h. Create accepts only the approval id. Account ids stay in storage and never reach a client payload. Supersedes the browser-supplied approval in D19.
+
+## D23. Crisis participants use opaque ids (2026-11-11)
+
+Crisis Room client payloads use opaque per-room `participantId` values; `assign-role` and `hand-off-command` take `participantId` / `toParticipantId`. Account ids are not sent to the browser.
+
+## D24. Manifest variants are undeployed files (2026-11-11)
+
+`manifests/judged-release.yml`, `m7-test.yml` and `m8-write-test.yml` document the minimal manifests each target would need. They are never deployed from this branch; the root `manifest.yml` is unchanged. `test/manifestVariants.test.ts` checks each variant's entities against what the real storage factories can reach under its flags. Deploying any of them needs owner approval for that environment.

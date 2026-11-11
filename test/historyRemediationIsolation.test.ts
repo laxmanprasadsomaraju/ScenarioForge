@@ -9,6 +9,7 @@ import { encodeSegment } from '../shared/history/keys';
 import { generateRehearsal } from '../shared/rehearsal/generate';
 import { evaluateSession } from '../shared/simulation/engine';
 import { replaySession, scenarioFingerprint } from '../shared/simulation/replay';
+import { APPROVAL_KEY_PREFIX, approvalRecordKey } from '../src/remediation/approvals';
 import { remediationRecordKey } from '../src/remediation/create';
 import { change, RB_AUTH_STEPS, runbook } from './fixtures/analysis/cases';
 
@@ -187,5 +188,62 @@ describe('remediation audit and approval records stay out of history', () => {
       expect(key.startsWith('remediation-item:')).toBe(true);
       expect(key.startsWith(`${KEY_PREFIX}:`)).toBe(false);
     }
+  });
+});
+
+describe('approval records (remediation-approval:) stay out of history', () => {
+  const MARK = 'APPROVER-MARKER-5b10ac8d82e05b22';
+  const IDS = [`sfa-${'a'.repeat(32)}`, `sfa-${'b'.repeat(32)}`];
+  const record = {
+    schemaVersion: 1,
+    approvalId: IDS[0],
+    approverAccountId: MARK,
+    status: 'active',
+    audit: [{ step: 'approve', outcome: 'issued', at: START, actorAccountId: MARK }],
+  };
+
+  it('key space is disjoint from history and remediation-item keys, for hostile ids', () => {
+    for (const id of [...IDS, 'x', ':', '../x', '%3A', approvalRecordKey(IDS[0]!)]) {
+      const key = approvalRecordKey(id);
+      expect(key.startsWith(APPROVAL_KEY_PREFIX)).toBe(true);
+      expect(key.startsWith(`${KEY_PREFIX}:`)).toBe(false);
+      expect(key.startsWith('remediation-item:')).toBe(false);
+      for (const user of [USER, { ...USER, accountId: id }, { ...USER, installation: id }]) {
+        const hk = runKey(user, id);
+        expect(hk.startsWith(`${KEY_PREFIX}:`)).toBe(true);
+        expect(hk.startsWith('remediation-approval')).toBe(false);
+        expect(hk).not.toBe(key);
+      }
+    }
+  });
+
+  it('history list, get, comparison and retention never read, leak, change or delete approvals', async () => {
+    const inner = new InMemoryStorage();
+    for (const id of IDS) {
+      expect((await inner.set(approvalRecordKey(id), record, null)).ok).toBe(true);
+    }
+    const snap = async () =>
+      JSON.stringify(await Promise.all(IDS.map((i) => inner.get(approvalRecordKey(i)))));
+    const before = await snap();
+    const { adapter, touched } = recording(inner);
+    const clock = { now: T0 };
+    const store = new HistoryStore({ storage: adapter, now: () => new Date(clock.now) });
+    const r = rehearsal();
+    for (let i = 0; i < MAX_RUNS_PER_USER + 2; i++) {
+      clock.now = T0 + i * 60_000;
+      await store.saveRun(USER, r, submission(r, `run-${i}`));
+    }
+    const outputs: unknown[] = [await store.listRuns(USER)];
+    for (const id of [...IDS, ...IDS.map(approvalRecordKey)]) {
+      outputs.push(await store.getRun(USER, id), await store.getComparison(USER, id));
+    }
+    clock.now = T0 + 400 * 24 * 3600 * 1000;
+    outputs.push(await store.listRuns(USER));
+    const text = JSON.stringify(outputs);
+    expect(text).not.toContain(MARK);
+    expect(text).not.toContain('remediation-approval');
+    expect(touched.length).toBeGreaterThan(0);
+    for (const t of touched) expect(t.key.startsWith(`${KEY_PREFIX}:`), t.key).toBe(true);
+    expect(await snap()).toBe(before);
   });
 });
