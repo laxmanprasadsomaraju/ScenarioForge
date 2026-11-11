@@ -15,6 +15,17 @@ Checked 2026-11-11 (Lane M10) from `m10/submission-prep`, based on `integration/
 
 Devpost blocks automated reads, as it did on 2026-11-09. **Nothing below that comes from Devpost has been verified.**
 
+## Fetch log (2026-11-11, docs lane re-check)
+
+| URL                                             | Result                  |
+| ----------------------------------------------- | ----------------------- |
+| https://codegeist2026.devpost.com/rules         | **HTTP 403** (not read) |
+| https://codegeist2026.devpost.com/              | **HTTP 403** (not read) |
+| https://codegeist2026.devpost.com/details/dates | **HTTP 403** (not read) |
+| https://codegeist2026.devpost.com/resources     | **HTTP 403** (not read) |
+
+Still blocked; no Atlassian-hosted rules page is linked from the announcement. Nothing newly verified about Devpost; the owner-confirm list below stands. New Marketplace fact relevant to the bonus: a free listing of a Jira-required + Confluence-optional app is not supported ([../proposals/M9_MARKETPLACE_ELIGIBILITY.md](../proposals/M9_MARKETPLACE_ELIGIBILITY.md) "Verification 2026-11-12").
+
 ## Verified (read on the page today)
 
 | Fact                                                                                                                                                                                                                       | Source                                                                                                   |
