@@ -76,3 +76,10 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - M6 Phase 2 is **not accepted**. Test 4 and injection Blocks B–D not run.
 - Pending owner approval: the exact Confluence installation change on `rovo-test` (proposal sent in chat).
 - `release/judged-full` @ `13513d5`: two documentation corrections pushed; not merged or deployed.
+
+## Update 2026-11-11 (lead, Test 3 passed)
+
+- Owner connected Confluence to the existing `rovo-test` installation (`64f87111…`, now Jira + Confluence, version 2). Test 3 on MC-62 **passed, live verified by the owner**. Not accepted overall: Test 4 and Blocks B–D pending.
+- Minor gap: `appPath` is a relative route, so the agent shows no clickable link. Fix needs a code change and deploy (not approved).
+- `rovo-test/phase2-confluence-403` (`e8550cd`, deployed as 2.4.0) is still unmerged.
+- Next: owner runs Test 4 and reports the result; no injection tests before then.

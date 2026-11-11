@@ -19,7 +19,7 @@ Owner approved `SF_ROVO_TEST_AI=enabled` on rovo-test only. Set and deployed the
 
 ## Test 3: MC-62 recovery risks (2026-11-11, owner, Recovery Investigator)
 
-Status: **Failed safe, not accepted.** Prompt: "What recovery risks does this change have?"
+Status: **Failed safe on runs 1 and 2; run 3 (after Confluence was connected) passed, live verified by the owner 2026-11-11. M6 Phase 2 is not yet accepted (Test 4 and Blocks B–D pending).** Prompt: "What recovery risks does this change have?"
 
 | Run | App version                                                       | Result                                                                                                                                                                                                                                              |
 | --- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -36,6 +36,18 @@ Observed (owner-supplied invocation record plus `forge logs -e rovo-test`):
 Cause: **probable, not confirmed.** The missing Confluence connection fits all the evidence, but a 403 is the same for an unconnected product and for a user without page access, and neither has been separated by a test. Not yet checked: the user's access to the SFDEMO space (the same user passes on `confluence-test`, which points away from a permission cause).
 
 Nothing was invented: no finding was produced. Retest after the connection is corrected, then Test 4, before any injection tests.
+
+### Test 3, run 3: PASSED after Confluence was connected (2026-11-11, owner)
+
+- The owner ran `forge install -e rovo-test -p Confluence -s one-atlas-cegq.atlassian.net` in their own terminal. The CLI consent listed exactly the five approved scopes (checked by the lead before handing over; the lead's non-TTY run could not answer the prompt and installed nothing).
+- `forge install list` afterwards: installation `64f87111-c12f-4eff-8d69-58f4f8bdc4d9`, environment `rovo-test`, connected to Jira (required) **and** Confluence, version 2, Up-to-date. One installation, no separate Confluence entry. `development` and `confluence-test` unchanged.
+- Owner-reported response, same prompt on MC-62: 1 finding (1 confirmed, 0 suspected); runbook [DEMO] RB-AUTH-01 step 3 still uses LegacyAuth; replacement NimbusID; confirmed because the page names MC-62; exact Jira and runbook quotes (`authctl failover --target legacyauth`); evidence ids for the change and runbook step; no invented findings and no claim the system is safe. The HTTP 403 did not reappear.
+- Logs: `forge logs -e rovo-test --since 3h` shows no WARN or ERROR entries. The success path writes no log lines by design, so this shows the absence of errors, not a positive trace of the run. The lead has not seen the owner's invocation record for run 3.
+- Cause of runs 1 and 2: the missing Confluence connection, now **confirmed by the fix** (the code and scopes did not change between run 2 and run 3).
+
+### Gap: no clickable deep link (minor, found by the owner)
+
+`appPath` (`/readiness-checks?change=MC-62`) is an in-app route, not a URL. `src/agents/output.ts` `readinessAppPath` returns it relative to the ScenarioForge page, and no action output carries the site URL or the app/environment ids needed to make an absolute link, so the agent has nothing it can render as clickable. The action output is otherwise correct, so this is a single missing field, not a broader output problem. A fix needs a code change and a deploy; neither is approved. Options to propose later: return an absolute link built from the request context, or have the prompt tell the user which ScenarioForge page to open.
 
 ## Blocks B–D
 
