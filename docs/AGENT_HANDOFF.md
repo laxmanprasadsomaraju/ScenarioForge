@@ -68,3 +68,11 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Devpost: all four pages HTTP 403 again; owner-confirm list unchanged.
 - M6 Phase 2 Block A passed (user-facing) 2026-11-11; AI activation still pending owner approval.
 - Next safe action: owner reviews F1–F9 and sends support questions 1–10.
+
+## Handoff 2026-11-11 (lead, M6 Test 3)
+
+- `rovo-test` runs app 2.4.0 = `rovo-test/phase2-confluence-403` @ `e8550cd` (message and status-only log; manifest, five scopes, variables unchanged). Not merged anywhere.
+- Test 3 on MC-62 failed safe twice; the app log shows the Confluence search returned HTTP 403. Cause (Confluence not connected to the `rovo-test` install) is probable, not confirmed. See [M6_PHASE2_LIVE_TEST](M6_PHASE2_LIVE_TEST.md).
+- M6 Phase 2 is **not accepted**. Test 4 and injection Blocks B–D not run.
+- Pending owner approval: the exact Confluence installation change on `rovo-test` (proposal sent in chat).
+- `release/judged-full` @ `13513d5`: two documentation corrections pushed; not merged or deployed.
