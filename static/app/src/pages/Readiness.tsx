@@ -24,6 +24,7 @@ import {
 import { MissingFindingNotice, RejectedLinkNotice } from '../components/readiness/LinkNotice';
 import { ImpactPath } from '../components/readiness/ImpactPath';
 import { RehearseFinding } from '../components/readiness/RehearseFinding';
+import { NotChecked } from '../components/readiness/NotChecked';
 
 export function ReadinessPage() {
   const { selected } = useChangeSelection();
@@ -140,7 +141,7 @@ function AnalysisView({ change }: { change: SelectedChange }) {
       </div>
 
       <section
-        className="region"
+        className="region verdict"
         aria-labelledby="analysis-status-title"
         aria-busy={state.status === 'loading'}
       >
@@ -166,11 +167,23 @@ function AnalysisView({ change }: { change: SelectedChange }) {
         <MissingFindingNotice changeKey={state.data.changeKey} />
       ) : null}
 
+      {state.status === 'ready' ? (
+        <RehearseFinding
+          key={linkedId ?? ''}
+          analysis={state.data}
+          {...(linkedId ? { prefill: { findingId: linkedId } } : {})}
+        />
+      ) : null}
+
       {state.status === 'ready' && state.data.findings.length > 0 ? (
         <section className="region" aria-labelledby="findings-title">
           <h2 id="findings-title" className="section-title">
             Findings
           </h2>
+          <p className="region-body">
+            Each finding sets the Jira text beside the Confluence step it may affect. Quoted text is
+            exactly as returned; the summary above the quotes is generated.
+          </p>
           <ol className="findings">
             {state.data.findings.map((f) => (
               <FindingItem
@@ -185,11 +198,15 @@ function AnalysisView({ change }: { change: SelectedChange }) {
       ) : null}
 
       {state.status === 'ready' ? (
-        <RehearseFinding
-          key={linkedId ?? ''}
-          analysis={state.data}
-          {...(linkedId ? { prefill: { findingId: linkedId } } : {})}
-        />
+        <div className="analysis-grid">
+          <NotChecked coverage={state.data.coverage} graph={graph} />
+          <section className="region" aria-labelledby="coverage-title">
+            <h2 id="coverage-title" className="section-title">
+              Coverage
+            </h2>
+            <CoverageFacts coverage={state.data.coverage} analyzedAt={state.data.analyzedAt} />
+          </section>
+        </div>
       ) : null}
 
       {state.status === 'ready' ? (
@@ -203,7 +220,7 @@ function AnalysisView({ change }: { change: SelectedChange }) {
           </h2>
           <p className="region-body">
             How {state.data.changeKey} reaches recovery steps, runbook pages, services and owning
-            teams. Open any link to read the source text behind it.
+            teams. A confirmed link means the dependency is real, not that recovery still works.
           </p>
           {graph.status === 'loading' ? (
             <SkeletonRows rows={3} label={`Tracing the impact path of ${change.key}`} />
@@ -216,20 +233,12 @@ function AnalysisView({ change }: { change: SelectedChange }) {
       ) : null}
 
       {state.status === 'ready' ? (
-        <div className="analysis-grid">
-          <section className="region" aria-labelledby="subjects-title">
-            <h2 id="subjects-title" className="section-title">
-              Subjects detected
-            </h2>
-            <SubjectsTable subjects={state.data.subjects} />
-          </section>
-          <section className="region" aria-labelledby="coverage-title">
-            <h2 id="coverage-title" className="section-title">
-              Coverage
-            </h2>
-            <CoverageFacts coverage={state.data.coverage} analyzedAt={state.data.analyzedAt} />
-          </section>
-        </div>
+        <section className="region" aria-labelledby="subjects-title">
+          <h2 id="subjects-title" className="section-title">
+            Subjects detected
+          </h2>
+          <SubjectsTable subjects={state.data.subjects} />
+        </section>
       ) : null}
     </>
   );

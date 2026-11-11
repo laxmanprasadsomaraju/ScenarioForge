@@ -214,3 +214,95 @@
 .rehearse-finding .toolbar {
   margin-bottom: 0;
 }
+
+/* Verdict: the answer, its confidence and how much was read, in one block. */
+.verdict .analysis-status {
+  gap: var(--space-xs);
+}
+.verdict-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  padding-top: var(--space-xs);
+}
+.verdict-coverage {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+/* The next action sits under the verdict, on a raised panel. */
+.next-action {
+  padding: var(--space-md) var(--space-lg);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-panel);
+  background: var(--color-paper-2);
+}
+.region + .next-action {
+  border-top: var(--rule-hair) solid var(--color-rule-strong);
+  padding-top: var(--space-md);
+}
+.finding-generated {
+  display: grid;
+  gap: var(--space-3xs);
+}
+/* Quoted sources sit on a sunken surface; generated text never does. */
+.source-quoted .quote {
+  padding: var(--space-sm);
+  border: var(--rule-hair) solid var(--color-rule-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-paper-2);
+}
+@media (max-width: 48rem) {
+  .finding-sources {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .next-action {
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+.not-checked-list {
+  margin: 0;
+  padding-left: var(--space-lg);
+  display: grid;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  max-width: 70ch;
+}
+.query-details {
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+}
+.query-details summary {
+  cursor: pointer;
+  width: fit-content;
+  border-radius: var(--radius-control);
+}
+.query-details summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.query-details code {
+  display: block;
+  margin-top: var(--space-2xs);
+  overflow-wrap: anywhere;
+}
+.procedure-steps {
+  display: grid;
+  gap: var(--space-xs);
+  padding-left: var(--space-xl);
+  max-width: 75ch;
+}
+.procedure-steps li {
+  padding: var(--space-2xs) 0;
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.steps-missing {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+}
+.analysis-grid + .region {
+  margin-top: var(--space-xl);
+}

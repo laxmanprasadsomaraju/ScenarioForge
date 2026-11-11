@@ -8,6 +8,7 @@ export function CheckImpactButton({ issue }: { issue: JiraIssueSummary }) {
   return (
     <Button
       spacing="compact"
+      variant="primary"
       onClick={() => checkChange(issue)}
       aria-label={`Check recovery impact of ${issue.key}`}
     >

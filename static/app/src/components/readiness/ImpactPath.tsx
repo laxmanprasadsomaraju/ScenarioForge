@@ -9,6 +9,7 @@ import type {
   UnassessedLink,
 } from '@shared/graph/types';
 import { useSite } from '../../lib/site';
+import { StatusBadge } from '../Badge';
 import { confluencePath } from './Analysis';
 import { buildImpactModel, type Hop, type ImpactRow, type Slot } from './impactModel';
 
@@ -267,9 +268,9 @@ function HopItem({ role, hop }: { role: Role; hop: Hop }) {
       <span className="hop-kind">{ROLE_LABELS[role]}</span>
       <NodeName node={hop.node} role={role} />
       <span className="hop-meta">
-        <span className={`link-confidence link-${edge.confidence}`}>
+        <StatusBadge tone={edge.confidence === 'confirmed' ? 'warning' : 'suspected'}>
           {CONFIDENCE_WORDS[edge.confidence]}
-        </span>
+        </StatusBadge>
         <span className="hop-source">from {SOURCE_LABELS[edge.source]}</span>
         <button
           type="button"
@@ -337,7 +338,9 @@ function MissingItem({ role, link }: { role: Role; link: UnassessedLink }) {
   return (
     <li className="hop hop-missing">
       <span className="hop-kind">{ROLE_LABELS[role]}</span>
-      <span className="hop-node hop-unassessed">Not assessed</span>
+      <span className="hop-node hop-unassessed">
+        <StatusBadge tone="unknown">Not assessed</StatusBadge>
+      </span>
       <span className="hop-reason">
         {link.reason} <span className="hop-source">({SOURCE_LABELS[link.source]})</span>
       </span>
@@ -349,7 +352,9 @@ function NoneItem({ role, text }: { role: Role; text: string }) {
   return (
     <li className="hop hop-missing">
       <span className="hop-kind">{ROLE_LABELS[role]}</span>
-      <span className="hop-node hop-unassessed">None returned</span>
+      <span className="hop-node hop-unassessed">
+        <StatusBadge tone="unknown">None returned</StatusBadge>
+      </span>
       <span className="hop-reason">{text}</span>
     </li>
   );
