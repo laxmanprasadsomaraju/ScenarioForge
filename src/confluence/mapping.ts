@@ -247,7 +247,10 @@ export function errorFromStatus(status: number, resource: 'search' | 'page'): Ap
     case 403:
       return {
         code: 'FORBIDDEN',
-        message: 'You do not have permission to view this Confluence content.',
+        // Confluence also answers 403 when it is not connected to this app
+        // installation, so the message names both causes.
+        message:
+          'Confluence refused access (HTTP 403): Confluence may not be connected to this ScenarioForge installation, or you do not have permission to view this content.',
         upstreamStatus: status,
       };
     case 404:

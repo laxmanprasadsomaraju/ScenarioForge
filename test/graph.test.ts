@@ -191,7 +191,7 @@ describe('buildGraphFromAnalysis (MC-62 shapes)', () => {
       ...base,
       status: 'not-assessed',
       notAssessedReason:
-        'Runbooks were not checked: You do not have permission to view this Confluence content.',
+        'Runbooks were not checked: Confluence refused access (HTTP 403): Confluence may not be connected to this ScenarioForge installation, or you do not have permission to view this content.',
       findings: [],
       coverage: {
         pagesFound: 0,
@@ -273,7 +273,7 @@ describe('confluenceSourceStatus', () => {
       'not-permitted',
     ],
     [
-      'Runbooks were not checked: You do not have permission to view this Confluence content.',
+      'Runbooks were not checked: Confluence refused access (HTTP 403): Confluence may not be connected to this ScenarioForge installation, or you do not have permission to view this content.',
       'not-permitted',
     ],
     ['Runbooks were not checked: ScenarioForge could not reach Confluence.', 'error'],
