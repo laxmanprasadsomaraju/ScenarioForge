@@ -1,0 +1,44 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (components/forced-colors): the full stamp and critique head app.css */
+/*
+ * Windows High Contrast and other forced-colour modes. The browser replaces
+ * backgrounds and text with system colours, so every state that relied on a
+ * fill keeps a visible border, and focus and selection use system keywords.
+ * Status is never colour alone (each badge carries a word and an icon), so
+ * these rules only restore boundaries.
+ */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  .badge,
+  .state-unknown,
+  .segmented,
+  .decision,
+  .journey-link,
+  .nav-link,
+  .rehearsal-bar,
+  .analysis-status,
+  .next-action,
+  .first-run {
+    border: 1px solid CanvasText;
+  }
+  .nav-link[aria-current='page'],
+  .segment input:checked + span,
+  .decision[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  .rail-deadline,
+  .rail-deadline-met,
+  .rail-deadline-missed {
+    border-color: CanvasText;
+  }
+  .skeleton {
+    background: GrayText;
+  }
+  svg {
+    forced-color-adjust: auto;
+  }
+}

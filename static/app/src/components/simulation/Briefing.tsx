@@ -47,6 +47,15 @@ export function Briefing({
         </h2>
         <p className="briefing-summary">{scenario.summary}</p>
 
+        <div className="briefing-action">
+          <Button variant="primary" onClick={onStart} aria-describedby="briefing-rules-note">
+            Start rehearsal
+          </Button>
+          <p id="briefing-rules-note" className="briefing-action-note">
+            The clock starts when you press it. Rules of the exercise are below.
+          </p>
+        </div>
+
         <dl className="facts briefing-facts">
           <dt>Source change</dt>
           <dd>
@@ -96,12 +105,6 @@ export function Briefing({
           </li>
           <li>You see what an action did only after you choose it.</li>
         </ul>
-
-        <div className="briefing-action">
-          <Button variant="primary" onClick={onStart}>
-            Start rehearsal
-          </Button>
-        </div>
       </section>
 
       <aside className="briefing-side" aria-label="Briefing material">

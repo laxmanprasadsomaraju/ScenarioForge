@@ -15,9 +15,6 @@
  * so a subtree with its own --ds-* values needs its own copy of the aliases.
  * Brand and origin values flip on data-color-mode, the same attribute ADS
  * uses, wherever it is set (html in Jira, the app root for an override).
- *
- * The --color-* names are migration aliases for existing rules; Phase E
- * removes them.
  */
 :root {
   --space-3xs: 2px;
@@ -71,10 +68,10 @@
 /* Semantic layer: ADS aliases. Re-declared on a subtree theme (see above). */
 :root,
 [data-subtree-theme] {
-  --sf-surface: var(--ds-surface, #ffffff);
+  --sf-surface: var(--ds-surface, #fffdfb);
   --sf-surface-sunken: var(--ds-surface-sunken, #f8f8f8);
-  --sf-surface-raised: var(--ds-surface-raised, #ffffff);
-  --sf-surface-overlay: var(--ds-surface-overlay, #ffffff);
+  --sf-surface-raised: var(--ds-surface-raised, #fffdfb);
+  --sf-surface-overlay: var(--ds-surface-overlay, #fffdfb);
   --sf-surface-hover: var(--ds-background-neutral-subtle-hovered, #0515240f);
   --sf-surface-pressed: var(--ds-background-neutral-subtle-pressed, #0b120e24);
   --sf-text: var(--ds-text, #292a2e);
@@ -83,6 +80,20 @@
   --sf-border: var(--ds-border, #0b120e24);
   --sf-border-bold: var(--ds-border-bold, #7d818a);
   --sf-focus: var(--ds-border-focused, #4688ec);
+
+  /* Buttons: the ADS button roles, so native buttons match Jira's. */
+  --sf-action-primary: var(--ds-background-brand-bold, #1868db);
+  --sf-action-primary-hover: var(--ds-background-brand-bold-hovered, #1558bc);
+  --sf-action-primary-pressed: var(--ds-background-brand-bold-pressed, #144794);
+  --sf-action-primary-text: var(--ds-text-inverse, #fffdfb);
+  --sf-action-danger: var(--ds-background-danger-bold, #c9372c);
+  --sf-action-danger-hover: var(--ds-background-danger-bold-hovered, #ae2e24);
+  --sf-action-danger-pressed: var(--ds-background-danger-bold-pressed, #8c2b23);
+  --sf-action-neutral: var(--ds-background-neutral, #0515240f);
+  --sf-action-neutral-hover: var(--ds-background-neutral-hovered, #0b120e24);
+  --sf-action-neutral-pressed: var(--ds-background-neutral-pressed, #080f214a);
+  --sf-action-disabled: var(--ds-background-disabled, #17171708);
+  --sf-action-disabled-text: var(--ds-text-disabled, #080f214a);
 
   --sf-status-success: var(--ds-text-success, #4c6b1f);
   --sf-status-success-bg: var(--ds-background-success, #efffd6);
@@ -115,31 +126,6 @@
     0 8px 12px rgb(30 31 33 / 0.15),
     0 0 1px rgb(30 31 33 / 0.31)
   );
-
-  /* Migration aliases (removed in Phase E). */
-  --color-paper: var(--sf-surface);
-  --color-paper-2: var(--sf-surface-hover);
-  --color-paper-3: var(--sf-surface-sunken);
-  --color-ink: var(--sf-text);
-  --color-ink-2: var(--sf-text-subtle);
-  --color-muted: var(--sf-text-subtlest);
-  --color-rule: var(--sf-border);
-  --color-rule-strong: var(--sf-border-bold);
-  --color-focus: var(--sf-focus);
-  --color-accent: var(--sf-accent-bold);
-  --color-accent-ink: var(--sf-accent-ink);
-  --color-accent-soft: var(--sf-accent-subtle);
-  --color-accent-text: var(--sf-accent-text);
-  --color-success: var(--sf-status-success);
-  --color-success-soft: var(--sf-status-success-bg);
-  --color-error: var(--sf-status-danger);
-  --color-error-soft: var(--sf-status-danger-bg);
-  --color-warning: var(--sf-status-warning);
-  --color-warning-soft: var(--sf-status-warning-bg);
-  --color-info-soft: var(--sf-status-info-bg);
-  --color-demo: var(--sf-origin-synthetic);
-  --color-demo-soft: var(--sf-origin-synthetic-bg);
-  --shadow-raised: var(--sf-shadow-raised);
 }
 
 /* Brand (forge copper) and the command band, dark. html[...] outranks :root, so order is free;

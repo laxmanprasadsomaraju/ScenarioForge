@@ -12,6 +12,7 @@ import { OriginTag } from '../components/OriginTag';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState } from '../components/States';
 import { CheckImpactButton } from '../components/readiness/CheckImpactButton';
+import { HowItWorks } from '../components/command/HowItWorks';
 import { JourneyStrip, StatTile, type JourneyStep } from '../components/command/CommandParts';
 import { api } from '../lib/api';
 import { useCheckLog, type CheckRecord } from '../lib/checkLog';
@@ -163,6 +164,8 @@ export function OverviewPage() {
         aside={<ConnectionStatusLine />}
       />
 
+      <HowItWorks checked={checks.length > 0 || completed.length > 0} />
+
       <div className="cc-summary">
         <p className="cc-summary-line">{summary}</p>
         <dl className="cc-sources">
@@ -248,7 +251,10 @@ export function OverviewPage() {
                 {checks.length ? 'Check another change' : 'Check a recent change'}
               </Button>
               {completed.length === 0 ? (
-                <Button onClick={() => navigate('simulations')}>Try the synthetic demo</Button>
+                <span className="cc-demo">
+                  <Button onClick={() => navigate('simulations')}>Try the synthetic demo</Button>
+                  <OriginBadge origin="synthetic">Synthetic demo data</OriginBadge>
+                </span>
               ) : null}
             </div>
           </div>

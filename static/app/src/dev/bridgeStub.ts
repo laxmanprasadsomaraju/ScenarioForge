@@ -11,3 +11,4 @@ export const view = {
   theme: { enable: unavailable },
 };
 export const router = { open: unavailable, navigate: unavailable };
+export const rovo = { isEnabled: unavailable, open: unavailable };

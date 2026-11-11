@@ -1,6 +1,7 @@
 import { QuestionCircleIcon } from '../icons';
 import type { Ref } from 'react';
 import { StatusBadge } from '../Badge';
+import { AskRovo } from '../AskRovo';
 import { Button } from '../Button';
 import type {
   AnalysisCoverage,
@@ -100,6 +101,10 @@ export function AnalysisStatement({
           ) : null}
           <CoverageLine coverage={coverage} />
         </div>
+        <AskRovo
+          agent="investigator"
+          prompt={`What recovery risks does ${changeKey} have? Cite the ScenarioForge evidence.`}
+        />
       </div>
     );
   }

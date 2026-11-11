@@ -1,0 +1,91 @@
+/* Hallmark · shape: app screen · posture: restrained · part of app.css (components/buttons): the full stamp and critique head app.css */
+/* Native buttons on ADS button roles: 32px default, 24px compact, as in Jira. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-badge);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--sf-action-neutral);
+  color: var(--sf-text-subtle);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+.btn:hover {
+  background: var(--sf-action-neutral-hover);
+}
+.btn:active {
+  background: var(--sf-action-neutral-pressed);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--sf-focus);
+  outline-offset: 2px;
+}
+.btn-compact {
+  min-height: 24px;
+  padding: 0 var(--space-xs);
+}
+.btn-primary {
+  background: var(--sf-action-primary);
+  color: var(--sf-action-primary-text);
+}
+.btn-primary:hover {
+  background: var(--sf-action-primary-hover);
+}
+.btn-primary:active {
+  background: var(--sf-action-primary-pressed);
+}
+.btn-danger {
+  background: var(--sf-action-danger);
+  color: var(--sf-action-primary-text);
+}
+.btn-danger:hover {
+  background: var(--sf-action-danger-hover);
+}
+.btn-danger:active {
+  background: var(--sf-action-danger-pressed);
+}
+.btn-subtle {
+  background: transparent;
+}
+.btn-subtle:hover {
+  background: var(--sf-surface-hover);
+}
+.btn-subtle:active {
+  background: var(--sf-surface-pressed);
+}
+.btn:disabled,
+.btn:disabled:hover {
+  background: var(--sf-action-disabled);
+  color: var(--sf-action-disabled-text);
+  cursor: not-allowed;
+}
+@media (pointer: coarse) {
+  .btn {
+    min-height: var(--hit);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .btn {
+    border: 1px solid ButtonText;
+  }
+  .btn:disabled {
+    border-color: GrayText;
+    color: GrayText;
+  }
+}

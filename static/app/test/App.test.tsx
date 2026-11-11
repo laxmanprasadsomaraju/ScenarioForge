@@ -82,16 +82,18 @@ describe('Rehearsal', () => {
 });
 
 describe('Planned screens', () => {
-  it.each([['Crisis room', 'M7', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
-    '%s says Planned for %s and offers a working alternative',
-    async (label, m, action, dest) => {
+  it.each([['Crisis room', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
+    '%s says it is coming later, lists planned capabilities and offers a working alternative',
+    async (label, action, dest) => {
       const user = userEvent.setup();
       render(<App />);
       await user.click(nav().getByRole('link', { name: `${label}, coming later` }));
 
       // Lazy screen: the skeleton shows until its chunk resolves.
       expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
-      expect(screen.getByText(`Planned for ${m}`)).toBeInTheDocument();
+      expect(screen.getByText('Coming later')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Planned capabilities' })).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bM[0-9]{1,2}\b/);
       expect(screen.getByRole('main')).toHaveFocus();
 
       await user.click(screen.getByRole('button', { name: action }));
@@ -142,7 +144,7 @@ describe('Settings', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(nav().getByRole('link', { name: 'Settings' }));
-    const sources = await screen.findByRole('table');
+    const sources = await screen.findByRole('table', { name: 'Connected sources' });
     expect(
       await within(sources).findByRole('row', { name: /^Jira Not connected/ }),
     ).toBeInTheDocument();
