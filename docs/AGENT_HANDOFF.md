@@ -41,6 +41,10 @@ Observed: `forge environments list` shows `confluence-test` last deployed 2026-1
 
 Code complete, Automated tests passed (see [M8_PLAN.md](M8_PLAN.md) section 14). Owner approved code, mock tests and local integration only. Flag `SF_REMEDIATION_WRITE` (off) plus `SF_STORAGE`; manifest and package files unchanged; no deploy, no real Jira call. Next safe action: lead review and merge; real writes need the separately approved `write-test` environment.
 
+## M8 server-issued approvals (Lane A, branch `m8/server-approvals`, from `054195d`)
+
+Code complete, Automated tests passed (see [M8_PLAN.md](M8_PLAN.md) section 15). Approvals are issued and stored by the server (approver from context, time from server clock, bound to request hash, project, source state), single use with versioned writes; the browser sends only an approval id. Partial-failure text fixed. Owner-approved code task only: manifest and package files unchanged vs `054195d`, no deploy, no Jira/Confluence call, no Rovo, writer still disabled. Next safe action: lead review and merge into the release line; real writes still need the separately approved `write-test` environment.
+
 ## Pending owner approvals
 
 1. Turn AI on for rovo-test (`SF_ROVO_TEST_AI=enabled`) and spend Rovo credits for the Phase 2 live test (RT2 `M6_PHASE2_TEST_SCRIPT.md`).
