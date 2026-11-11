@@ -173,7 +173,12 @@ function RehearsalScreen() {
         </p>
       )}
       {phase.kind === 'briefing' ? (
-        <Briefing scenario={baseScenario} onStart={start} focusOnMount={phase.returned} />
+        <Briefing
+          scenario={baseScenario}
+          provenance={provenance}
+          onStart={start}
+          focusOnMount={phase.returned}
+        />
       ) : null}
       {phase.kind === 'running' ? (
         <>

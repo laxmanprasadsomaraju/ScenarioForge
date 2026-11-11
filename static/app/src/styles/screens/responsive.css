@@ -3,9 +3,11 @@
 @media (max-width: 75rem) {
   .rehearsal-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    grid-template-areas:
+      'rail stage'
+      'side side';
   }
   .rehearsal-side {
-    grid-column: 1 / -1;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--gap-columns);
   }
@@ -42,16 +44,30 @@
     border-top: var(--rule-hair) solid var(--color-rule);
     padding-top: var(--space-lg);
   }
+  .rehearsal-grid {
+    grid-template-areas:
+      'stage'
+      'rail'
+      'side';
+    gap: 0;
+  }
   .rehearsal-stage {
-    order: -1;
+    margin-bottom: var(--space-lg);
   }
   .rehearsal-side {
     grid-template-columns: minmax(0, 1fr);
+    gap: 0;
   }
   .rehearsal-side .region + .region {
-    margin-top: var(--space-lg);
-    padding-top: var(--space-lg);
-    border-top: var(--rule-hair) solid var(--color-rule);
+    margin-top: 0;
+    padding-top: 0;
+  }
+  .rehearsal-bar {
+    gap: var(--space-2xs) var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .rehearsal-bar .clock-value {
+    font-size: var(--text-xl);
   }
 }
 
