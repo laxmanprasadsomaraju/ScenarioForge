@@ -1,4 +1,4 @@
-import { parseDeepLink } from './deepLink';
+import { buildDeepLink, parseDeepLink } from './deepLink';
 
 /**
  * Absolute ScenarioForge links for Rovo agents.
@@ -36,5 +36,11 @@ export function buildAppUrl(input: {
   const pathname = appPath.slice(0, q);
   const parsed = parseDeepLink(pathname, appPath.slice(q));
   if (parsed.kind !== 'link') return null;
+  // Canonical form only: no trailing slash, no percent-encoded look-alikes.
+  try {
+    if (buildDeepLink(parsed.link) !== appPath) return null;
+  } catch {
+    return null;
+  }
   return `${siteUrl}/apps/full-page/${installationId.toLowerCase()}/${ROUTE_PREFIX}${pathname}${appPath.slice(q)}`;
 }

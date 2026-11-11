@@ -123,6 +123,18 @@ describe('withAppUrl', () => {
   });
 });
 
+describe('buildAppUrl canonical form', () => {
+  const base = {
+    siteUrl: 'https://a.atlassian.net',
+    installationId: '0123abcd-0123-0123-0123-0123456789ab',
+  };
+  it('refuses parseable but non-canonical paths (trailing slash, percent-encoded letters)', () => {
+    expect(buildAppUrl({ ...base, appPath: '/readiness-checks/?change=MC-62' })).toBeNull();
+    expect(buildAppUrl({ ...base, appPath: '/readiness-checks?change=%4DC-62' })).toBeNull();
+    expect(buildAppUrl({ ...base, appPath: '/readiness-checks?change=MC-62' })).not.toBeNull();
+  });
+});
+
 describe('forgeLinkBase', () => {
   it('returns null when the runtime context is unavailable', async () => {
     expect(await forgeLinkBase()).toBeNull();
