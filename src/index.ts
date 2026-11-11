@@ -67,7 +67,7 @@ async function guarded<T>(
   try {
     return await work();
   } catch (error) {
-    console.error('Resolver failed', error instanceof Error ? error.message : 'unknown error');
+    console.error('Resolver failed', error instanceof Error ? error.name : 'unknown error');
     return {
       ok: false,
       error: {

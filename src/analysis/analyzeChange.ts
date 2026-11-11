@@ -127,7 +127,7 @@ export async function analyzeChange(
   try {
     search = await searchRunbooksForSubjects(deps.confluence, terms.value);
   } catch (error) {
-    console.error('Runbook search failed', error instanceof Error ? error.message : 'unknown');
+    console.error('Runbook search failed', error instanceof Error ? error.name : 'unknown');
     return {
       ok: true,
       data: notAssessed(
