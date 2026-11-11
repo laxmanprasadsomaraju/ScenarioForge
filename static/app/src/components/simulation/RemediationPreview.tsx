@@ -1,7 +1,8 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { RemediationAction } from '@shared/domain/types';
+import type { ApiResult, CreateRemediationWorkItemResponse } from '@shared/api';
 import {
   approveDraft,
   buildWorkItemDraft,
@@ -12,12 +13,34 @@ import {
   validateDraft,
   type DraftApproval,
   type DraftRehearsalResult,
+  type WorkItemDraft,
 } from '@shared/remediation';
 import { useSite } from '../../lib/site';
 import { StatusBadge, type StatusTone } from '../Badge';
 
 export const CREATE_BLOCKED_REASON =
   'Creating work items needs the write:jira-work permission (not granted)';
+
+export const CREATE_NEEDS_APPROVAL = 'Approve this exact draft first';
+
+export const RETEST_SUGGESTION = 'Retest after the runbook is updated';
+
+/**
+ * Sends an approved draft to the backend `createRemediationWorkItem`
+ * resolver. No build passes one yet: without it the create button stays
+ * disabled with CREATE_BLOCKED_REASON.
+ */
+export type RemediationCreator = (
+  draft: WorkItemDraft,
+  approval: DraftApproval,
+) => Promise<ApiResult<CreateRemediationWorkItemResponse>>;
+
+type CreatePhase =
+  | { kind: 'idle' }
+  | { kind: 'confirming' }
+  | { kind: 'sending' }
+  | { kind: 'done'; result: CreateRemediationWorkItemResponse }
+  | { kind: 'failed'; message: string };
 
 /**
  * The exact Jira work item ScenarioForge would create for a fix, reviewed as a
@@ -32,6 +55,7 @@ export function RemediationPreview({
   fixes,
   defaultFixId,
   rehearsal,
+  creator = null,
 }: {
   analysis: ChangeAnalysis;
   findingId: string;
@@ -39,6 +63,8 @@ export function RemediationPreview({
   defaultFixId?: string;
   /** Retest verdict to quote, when the debrief follows a retest. */
   rehearsal?: DraftRehearsalResult;
+  /** Null in every build until `write:jira-work` is approved. */
+  creator?: RemediationCreator | null;
 }) {
   const { siteUrl, accountId } = useSite();
   const ids = useId();
@@ -49,6 +75,12 @@ export function RemediationPreview({
   const [reviewedHash, setReviewedHash] = useState<string | null>(null);
   const [approval, setApproval] = useState<DraftApproval | null>(null);
   const [approveError, setApproveError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<CreatePhase>({ kind: 'idle' });
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (phase.kind === 'confirming') confirmRef.current?.focus();
+  }, [phase.kind]);
 
   const finding = analysis.findings.find((f) => f.id === findingId);
   const fix = fixes.find((f) => f.id === fixId);
@@ -121,8 +153,42 @@ export function RemediationPreview({
       value: approved ? 'Approved, this tab only' : stale ? 'Stale' : 'Not approved',
       tone: approved ? 'success' : stale ? 'warning' : 'unknown',
     },
-    { label: 'Create in Jira', value: 'Disabled: no write permission', tone: 'unknown' },
+    {
+      label: 'Create in Jira',
+      value: creator
+        ? approved
+          ? 'Ready to confirm'
+          : 'Needs approval'
+        : 'Disabled: no write permission',
+      tone: 'unknown',
+    },
   ];
+
+  const createdResult = phase.kind === 'done' && phase.result.issueKey ? phase.result : null;
+  const canCreate =
+    creator !== null && approved && (phase.kind === 'idle' || phase.kind === 'failed');
+  const createReason = !creator
+    ? CREATE_BLOCKED_REASON
+    : createdResult
+      ? `Created as ${createdResult.issueKey}`
+      : !approved
+        ? CREATE_NEEDS_APPROVAL
+        : '';
+
+  const sendCreate = async () => {
+    if (!creator || !approval) return;
+    setPhase({ kind: 'sending' });
+    try {
+      const result = await creator(draft, approval);
+      setPhase(
+        result.ok
+          ? { kind: 'done', result: result.data }
+          : { kind: 'failed', message: result.error.message },
+      );
+    } catch {
+      setPhase({ kind: 'failed', message: 'Could not reach the ScenarioForge backend.' });
+    }
+  };
 
   const approve = () => {
     if (!accountId) return;
@@ -323,13 +389,59 @@ export function RemediationPreview({
             <Button variant="secondary" isDisabled={!canApprove} onClick={approve}>
               Approve this exact draft
             </Button>
-            <Button variant="primary" isDisabled aria-describedby={`${ids}-create-reason`}>
+            <Button
+              variant="primary"
+              isDisabled={!canCreate}
+              aria-describedby={`${ids}-create-reason`}
+              onClick={() => setPhase({ kind: 'confirming' })}
+            >
               Create in Jira
             </Button>
             <span id={`${ids}-create-reason`} className="region-body">
-              {CREATE_BLOCKED_REASON}
+              {createReason}
             </span>
           </div>
+          {phase.kind === 'confirming' ? (
+            <div
+              role="alertdialog"
+              aria-labelledby={`${ids}-confirm-title`}
+              className="create-confirm"
+            >
+              <h3 id={`${ids}-confirm-title`} className="remediation-subtitle">
+                Create 1 work item in {draft.projectKey} as you?
+              </h3>
+              <ul className="draft-links" aria-label="Will be created">
+                <li>
+                  Work item: {draft.issueType} in{' '}
+                  <span className="draft-mono">{draft.projectKey}</span>, “{draft.summary}”
+                </li>
+                <li>
+                  Labels: <code>{draft.labels.join(', ')}</code>
+                </li>
+                <li>
+                  Issue link: relates to{' '}
+                  <span className="draft-mono">{draft.links.issueLink.issueKey}</span>
+                </li>
+                <li>
+                  {draft.links.remoteLink
+                    ? `Runbook page link: “${draft.links.remoteLink.title}”`
+                    : 'No runbook page link'}
+                </li>
+              </ul>
+              <p className="region-body">
+                Nothing else is changed. The runbook page is not edited.
+              </p>
+              <div className="debrief-actions">
+                <Button variant="primary" ref={confirmRef} onClick={() => void sendCreate()}>
+                  Create 1 work item
+                </Button>
+                <Button variant="subtle" onClick={() => setPhase({ kind: 'idle' })}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          <CreateOutcome phase={phase} onCheckAgain={() => void sendCreate()} />
           <div role="status" aria-live="polite" className="approval-status">
             {approved && approval ? (
               <p className="approval-note">
@@ -357,6 +469,125 @@ export function RemediationPreview({
           ) : null}
         </div>
       </details>
+
+      <RemediationTracking findingId={findingId} approved={approved} created={createdResult} />
     </section>
+  );
+}
+
+function CreateOutcome({ phase, onCheckAgain }: { phase: CreatePhase; onCheckAgain: () => void }) {
+  if (phase.kind === 'sending') {
+    return (
+      <p role="status" className="approval-note">
+        Creating the work item…
+      </p>
+    );
+  }
+  if (phase.kind === 'failed') {
+    return (
+      <p role="alert" className="approval-stale">
+        Not created: {phase.message}
+      </p>
+    );
+  }
+  if (phase.kind !== 'done') return null;
+  const r = phase.result;
+  if (r.outcome === 'unknown') {
+    return (
+      <div role="status" className="approval-note">
+        <p>
+          Outcome unknown: checking Jira for a work item labelled <code>{r.idempotencyLabel}</code>.
+          Checking again never creates a second one.
+        </p>
+        <Button variant="secondary" onClick={onCheckAgain}>
+          Check again
+        </Button>
+      </div>
+    );
+  }
+  const followUps = [
+    r.issueLink.status === 'failed' ? `Issue link not added: ${r.issueLink.message}` : null,
+    r.remoteLink.status === 'failed'
+      ? `Runbook page link not added: ${r.remoteLink.message}`
+      : null,
+  ].filter((x): x is string => x !== null);
+  return (
+    <div role="status" className="approval-note">
+      <p>
+        {r.adopted ? 'Existing work item adopted: ' : 'Work item created: '}
+        <a href={r.issueUrl} target="_blank" rel="noreferrer">
+          {r.issueKey}
+        </a>
+        {r.outcome === 'created-with-follow-up' ? '. Follow-up needed.' : '.'}
+      </p>
+      {followUps.length > 0 ? (
+        <ul>
+          {followUps.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Where the fix stands, one stage at a time. Each stage is stated on its
+ * own: an in-tab approval is not a created work item, and a created work item
+ * is not an updated runbook or a verified retest.
+ */
+function RemediationTracking({
+  findingId,
+  approved,
+  created,
+}: {
+  findingId: string;
+  approved: boolean;
+  created: CreateRemediationWorkItemResponse | null;
+}) {
+  const ids = useId();
+  const stages: { label: string; value: string; tone: StatusTone }[] = [
+    { label: 'Proposed', value: 'Draft ready', tone: 'info' },
+    {
+      label: 'Approved (simulated)',
+      value: approved ? 'Approved in this tab' : 'Not approved',
+      tone: approved ? 'info' : 'unknown',
+    },
+    {
+      label: 'Jira work item created',
+      value: created ? (created.issueKey ?? 'Created') : 'Not created',
+      tone: created ? 'success' : 'unknown',
+    },
+    { label: 'Runbook updated', value: 'Not tracked yet', tone: 'unknown' },
+    { label: 'Verified retest', value: RETEST_SUGGESTION, tone: 'unknown' },
+  ];
+  return (
+    <div className="remediation-tracking" aria-labelledby={`${ids}-title`} role="group">
+      <h3 id={`${ids}-title`} className="remediation-subtitle">
+        Remediation tracking
+      </h3>
+      <p className="region-body">
+        For finding <span className="draft-mono">{findingId}</span>
+        {created?.issueKey ? (
+          <>
+            {', tracked in '}
+            <a href={created.issueUrl} target="_blank" rel="noreferrer">
+              {created.issueKey}
+            </a>
+          </>
+        ) : null}
+        .
+      </p>
+      <dl className="review-strip" aria-label="Remediation stages">
+        {stages.map((st) => (
+          <div key={st.label} className="review-item">
+            <dt>{st.label}</dt>
+            <dd>
+              <StatusBadge tone={st.tone}>{st.value}</StatusBadge>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

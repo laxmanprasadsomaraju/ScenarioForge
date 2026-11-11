@@ -692,11 +692,16 @@ describe('no write path', () => {
     expect(forge.match(/requestJira\(/g)).toHaveLength(4);
   });
 
-  it('registers no create resolver', () => {
+  it('registers only the hard-disabled create resolver, wired to the null production writer', () => {
     const index = readFileSync(join(ROOT, 'src/index.ts'), 'utf8');
     const defined = [...index.matchAll(/resolver\.define\('([^']+)'/g)].map((m) => m[1]);
     expect(defined).toContain('prepareRemediationRequest');
     expect(defined).toContain('checkRemediationApproval');
-    expect(defined.some((name) => /create|post|write|submit/i.test(name!))).toBe(false);
+    expect(defined.filter((name) => /create|post|write|submit/i.test(name!))).toEqual([
+      'createRemediationWorkItem',
+    ]);
+    expect(index).toMatch(/writer: productionRemediationWriter\(\)/);
+    const gateways = readFileSync(join(ROOT, 'src/remediation/gateways.ts'), 'utf8');
+    expect(gateways).not.toMatch(/@forge\/api|requestJira/);
   });
 });

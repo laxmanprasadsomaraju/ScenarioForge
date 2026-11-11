@@ -11,6 +11,8 @@ import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
 import { forgeRemediationJira } from './remediation/forge';
+import { handleCreateRemediationWorkItem } from './remediation/create';
+import { productionRemediationStorage, productionRemediationWriter } from './remediation/gateways';
 import { checkRemediationApproval, prepareRemediationRequest } from './remediation/prepare';
 import {
   parseCheckRemediationApprovalRequest,
@@ -155,7 +157,9 @@ resolver.define('getReadinessGraph', ({ payload, context }) =>
   }),
 );
 
-// M8 preparation only: read-only (GETs as the user). There is no create resolver.
+// M8: preparation is read-only (GETs as the user). The create resolver is
+// compiled in but hard-disabled: the production writer is null, so it answers
+// WRITE_NOT_PERMITTED before reading anything (src/remediation/gateways.ts).
 const remediationDeps = {
   jira: forgeRemediationJira,
   confluence: forgeConfluence,
@@ -187,6 +191,20 @@ resolver.define('checkRemediationApproval', ({ payload, context }) =>
     }
     return checkRemediationApproval(remediationDeps, parsed.value, accountId);
   }),
+);
+
+resolver.define('createRemediationWorkItem', ({ payload, context }) =>
+  guarded(() =>
+    handleCreateRemediationWorkItem(
+      {
+        ...remediationDeps,
+        writer: productionRemediationWriter(),
+        storage: productionRemediationStorage(),
+      },
+      payload,
+      context?.accountId,
+    ),
+  ),
 );
 
 /**
