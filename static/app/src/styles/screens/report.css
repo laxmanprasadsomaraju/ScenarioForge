@@ -257,8 +257,11 @@
   margin: 0;
 }
 .review-item .badge,
-.fix-state .badge {
+.fix-state .badge,
+.report-stat .badge {
   height: auto;
+  padding-block: var(--space-3xs);
+  line-height: 1.35;
   white-space: normal;
 }
 .remediation-body > summary {
@@ -307,8 +310,4 @@
 }
 .report-stats {
   padding: 0;
-}
-.report-stat .badge {
-  height: auto;
-  white-space: normal;
 }
