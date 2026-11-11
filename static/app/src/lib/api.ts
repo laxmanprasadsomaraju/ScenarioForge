@@ -13,6 +13,8 @@ import type {
   SaveRehearsalRunRequest,
   PrepareRemediationRequest,
   PrepareRemediationResponse,
+  ApproveRemediationRequest,
+  ApproveRemediationResponse,
   CreateRemediationWorkItemRequest,
   CreateRemediationWorkItemResponse,
   SaveRetestRequest,
@@ -95,6 +97,8 @@ export const api = {
   // Remediation (M8). The server rebuilds the draft and request; the browser copy is never trusted.
   prepareRemediationRequest: (request: PrepareRemediationRequest) =>
     call<PrepareRemediationResponse>('prepareRemediationRequest', request),
+  approveRemediationRequest: (request: ApproveRemediationRequest) =>
+    call<ApproveRemediationResponse>('approveRemediationRequest', request),
   createRemediationWorkItem: (request: CreateRemediationWorkItemRequest) =>
     call<CreateRemediationWorkItemResponse>('createRemediationWorkItem', request),
   // Crisis room. Identity, ids, tokens and clocks are all server-side.

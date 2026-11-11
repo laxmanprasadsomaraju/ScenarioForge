@@ -408,12 +408,20 @@ describe('RemediationPreview create step', () => {
     await approveAs(user);
     await user.click(screen.getByRole('button', { name: 'Create in Jira' }));
     await user.click(screen.getByRole('button', { name: 'Create 1 work item' }));
-    expect(await screen.findByText(/Follow-up needed\./)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/It exists in Jira, but a link is missing\./),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Issue link not added: You do not have permission to add the link in this project.',
+        /ScenarioForge does not retry links\. Open OPS-7 in Jira and add the missing link manually\./,
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Relates link to the change was not added: You do not have permission to add the link in this project.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
   });
 
   it('shows the failure reason and allows another attempt', async () => {

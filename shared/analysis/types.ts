@@ -123,7 +123,7 @@ export type AnalysisStatus =
 export interface ChangeAnalysis {
   changeKey: string;
   /** The change as read from Jira, so results always show their source. */
-  change: { key: string; summary: string; browsePath: string };
+  change: { key: string; summary: string; browsePath: string; updated?: string | null };
   analyzedAt: string;
   status: AnalysisStatus;
   /** Present when status is 'not-assessed'. */

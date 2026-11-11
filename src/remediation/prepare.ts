@@ -1,5 +1,6 @@
 import type {
   ApiResult,
+  ApprovalSource,
   CheckRemediationApprovalRequest,
   CheckRemediationApprovalResponse,
   PrepareRemediationRequest,
@@ -64,6 +65,7 @@ const DUPLICATE_SEARCH_FIELDS = 'summary,labels';
 const FIX_LOOKUP_RESTORE_MINUTES = 60;
 
 interface Prepared {
+  source: ApprovalSource;
   draft: WorkItemDraft;
   request: RemediationRequest;
   siteUrl: string;
@@ -122,7 +124,16 @@ async function rebuild(
 
   const request = buildCreateIssueRequest(built.draft, { siteUrl: site.data });
   if (!request.ok) return invalid(request.message);
-  return { ok: true, data: { draft: built.draft, request: request.request, siteUrl: site.data } };
+  const source: ApprovalSource = {
+    changeKey: input.changeKey,
+    changeUpdated: analysis.data.change.updated ?? null,
+    findingId: finding.id,
+    fixId: input.fixId,
+  };
+  return {
+    ok: true,
+    data: { source, draft: built.draft, request: request.request, siteUrl: site.data },
+  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -197,7 +208,7 @@ export async function prepareRemediationRequest(
   const now = deps.now ?? (() => new Date());
   const prepared = await rebuild(deps, input);
   if (!prepared.ok) return prepared;
-  const { draft, request, siteUrl } = prepared.data;
+  const { draft, request, siteUrl, source } = prepared.data;
   const duplicate = await searchDuplicates(deps.jira, draft.labels[1]!);
   if (!duplicate.ok) return duplicate;
   return {
@@ -210,6 +221,7 @@ export async function prepareRemediationRequest(
       duplicate: duplicate.data,
       siteUrl,
       preparedAt: now().toISOString(),
+      source,
     },
   };
 }

@@ -13,7 +13,11 @@ import { api } from '../src/lib/api';
 import { makeRemediationCreator, remediationCreateUiEnabled } from '../src/lib/remediationCreator';
 
 vi.mock('../src/lib/api', () => ({
-  api: { prepareRemediationRequest: vi.fn(), createRemediationWorkItem: vi.fn() },
+  api: {
+    prepareRemediationRequest: vi.fn(),
+    approveRemediationRequest: vi.fn(),
+    createRemediationWorkItem: vi.fn(),
+  },
 }));
 
 const SITE = 'https://example.atlassian.net';
@@ -65,13 +69,8 @@ const prepared = {
   preparedAt: AT,
 };
 const approval = approveDraft(draft, ME, AT, FIXED_ISSUE_TYPES);
-const creator = () =>
-  makeRemediationCreator({
-    changeKey: 'MC-62',
-    findingId: finding.id,
-    accountId: ME,
-    now: () => new Date(AT),
-  });
+const creator = () => makeRemediationCreator({ changeKey: 'MC-62', findingId: finding.id });
+const APPROVAL_ID = `sfa-${'a'.repeat(32)}`;
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -80,10 +79,19 @@ describe('remediation creator (browser to server)', () => {
     expect(remediationCreateUiEnabled()).toBe(false);
   });
 
-  it('prepares on the server, binds the approval to the request hash, then creates once', async () => {
+  it('prepares, asks the server to approve the request hash, then creates with the approval id only', async () => {
     vi.mocked(api.prepareRemediationRequest).mockResolvedValue({
       ok: true,
       data: prepared as never,
+    });
+    vi.mocked(api.approveRemediationRequest).mockResolvedValue({
+      ok: true,
+      data: {
+        approvalId: APPROVAL_ID,
+        requestHash: prepared.requestHash,
+        approvedAt: AT,
+        expiresAt: AT,
+      },
     });
     vi.mocked(api.createRemediationWorkItem).mockResolvedValue({
       ok: false,
@@ -93,12 +101,18 @@ describe('remediation creator (browser to server)', () => {
     expect(result).toMatchObject({ ok: false, error: { code: 'WRITE_NOT_PERMITTED' } });
     expect(api.prepareRemediationRequest).toHaveBeenCalledTimes(1);
     expect(api.createRemediationWorkItem).toHaveBeenCalledTimes(1);
+    const approvedWith = vi.mocked(api.approveRemediationRequest).mock.calls[0]![0];
+    expect(approvedWith.requestHash).toBe(prepared.requestHash);
     const sent = vi.mocked(api.createRemediationWorkItem).mock.calls[0]![0];
-    expect(sent.requestHash).toBe(prepared.requestHash);
-    expect(sent.approval.requestHash).toBe(prepared.requestHash);
-    expect(sent.approval.draftHash).toBe(approval.draftHash);
-    expect(sent.approval.approverAccountId).toBe(ME);
-    expect(sent).not.toHaveProperty('siteUrl');
+    expect(sent.approvalId).toBe(APPROVAL_ID);
+    // The browser sends no approver, time, age, hash or approval record.
+    for (const body of [approvedWith, sent]) {
+      for (const field of ['approval', 'approvedAt', 'approverAccountId', 'accountId', 'siteUrl']) {
+        expect(body).not.toHaveProperty(field);
+      }
+    }
+    expect(sent).not.toHaveProperty('requestHash');
+    expect(JSON.stringify([approvedWith, sent])).not.toContain(ME);
   });
 
   it('refuses without calling create when the server draft differs from the approved one', async () => {
@@ -111,18 +125,26 @@ describe('remediation creator (browser to server)', () => {
     expect(api.createRemediationWorkItem).not.toHaveBeenCalled();
   });
 
-  it('does not create when prepare fails or the account is unknown', async () => {
+  it('does not create when the server refuses to approve', async () => {
+    vi.mocked(api.prepareRemediationRequest).mockResolvedValue({
+      ok: true,
+      data: prepared as never,
+    });
+    vi.mocked(api.approveRemediationRequest).mockResolvedValue({
+      ok: false,
+      error: { code: 'WRITE_NOT_PERMITTED', message: 'Nothing was sent to Jira.' },
+    });
+    expect(await creator()(draft, approval, { fixId: 'rem-step' })).toMatchObject({ ok: false });
+    expect(api.createRemediationWorkItem).not.toHaveBeenCalled();
+  });
+
+  it('does not approve or create when prepare fails', async () => {
     vi.mocked(api.prepareRemediationRequest).mockResolvedValue({
       ok: false,
       error: { code: 'UPSTREAM_ERROR', message: 'down' },
     });
     expect(await creator()(draft, approval, { fixId: 'rem-step' })).toMatchObject({ ok: false });
-    const anon = makeRemediationCreator({
-      changeKey: 'MC-62',
-      findingId: finding.id,
-      accountId: null,
-    });
-    expect(await anon(draft, approval, { fixId: 'rem-step' })).toMatchObject({ ok: false });
+    expect(api.approveRemediationRequest).not.toHaveBeenCalled();
     expect(api.createRemediationWorkItem).not.toHaveBeenCalled();
   });
 });

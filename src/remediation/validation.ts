@@ -1,4 +1,5 @@
 import type {
+  ApproveRemediationRequest,
   CheckRemediationApprovalRequest,
   CreateRemediationWorkItemRequest,
   PrepareRemediationRequest,
@@ -128,17 +129,75 @@ export function parseCheckRemediationApprovalRequest(
   };
 }
 
+/** Fields that name who approved, when, or how old: the server alone decides these. */
+const AUTHORITY_FIELDS = [
+  'approval',
+  'approvedAt',
+  'approver',
+  'approverAccountId',
+  'accountId',
+  'expiresAt',
+  'age',
+  'draftHash',
+] as const;
+
+const PREPARE_FIELDS = [
+  'changeKey',
+  'findingId',
+  'fixId',
+  'projectKey',
+  'issueTypeName',
+  'summary',
+] as const;
+
+/** Server-issued approval ids: `sfa-` and 32 lowercase hex characters. */
+export const APPROVAL_ID_PATTERN = /^sfa-[0-9a-f]{32}$/;
+
 /**
- * Create payload: the approval check fields, and the approval must carry a
- * `requestHash` (a draft-only approval never covers a create).
+ * Strict payloads for the two authority-bearing resolvers: any field outside
+ * the allow-list is rejected, and fields that would carry an approver, a time
+ * or an age get a specific message. Nothing the browser sends can set them.
  */
+function rejectUnexpected(
+  record: Record<string, unknown>,
+  allowed: readonly string[],
+): string | null {
+  for (const field of Object.keys(record)) {
+    if ((AUTHORITY_FIELDS as readonly string[]).includes(field)) {
+      return 'The approver, approval time and age are set by the server and cannot be sent.';
+    }
+    if (!allowed.includes(field)) return 'The request contains a field that is not accepted.';
+  }
+  return null;
+}
+
+export function parseApproveRemediationRequest(
+  payload: unknown,
+): Validated<ApproveRemediationRequest> {
+  const record = asRecord(payload);
+  if (!record) return { ok: false, message: 'Request payload must be an object.' };
+  const unexpected = rejectUnexpected(record, [...PREPARE_FIELDS, 'requestHash']);
+  if (unexpected) return { ok: false, message: unexpected };
+  const prepared = parsePrepareRemediationRequest(payload);
+  if (!prepared.ok) return prepared;
+  if (typeof record.requestHash !== 'string' || !HASH.test(record.requestHash)) {
+    return { ok: false, message: 'requestHash must be 64 lowercase hex characters.' };
+  }
+  return { ok: true, value: { ...prepared.value, requestHash: record.requestHash } };
+}
+
+/** Create payload: the prepare fields and the id of a server-issued approval. Nothing else. */
 export function parseCreateRemediationWorkItemRequest(
   payload: unknown,
 ): Validated<CreateRemediationWorkItemRequest> {
-  const parsed = parseCheckRemediationApprovalRequest(payload);
-  if (!parsed.ok) return parsed;
-  if (parsed.value.approval.requestHash === undefined) {
-    return { ok: false, message: 'approval must cover the exact request (requestHash).' };
+  const record = asRecord(payload);
+  if (!record) return { ok: false, message: 'Request payload must be an object.' };
+  const unexpected = rejectUnexpected(record, [...PREPARE_FIELDS, 'approvalId']);
+  if (unexpected) return { ok: false, message: unexpected };
+  const prepared = parsePrepareRemediationRequest(payload);
+  if (!prepared.ok) return prepared;
+  if (typeof record.approvalId !== 'string' || !APPROVAL_ID_PATTERN.test(record.approvalId)) {
+    return { ok: false, message: 'approvalId is not a ScenarioForge approval id.' };
   }
-  return parsed;
+  return { ok: true, value: { ...prepared.value, approvalId: record.approvalId } };
 }

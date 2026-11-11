@@ -576,9 +576,11 @@ function CreateOutcome({ phase, onCheckAgain }: { phase: CreatePhase; onCheckAga
     );
   }
   const followUps = [
-    r.issueLink.status === 'failed' ? `Issue link not added: ${r.issueLink.message}` : null,
+    r.issueLink.status === 'failed'
+      ? `Relates link to the change was not added: ${r.issueLink.message}`
+      : null,
     r.remoteLink.status === 'failed'
-      ? `Runbook page link not added: ${r.remoteLink.message}`
+      ? `Link to the runbook page was not added: ${r.remoteLink.message}`
       : null,
   ].filter((x): x is string => x !== null);
   return (
@@ -588,8 +590,16 @@ function CreateOutcome({ phase, onCheckAgain }: { phase: CreatePhase; onCheckAga
         <a href={r.issueUrl} target="_blank" rel="noreferrer">
           {r.issueKey}
         </a>
-        {r.outcome === 'created-with-follow-up' ? '. Follow-up needed.' : '.'}
+        {r.outcome === 'created-with-follow-up'
+          ? '. It exists in Jira, but a link is missing.'
+          : '.'}
       </p>
+      {r.outcome === 'created-with-follow-up' ? (
+        <p>
+          ScenarioForge does not retry links. Open {r.issueKey} in Jira and add the missing link
+          manually.
+        </p>
+      ) : null}
       {followUps.length > 0 ? (
         <ul>
           {followUps.map((f) => (

@@ -16,6 +16,7 @@ import type { JiraGateway, JiraIssueGateway } from './jira/client';
 import { checkConnection, listRecentChanges } from './jira/client';
 import { getReadinessGraph } from './graph/getReadinessGraph';
 import { forgeRemediationJira } from './remediation/forge';
+import { handleApproveRemediation } from './remediation/approvals';
 import { handleCreateRemediationWorkItem } from './remediation/create';
 import { remediationCreateWiring } from './remediation/gateways';
 import { checkRemediationApproval, prepareRemediationRequest } from './remediation/prepare';
@@ -198,6 +199,21 @@ resolver.define('checkRemediationApproval', ({ payload, context }) =>
     }
     return checkRemediationApproval(remediationDeps, parsed.value, accountId);
   }),
+);
+
+// Approvals are issued by the server: the approver comes from the invocation
+// context, the time from the server clock; the payload cannot set either.
+resolver.define('approveRemediationRequest', ({ payload, context }) =>
+  guarded(() =>
+    handleApproveRemediation(
+      {
+        ...remediationDeps,
+        ...remediationCreateWiring(),
+      },
+      payload,
+      context?.accountId,
+    ),
+  ),
 );
 
 resolver.define('createRemediationWorkItem', ({ payload, context }) =>

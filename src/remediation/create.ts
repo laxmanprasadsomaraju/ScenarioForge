@@ -7,14 +7,12 @@ import type {
 } from '../../shared/api';
 import type { StorageAdapter } from '../../shared/agents/storage';
 import {
-  checkRequestApproval,
   resolveFollowUpRequests,
   transition,
   type DuplicateCheck,
   type JiraWriteCall,
   type RemediationAuditRecord,
   type RemediationEvent,
-  type RemediationRequest,
   type RemediationState,
 } from '../../shared/remediation';
 import type { JiraResponse } from '../jira/client';
@@ -23,7 +21,26 @@ import {
   searchDuplicates,
   type PrepareRemediationDeps,
 } from './prepare';
+import {
+  approvalRecordKey,
+  checkApprovalAge,
+  fail,
+  handleApproveRemediation,
+  STORAGE_UNAVAILABLE_MESSAGE,
+  toDraftApproval,
+  verifyStoredApproval,
+  WRITE_NOT_PERMITTED_MESSAGE,
+  type ApprovalDeps,
+  type ApprovalRecord,
+} from './approvals';
 import { parseCreateRemediationWorkItemRequest } from './validation';
+
+export {
+  APPROVAL_CLOCK_SKEW_MS,
+  MAX_APPROVAL_AGE_MS,
+  WRITE_NOT_PERMITTED_MESSAGE,
+} from './approvals';
+export { handleApproveRemediation };
 
 /**
  * M8 creation adapter: turns an approved, fingerprinted request into a Jira
@@ -36,16 +53,21 @@ import { parseCreateRemediationWorkItemRequest } from './validation';
  * `write:jira-work`, so a mis-set flag still cannot write.
  *
  * Order when a writer and a store exist:
- * 1. Rebuild the draft and exact request server-side (prepareRemediationRequest,
- *    including the duplicate search), never trusting the browser's copy.
- * 2. Re-check the approval: carries `requestHash`, equals the fresh hash and
- *    the hash the person saw, approver is the Forge context account, not
- *    older than 24 h, not from the future.
- * 3. Read the stored record for the idempotency label: `created` returns it;
- *    `creating`/`unknown` only search by label (adopt or keep checking); never
- *    a second create.
- * 4. Conditional write `approved -> creating` (expectedVersion), so two clicks
- *    or two tabs cannot both create.
+ * 1. Load the server-issued approval by id (src/remediation/approvals.ts). The
+ *    payload carries no approver, time, age or hash.
+ * 2. Rebuild the draft and exact request server-side (prepareRemediationRequest,
+ *    including the duplicate search), never trusting the browser's copy, and
+ *    check the stored approval: same actor, same request fingerprint, same
+ *    project, same source state (change `updated`, finding, fix).
+ * 3. Read the stored record for the idempotency label: `created` returns it
+ *    (read-only, any age); `creating`/`unknown` only search by label (adopt or
+ *    keep checking); never a second create. Then the 24 h age check by the
+ *    server clock.
+ * 4. Single use: the approval is marked consumed with a conditional write
+ *    (expectedVersion) immediately before the first item record is written, then
+ *    `approved -> creating` is written conditionally too, so two clicks or two
+ *    tabs cannot both create. A consumed approval can only read back or recover
+ *    its own record, never send a new create.
  * 5. Duplicate search again immediately before the create.
  * 6. Create issue, then issue link, then remote link, each with the exact
  *    fingerprinted body. A failed link after a created work item is recorded
@@ -61,7 +83,7 @@ export interface JiraWriteGateway {
   send(call: JiraWriteCall<unknown>): Promise<JiraResponse>;
 }
 
-export interface CreateRemediationDeps extends PrepareRemediationDeps {
+export interface CreateRemediationDeps extends PrepareRemediationDeps, ApprovalDeps {
   /** Null in every build until `write:jira-work` is approved. */
   writer: JiraWriteGateway | null;
   /** Null in every build until `storage:app` is approved. */
@@ -72,11 +94,9 @@ export interface CreateRemediationDeps extends PrepareRemediationDeps {
 export const LOCK_EXPIRY_MS = 15 * 60 * 1000;
 /** Newest audit lines kept per record. */
 export const MAX_AUDIT_ENTRIES = 200;
-export const MAX_APPROVAL_AGE_MS = 24 * 60 * 60 * 1000;
-/** Clock difference tolerated for an approval timestamp slightly ahead of the server. */
-export const APPROVAL_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 export type CreateStep =
+  | 'approve'
   | 'approval-check'
   | 'duplicate-check'
   | 'lock'
@@ -92,6 +112,8 @@ export interface CreateAuditEntry {
   at: string;
   actorAccountId: string | null;
   issueKey?: string;
+  /** Server-issued approval id (opaque; no account id or text). */
+  approvalId?: string;
   upstreamStatus?: number;
   /** The state machine's own record when the step moved the state. */
   transition?: RemediationAuditRecord;
@@ -101,6 +123,8 @@ export interface CreateAuditEntry {
 export interface RemediationItemRecord {
   schemaVersion: 1;
   state: RemediationState;
+  /** The approval that started this record. */
+  approvalId?: string;
   requestHash: string;
   issueLink: RemediationLinkOutcome;
   remoteLink: RemediationLinkOutcome;
@@ -109,16 +133,6 @@ export interface RemediationItemRecord {
 
 export function remediationRecordKey(idempotencyLabel: string): string {
   return `remediation-item:${idempotencyLabel}`;
-}
-
-export const WRITE_NOT_PERMITTED_MESSAGE =
-  'Creating work items needs the write:jira-work permission, which is not granted in this build. Nothing was sent to Jira.';
-
-function fail(code: ApiError['code'], message: string, upstreamStatus?: number): ApiResult<never> {
-  return {
-    ok: false,
-    error: { code, message, ...(upstreamStatus !== undefined ? { upstreamStatus } : {}) },
-  };
 }
 
 /**
@@ -168,41 +182,6 @@ export function writeErrorFromStatus(status: number, step: CreateStep): ApiError
   }
 }
 
-type ApprovalVerdict = { ok: true } | { ok: false; message: string };
-
-/** Approval re-check against the request rebuilt now. */
-export function verifyApproval(
-  fresh: RemediationRequest,
-  freshHash: string,
-  input: CreateRemediationWorkItemRequest,
-  actorAccountId: string,
-  now: Date,
-): ApprovalVerdict {
-  const check = checkRequestApproval(fresh, input.approval, actorAccountId);
-  if (check === 'missing') return { ok: false, message: 'There is no approval for this request.' };
-  if (check === 'wrong-approver') {
-    return { ok: false, message: 'Only the person who approved this request can create it.' };
-  }
-  if (check === 'stale' || input.requestHash !== freshHash) {
-    return {
-      ok: false,
-      message:
-        'The approval is stale: the request rebuilt now differs from the one approved. Review and approve it again.',
-    };
-  }
-  const approvedAt = Date.parse(input.approval.approvedAt);
-  if (Number.isNaN(approvedAt) || approvedAt - now.getTime() > APPROVAL_CLOCK_SKEW_MS) {
-    return { ok: false, message: 'The approval time cannot be read. Approve the request again.' };
-  }
-  if (now.getTime() - approvedAt > MAX_APPROVAL_AGE_MS) {
-    return {
-      ok: false,
-      message: 'The approval is older than 24 hours. Approve the request again.',
-    };
-  }
-  return { ok: true };
-}
-
 const ISSUE_KEY = /^[A-Z][A-Z0-9_]{1,9}-[1-9][0-9]*$/;
 
 async function readIssueKey(response: JiraResponse): Promise<string | null> {
@@ -231,53 +210,113 @@ export async function createRemediationWorkItem(
   const writer = deps.writer;
   if (!writer) return fail('WRITE_NOT_PERMITTED', WRITE_NOT_PERMITTED_MESSAGE);
   const storage = deps.storage;
-  if (!storage) {
-    return fail(
-      'STORAGE_UNAVAILABLE',
-      'Approvals cannot be stored in this environment, so nothing can be created.',
-    );
-  }
+  if (!storage) return fail('STORAGE_UNAVAILABLE', STORAGE_UNAVAILABLE_MESSAGE);
   const now = deps.now ?? (() => new Date());
   const at = () => now().toISOString();
 
-  // 1. Server-side rebuild (with the duplicate search).
+  // 1. The stored, server-issued approval.
+  const approvalKey = approvalRecordKey(input.approvalId);
+  let approvalEntry: Awaited<ReturnType<StorageAdapter['get']>>;
+  try {
+    approvalEntry = await storage.get<ApprovalRecord>(approvalKey);
+  } catch {
+    return fail('STORAGE_UNAVAILABLE', STORAGE_UNAVAILABLE_MESSAGE);
+  }
+  if (!approvalEntry) return fail('APPROVAL_INVALID', 'There is no approval for this request.');
+  const approval = approvalEntry.value as ApprovalRecord;
+  const approvalVersion = approvalEntry.version;
+  if (approval.approverAccountId !== actorAccountId) {
+    return fail('APPROVAL_INVALID', 'Only the person who approved this request can create it.');
+  }
+
+  // 2. Server-side rebuild (with the duplicate search) and approval binding.
   const prepared = await prepareRemediationRequest(deps, input);
   if (!prepared.ok) return prepared;
   const { draft, request, siteUrl } = prepared.data;
   const label = draft.labels[1]!;
-
-  // 2. Approval.
-  const verdict = verifyApproval(request, prepared.data.requestHash, input, actorAccountId, now());
+  const verdict = verifyStoredApproval(approval, prepared.data, actorAccountId);
   if (!verdict.ok) return fail('APPROVAL_INVALID', verdict.message);
+  const serverApproval = toDraftApproval(approval);
 
   const key = remediationRecordKey(label);
-  const stored = await storage.get<RemediationItemRecord>(key);
+  let stored: Awaited<ReturnType<StorageAdapter['get']>>;
+  try {
+    stored = await storage.get<RemediationItemRecord>(key);
+  } catch {
+    return fail('STORAGE_UNAVAILABLE', STORAGE_UNAVAILABLE_MESSAGE);
+  }
   let version: number | null = stored?.version ?? null;
+  const storedRecord = stored?.value as RemediationItemRecord | undefined;
 
   const save = async (record: RemediationItemRecord): Promise<boolean> => {
     // Repeated "check again" polls append audit lines; keep the record far below the store limit.
     if (record.audit.length > MAX_AUDIT_ENTRIES) {
       record.audit.splice(0, record.audit.length - MAX_AUDIT_ENTRIES);
     }
-    const written = await storage.set(key, record, version);
-    if (!written.ok) return false;
-    version = written.version;
-    return true;
+    try {
+      const written = await storage.set(key, record, version);
+      if (!written.ok) return false;
+      version = written.version;
+      return true;
+    } catch {
+      return false;
+    }
   };
   const respond = (record: RemediationItemRecord, message: string) =>
-    ({ ok: true, data: toResponse(record, label, siteUrl, message) }) as const;
+    ({
+      ok: true,
+      data: toResponse(record, label, siteUrl, message, input.changeKey),
+    }) as const;
   const conflict = () =>
     fail('CONFLICT', 'Another create for this fix is in progress. Check again in a moment.');
 
+  /** Marks the approval used, conditionally, so two tabs cannot both spend it. */
+  const consume = async (): Promise<ApiResult<never> | null> => {
+    const used: ApprovalRecord = {
+      ...approval,
+      status: 'consumed',
+      consumedAt: at(),
+      audit: [
+        ...approval.audit,
+        { step: 'consume', outcome: 'consumed', at: at(), actorAccountId },
+      ],
+    };
+    try {
+      const written = await storage.set(approvalKey, used, approvalVersion);
+      return written.ok ? null : conflict();
+    } catch {
+      return fail('STORAGE_UNAVAILABLE', STORAGE_UNAVAILABLE_MESSAGE);
+    }
+  };
+
+  const priorAudit = storedRecord?.audit ?? [];
   const record: RemediationItemRecord = {
     schemaVersion: 1,
-    state: { status: 'approved', draft, approval: input.approval },
+    state: { status: 'approved', draft, approval: serverApproval },
+    approvalId: approval.approvalId,
     requestHash: prepared.data.requestHash,
     issueLink: NOT_ATTEMPTED,
     remoteLink: NOT_ATTEMPTED,
     audit: [
-      ...(stored?.value.audit ?? []),
-      { step: 'approval-check', outcome: 'valid', at: at(), actorAccountId },
+      ...priorAudit,
+      ...(priorAudit.some((e) => e.step === 'approve' && e.approvalId === approval.approvalId)
+        ? []
+        : [
+            {
+              step: 'approve' as const,
+              outcome: 'issued',
+              at: approval.approvedAt,
+              actorAccountId: approval.approverAccountId,
+              approvalId: approval.approvalId,
+            },
+          ]),
+      {
+        step: 'approval-check',
+        outcome: 'valid',
+        at: at(),
+        actorAccountId,
+        approvalId: approval.approvalId,
+      },
     ],
   };
 
@@ -292,10 +331,12 @@ export async function createRemediationWorkItem(
     if (record.state.status === 'approved') {
       // Found before anything was sent: adopt without creating or linking.
       const issueKey = dup.issueKey!;
+      const spent = await consume();
+      if (spent) return spent;
       record.state = {
         status: 'created',
         draft,
-        approval: input.approval,
+        approval: serverApproval,
         issueKey,
         adopted: true,
         at: at(),
@@ -369,25 +410,47 @@ export async function createRemediationWorkItem(
   }
 
   // 3. Existing record: never create twice.
-  if (stored) {
-    const status = stored.value.state.status;
+  if (storedRecord) {
+    const status = storedRecord.state.status;
     if (status === 'created') {
       // The label is per change/finding/fix, not per project or person. A different
       // request (other project, summary or approver view) must not learn the key or URL
       // of a work item it may not be able to see.
-      if (stored.value.requestHash !== prepared.data.requestHash) {
+      if (storedRecord.requestHash !== prepared.data.requestHash) {
         return fail(
           'CONFLICT',
           'A work item was already created for this fix from a different request. A person needs to decide.',
         );
       }
-      return respond(stored.value, `${issueKeyOf(stored.value)} was already created for this fix.`);
+      return respond(storedRecord, `${issueKeyOf(storedRecord)} was already created for this fix.`);
     }
     if (status === 'creating' || status === 'unknown') {
-      return recover(stored.value);
+      // Recovery never creates, but it may add links, so the same bindings apply.
+      if (storedRecord.requestHash !== prepared.data.requestHash) {
+        return fail(
+          'CONFLICT',
+          'A create for this fix from a different request is in progress. A person needs to decide.',
+        );
+      }
+      if (approval.status === 'consumed' && storedRecord.approvalId !== approval.approvalId) {
+        return fail(
+          'APPROVAL_INVALID',
+          'This approval was already used. Approve the request again.',
+        );
+      }
+      const age = checkApprovalAge(approval, now());
+      if (!age.ok) return fail('APPROVAL_INVALID', age.message);
+      return recover(storedRecord);
     }
-    // `failed`: a definite refusal before anything was created; may be retried below.
+    // `failed`: a definite refusal before anything was created; a fresh approval may retry below.
   }
+
+  // Single use: a consumed approval never starts a create (it only reads back or recovers above).
+  if (approval.status === 'consumed') {
+    return fail('APPROVAL_INVALID', 'This approval was already used. Approve the request again.');
+  }
+  const ageVerdict = checkApprovalAge(approval, now());
+  if (!ageVerdict.ok) return fail('APPROVAL_INVALID', ageVerdict.message);
 
   // Pre-create duplicate from the fresh preparation.
   if (prepared.data.duplicate.decision === 'ambiguous') {
@@ -413,6 +476,8 @@ export async function createRemediationWorkItem(
     actorAccountId,
     transition: started.audit,
   });
+  const spent = await consume();
+  if (spent) return spent;
   if (!(await save(record))) return conflict();
 
   const failRecord = async (error: ApiError) => {
@@ -480,17 +545,20 @@ export async function createRemediationWorkItem(
     upstreamStatus: response.status,
     transition: created.audit,
   });
-  await save(record);
+  const createdSaved = await save(record);
 
-  // 7. Links; never re-create.
+  // 7. Links; never re-create, never retried.
   await addLinks(record);
-  await save(record);
-  return respond(
-    record,
-    record.issueLink.status === 'failed' || record.remoteLink.status === 'failed'
-      ? `${issueKey} was created, but a link was not added. Add it by hand or check again.`
-      : `${issueKey} was created.`,
-  );
+  const linksSaved = await save(record);
+  const unsaved =
+    createdSaved && linksSaved
+      ? ''
+      : ` The record of this create could not be saved; find the work item by the label ${label}.`;
+  const done = respond(record, `${issueKey} was created.${unsaved}`);
+  if (unsaved && done.data.outcome === 'created-with-follow-up') {
+    done.data.message += unsaved;
+  }
+  return done;
 
   async function addLinks(target: RemediationItemRecord) {
     const key = issueKeyOf(target);
@@ -542,11 +610,37 @@ function issueKeyOf(record: RemediationItemRecord): string {
   return record.state.status === 'created' ? record.state.issueKey : '';
 }
 
+/**
+ * Says exactly what exists after a created work item with a failed link:
+ * the work item key, which link failed, and that the person adds it in Jira.
+ * Links are never retried by ScenarioForge, so nothing here suggests it.
+ */
+export function followUpMessage(
+  record: RemediationItemRecord,
+  issueKey: string,
+  changeKey: string,
+): string {
+  const missing: string[] = [];
+  if (record.issueLink.status === 'failed') missing.push(`the "Relates" link to ${changeKey}`);
+  if (record.remoteLink.status === 'failed') missing.push('the link to the runbook page');
+  const unanswered = [record.issueLink, record.remoteLink].some(
+    (l) => l.status === 'failed' && l.upstreamStatus === undefined,
+  );
+  return (
+    `${issueKey} was created in Jira, but ${missing.join(' and ')} ${missing.length > 1 ? 'were' : 'was'} not added. ` +
+    `ScenarioForge does not retry links: open ${issueKey} in Jira and add ${missing.length > 1 ? 'them' : 'it'} manually.` +
+    (unanswered
+      ? ` Jira did not answer a link request, so look at ${issueKey} first: that link may already exist.`
+      : '')
+  );
+}
+
 function toResponse(
   record: RemediationItemRecord,
   label: string,
   siteUrl: string,
   message: string,
+  changeKey: string,
 ): CreateRemediationWorkItemResponse {
   const state = record.state;
   const base = {
@@ -557,6 +651,7 @@ function toResponse(
   };
   if (state.status !== 'created') return { outcome: 'unknown', adopted: false, ...base };
   const followUp = record.issueLink.status === 'failed' || record.remoteLink.status === 'failed';
+  if (followUp) base.message = followUpMessage(record, state.issueKey, changeKey);
   return {
     outcome: followUp ? 'created-with-follow-up' : 'created',
     issueKey: state.issueKey,

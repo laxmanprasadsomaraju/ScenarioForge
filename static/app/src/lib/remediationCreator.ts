@@ -1,5 +1,4 @@
 import type { ApiResult } from '@shared/api';
-import { approveRequest, FIXED_ISSUE_TYPES } from '@shared/remediation';
 import { api } from './api';
 import type {
   DuplicateChecker,
@@ -22,19 +21,19 @@ const refuse = (message: string): ApiResult<never> => ({
 });
 
 /**
- * Creator for one finding: the server rebuilds the draft and the exact Jira
+ * Creator for one finding. The server rebuilds the draft and the exact Jira
  * request; the browser checks the server's draft is the one the person
- * approved (SHA-256 draft hash), binds the approval to the server's request
- * hash, then asks the server to create. The server re-checks everything.
+ * approved on screen (draft hash), then asks the server to issue an approval
+ * for the request hash the person saw, then creates with the returned approval
+ * id. The browser sends no approver, time, age or approval record: the server
+ * derives the approver from the invocation, stamps the time with its own
+ * clock, and re-checks everything on create.
  */
 export function makeRemediationCreator(opts: {
   changeKey: string;
   findingId: string;
-  accountId: string | null;
-  now?: () => Date;
 }): RemediationCreator {
   return async (draft, approval, { fixId }) => {
-    if (!opts.accountId) return refuse('Your Atlassian account is not known.');
     const base = {
       changeKey: opts.changeKey,
       findingId: opts.findingId,
@@ -50,26 +49,12 @@ export function makeRemediationCreator(opts: {
         'The draft rebuilt by the server differs from the one you approved. Review and approve it again.',
       );
     }
-    let bound;
-    try {
-      bound = approveRequest(
-        prepared.data.draft,
-        { siteUrl: prepared.data.siteUrl },
-        opts.accountId,
-        (opts.now ?? (() => new Date()))().toISOString(),
-        FIXED_ISSUE_TYPES,
-      );
-    } catch (error) {
-      return refuse(error instanceof Error ? error.message : 'The draft cannot be approved.');
-    }
-    if (bound.requestHash !== prepared.data.requestHash) {
-      return refuse('The request changed while preparing. Approve it again.');
-    }
-    return api.createRemediationWorkItem({
+    const approved = await api.approveRemediationRequest({
       ...base,
       requestHash: prepared.data.requestHash,
-      approval: bound,
     });
+    if (!approved.ok) return approved;
+    return api.createRemediationWorkItem({ ...base, approvalId: approved.data.approvalId });
   };
 }
 

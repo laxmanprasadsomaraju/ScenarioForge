@@ -698,6 +698,7 @@ describe('no write path', () => {
     const defined = [...index.matchAll(/resolver\.define\('([^']+)'/g)].map((m) => m[1]);
     expect(defined).toContain('prepareRemediationRequest');
     expect(defined).toContain('checkRemediationApproval');
+    expect(defined).toContain('approveRemediationRequest');
     expect(defined.filter((name) => /create|post|write|submit/i.test(name!))).toEqual([
       'createRemediationWorkItem',
     ]);

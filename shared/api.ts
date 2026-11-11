@@ -186,6 +186,17 @@ export interface PrepareRemediationResponse {
   /** Site origin from `GET /rest/api/3/serverInfo`, used for every link. */
   siteUrl: string;
   preparedAt: string;
+  /** Source state the draft was built from; bound into a server-issued approval. */
+  source: ApprovalSource;
+}
+
+/** The change and finding a draft was built from, as the request builder used them. */
+export interface ApprovalSource {
+  changeKey: string;
+  /** The change's `updated` as read from Jira (null when absent). */
+  changeUpdated: string | null;
+  findingId: string;
+  fixId: string;
 }
 
 export interface CheckRemediationApprovalRequest extends PrepareRemediationRequest {
@@ -203,8 +214,34 @@ export interface CheckRemediationApprovalResponse {
   checkedAt: string;
 }
 
-/** M8 create: the approval must carry `requestHash` (from `approveRequest`). */
-export type CreateRemediationWorkItemRequest = CheckRemediationApprovalRequest;
+/**
+ * M8 approve: the person approves the exact request they saw (`requestHash`).
+ * The server derives the approver from the invocation context and stamps the
+ * time itself; the browser can send neither.
+ */
+export interface ApproveRemediationRequest extends PrepareRemediationRequest {
+  /** The request hash the person saw. */
+  requestHash: string;
+}
+
+/** What the server issued. Holds no account id; the approver is kept server-side. */
+export interface ApproveRemediationResponse {
+  /** Opaque, unguessable, single-use reference to the stored approval. */
+  approvalId: string;
+  requestHash: string;
+  /** Server clock. */
+  approvedAt: string;
+  /** Server clock: `approvedAt` plus 24 hours. */
+  expiresAt: string;
+}
+
+/**
+ * M8 create: the same inputs as prepare plus the id of a server-issued
+ * approval. No approval record, time, approver or hash is accepted.
+ */
+export interface CreateRemediationWorkItemRequest extends PrepareRemediationRequest {
+  approvalId: string;
+}
 
 /** Result of one follow-up call after the work item exists. */
 export type RemediationLinkOutcome =

@@ -198,7 +198,12 @@ export function analyzeChange(
   const subjects = reading.subjects.map((s) => ({ ...s }));
   const base = {
     changeKey: change.key,
-    change: { key: change.key, summary: change.summary, browsePath: change.browsePath },
+    change: {
+      key: change.key,
+      summary: change.summary,
+      browsePath: change.browsePath,
+      updated: change.updated,
+    },
     analyzedAt,
     subjects,
     coverage,
