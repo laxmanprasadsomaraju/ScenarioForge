@@ -6,7 +6,11 @@ import type { Consequence, EvidenceReference, SimulationScenario } from '@shared
 import { decisionTrail } from '@shared/simulation/engine';
 import type { CompletedExercise } from '../../lib/exercises';
 import { useSite } from '../../lib/site';
-import { makeRemediationCreator, remediationCreateUiEnabled } from '../../lib/remediationCreator';
+import {
+  makeDuplicateChecker,
+  makeRemediationCreator,
+  remediationCreateUiEnabled,
+} from '../../lib/remediationCreator';
 import { approvedFor, useFixApprovals } from '../../lib/fixApprovals';
 import { EvidenceList } from './Evidence';
 import { Correction, FixStateList, fixStates } from './FixReview';
@@ -334,6 +338,10 @@ export function Debrief({
           findingId={workItemSource.findingId}
           fixes={scenario.remediation}
           defaultFixId={applied[0]}
+          checker={makeDuplicateChecker({
+            changeKey: workItemSource.analysis.change.key,
+            findingId: workItemSource.findingId,
+          })}
           creator={
             remediationCreateUiEnabled()
               ? makeRemediationCreator({

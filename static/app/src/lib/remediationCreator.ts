@@ -1,7 +1,10 @@
 import type { ApiResult } from '@shared/api';
 import { approveRequest, FIXED_ISSUE_TYPES } from '@shared/remediation';
 import { api } from './api';
-import type { RemediationCreator } from '../components/simulation/RemediationPreview';
+import type {
+  DuplicateChecker,
+  RemediationCreator,
+} from '../components/simulation/RemediationPreview';
 
 /**
  * Build-time switch for the create button. Off unless the build sets
@@ -67,5 +70,23 @@ export function makeRemediationCreator(opts: {
       requestHash: prepared.data.requestHash,
       approval: bound,
     });
+  };
+}
+
+/** Read-only duplicate search: the server rebuilds the draft and searches by label (GETs only). */
+export function makeDuplicateChecker(opts: {
+  changeKey: string;
+  findingId: string;
+}): DuplicateChecker {
+  return async (draft, { fixId }) => {
+    const prepared = await api.prepareRemediationRequest({
+      changeKey: opts.changeKey,
+      findingId: opts.findingId,
+      fixId,
+      projectKey: draft.projectKey,
+      issueTypeName: draft.issueType,
+      summary: draft.summary,
+    });
+    return prepared.ok ? { ok: true, data: prepared.data.duplicate } : prepared;
   };
 }
