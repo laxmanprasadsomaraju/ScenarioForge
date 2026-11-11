@@ -429,6 +429,9 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       // Clients name people by opaque participant id; the real id stays server-side.
       const loaded = await load(gated.storage, gated.user, roomId);
       if (!loaded.ok) return data(loaded.response);
+      // Same answer for every command: only a seated participant gets past this point.
+      if (!loaded.state.participants.some((p) => p.accountId === gated.user.accountId && p.active))
+        return data(rejected('NOT_PARTICIPANT', null));
       const alias = participantAlias(loaded.record, gated.user.installation, roomId);
       const wanted = cmd.type === 'assign-role' ? cmd.participantId : cmd.toParticipantId;
       const target = loaded.state.participants.find((p) => alias(p.accountId) === wanted);

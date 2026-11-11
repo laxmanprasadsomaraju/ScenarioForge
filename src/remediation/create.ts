@@ -70,6 +70,8 @@ export interface CreateRemediationDeps extends PrepareRemediationDeps {
 
 /** A `creating`/`unknown` record this old with no labelled work item is released as failed. */
 export const LOCK_EXPIRY_MS = 15 * 60 * 1000;
+/** Newest audit lines kept per record. */
+export const MAX_AUDIT_ENTRIES = 200;
 export const MAX_APPROVAL_AGE_MS = 24 * 60 * 60 * 1000;
 /** Clock difference tolerated for an approval timestamp slightly ahead of the server. */
 export const APPROVAL_CLOCK_SKEW_MS = 5 * 60 * 1000;
@@ -253,6 +255,10 @@ export async function createRemediationWorkItem(
   let version: number | null = stored?.version ?? null;
 
   const save = async (record: RemediationItemRecord): Promise<boolean> => {
+    // Repeated "check again" polls append audit lines; keep the record far below the store limit.
+    if (record.audit.length > MAX_AUDIT_ENTRIES) {
+      record.audit.splice(0, record.audit.length - MAX_AUDIT_ENTRIES);
+    }
     const written = await storage.set(key, record, version);
     if (!written.ok) return false;
     version = written.version;
@@ -366,6 +372,15 @@ export async function createRemediationWorkItem(
   if (stored) {
     const status = stored.value.state.status;
     if (status === 'created') {
+      // The label is per change/finding/fix, not per project or person. A different
+      // request (other project, summary or approver view) must not learn the key or URL
+      // of a work item it may not be able to see.
+      if (stored.value.requestHash !== prepared.data.requestHash) {
+        return fail(
+          'CONFLICT',
+          'A work item was already created for this fix from a different request. A person needs to decide.',
+        );
+      }
       return respond(stored.value, `${issueKeyOf(stored.value)} was already created for this fix.`);
     }
     if (status === 'creating' || status === 'unknown') {

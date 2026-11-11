@@ -15,6 +15,7 @@ import type { JiraResponse } from '../src/jira/client';
 import {
   createRemediationWorkItem,
   LOCK_EXPIRY_MS,
+  MAX_AUDIT_ENTRIES,
   handleCreateRemediationWorkItem,
   remediationRecordKey,
   WRITE_NOT_PERMITTED_MESSAGE,
@@ -661,6 +662,36 @@ describe('lock expiry and recovery', () => {
     const later = { ...t.deps, now: () => new Date(Date.parse(AT) + LOCK_EXPIRY_MS + 1000) };
     const r = await createRemediationWorkItem(later, t.request, ME);
     expect(r).toMatchObject({ ok: true, data: { issueKey: 'OPS-12', adopted: true } });
+  });
+});
+
+describe('record binding and growth', () => {
+  it('does not reveal a stored work item to a different request for the same label', async () => {
+    const t = await setup();
+    await createRemediationWorkItem(t.deps, t.request, ME);
+    const other = { ...INPUT, projectKey: 'ZZZ' };
+    const p2 = await prepareRemediationRequest(t.deps, other);
+    if (!p2.ok) throw new Error(p2.error.message);
+    const approval = approveRequest(p2.data.draft, { siteUrl: SITE }, SOMEONE_ELSE, AT);
+    const r = await createRemediationWorkItem(
+      t.deps,
+      { ...other, requestHash: p2.data.requestHash, approval },
+      SOMEONE_ELSE,
+    );
+    expect(r).toMatchObject({ ok: false, error: { code: 'CONFLICT' } });
+    expect(JSON.stringify(r)).not.toContain('OPS-7');
+    expect(creates(t.sent)).toHaveLength(1);
+  });
+
+  it('caps the audit trail so repeated checks cannot grow the record without bound', async () => {
+    const t = await setup(async () => {
+      throw new Error('crash');
+    });
+    for (let i = 0; i < 250; i += 1) await createRemediationWorkItem(t.deps, t.request, ME);
+    const rec = await t.record();
+    expect(rec!.audit.length).toBeLessThanOrEqual(MAX_AUDIT_ENTRIES);
+    expect(rec!.state.status).toBe('unknown');
+    expect(creates(t.sent)).toHaveLength(1);
   });
 });
 

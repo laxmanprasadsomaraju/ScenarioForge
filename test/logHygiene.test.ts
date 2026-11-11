@@ -47,6 +47,11 @@ describe('log checker negative cases', () => {
     bad(`console.log(JSON.stringify({ a: error.message }))`);
     bad(`console.log(JSON.stringify(response))`);
     bad(`console.log(String(error))`);
+    bad(`console.log(user.name)`);
+    bad(`console.log(account.displayName ?? profile.name)`);
+    bad(`console.log({ [accountId]: 1 })`);
+    bad(`logError(e.message)`);
+    bad(`deps.report(error)`);
     bad(`console.log(err ?? error)`);
   });
   it('flags multi-line calls and calls without semicolons', () => {
@@ -72,5 +77,6 @@ describe('log checker negative cases', () => {
     );
     good("console.error('x', `${problems.length} problem(s)`)");
     good(`console.warn('x', { problems: Number(n) })`);
+    good(`console.error('x', err.name)`);
   });
 });

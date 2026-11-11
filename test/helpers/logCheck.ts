@@ -9,9 +9,11 @@ import ts from 'typescript';
  * Nothing else: no bare identifiers, no `.message` / `.stack`, no spread.
  */
 
-const SAFE_PROPS = new Set(['name', 'status', 'code', 'length', 'upstreamStatus']);
+const SAFE_PROPS = new Set(['status', 'code', 'length', 'upstreamStatus']);
+/** `.name` is safe only on an error-like identifier; `user.name` is a display name. */
+const ERROR_LIKE = /^(e|err|error|cause|reason)$/;
 const CONSOLE_METHODS = /^(log|info|warn|error|debug|trace|dir|table|assert)$/;
-const WRAPPER_NAME = /^(log|logger)$/;
+const WRAPPER_NAME = /^(log\w*|logger|warn|report\w*|trace|debug)$/i;
 
 function isSafe(node: ts.Expression): boolean {
   if (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node))
@@ -30,7 +32,13 @@ function isSafe(node: ts.Expression): boolean {
   )
     return true;
   if (ts.isTemplateExpression(node)) return node.templateSpans.every((s) => isSafe(s.expression));
-  if (ts.isPropertyAccessExpression(node)) return SAFE_PROPS.has(node.name.text);
+  if (ts.isPropertyAccessExpression(node)) {
+    if (node.name.text === 'name') {
+      const o = node.expression;
+      return ts.isIdentifier(o) && ERROR_LIKE.test(o.text);
+    }
+    return SAFE_PROPS.has(node.name.text);
+  }
   if (ts.isConditionalExpression(node)) return isSafe(node.whenTrue) && isSafe(node.whenFalse);
   if (ts.isBinaryExpression(node)) {
     const k = node.operatorToken.kind;
@@ -51,7 +59,10 @@ function isSafe(node: ts.Expression): boolean {
     return false;
   }
   if (ts.isObjectLiteralExpression(node))
-    return node.properties.every((p) => ts.isPropertyAssignment(p) && isSafe(p.initializer));
+    return node.properties.every(
+      (p) =>
+        ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name) && isSafe(p.initializer),
+    );
   return false;
 }
 

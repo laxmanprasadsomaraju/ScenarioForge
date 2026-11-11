@@ -324,6 +324,41 @@ describe('crisis lifecycle over the in-memory adapter', () => {
       expect(unknown).toMatchObject({ status: 'REJECTED', reason: 'INVALID_INPUT' });
     });
 
+    it('a non-owner cannot use a participant id to change roles; an outsider learns nothing', async () => {
+      const t = await fullRoom();
+      const secPid = snap(await t.view(A.sec)).view.viewer;
+      const denied = await t.run(A.eng, t.version(), {
+        type: 'assign-role',
+        participantId: secPid,
+        role: 'observer',
+      });
+      expect(denied).toMatchObject({ status: 'REJECTED', reason: 'FORBIDDEN' });
+      const handoff = await t.run(A.eng, t.version(), {
+        type: 'hand-off-command',
+        toParticipantId: secPid,
+      });
+      expect(handoff).toMatchObject({ status: 'REJECTED', reason: 'FORBIDDEN' });
+      // Someone who is not in the room gets NOT_PARTICIPANT, whatever id they send.
+      for (const participantId of [secPid, 'p_AAAAAAAAAAAAAAAA']) {
+        const outsider = await t.run('acc-outsider', t.version(), {
+          type: 'assign-role',
+          participantId,
+          role: 'observer',
+        });
+        expect(outsider).toMatchObject({ status: 'REJECTED', reason: 'NOT_PARTICIPANT' });
+      }
+      // An id from another room does not resolve here.
+      const otherRoom = snap(
+        ok(await t.resolvers.crisisOpenRoom({ payload: { source: DEMO }, context: ctx(A.sec) })),
+      );
+      const foreign = await t.run(A.owner, t.version(), {
+        type: 'assign-role',
+        participantId: otherRoom.view.viewer,
+        role: 'observer',
+      });
+      expect(foreign).toMatchObject({ status: 'REJECTED', reason: 'INVALID_INPUT' });
+    });
+
     it('rooms stored before aliasKey existed still serve opaque ids', async () => {
       const t = await fullRoom();
       const key = roomKey(INSTALL, t.roomId);
