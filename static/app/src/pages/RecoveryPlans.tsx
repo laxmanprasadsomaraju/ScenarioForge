@@ -8,6 +8,7 @@ import { useSite } from '../lib/site';
 import { useApi } from '../lib/useApi';
 import { OriginTag } from '../components/OriginTag';
 import { StatusBadge } from '../components/Badge';
+import { ShowQuery } from '../components/readiness/ShowQuery';
 import { DataRegion } from '../components/DataRegion';
 import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
@@ -84,10 +85,7 @@ export function RecoveryPlansPage() {
         empty={(data) => (
           <EmptyState title="No recovery pages found">
             Confluence returned no pages you can view.
-            <details className="query-details">
-              <summary>Show query</summary>
-              <code>{data.cql}</code>
-            </details>
+            <ShowQuery query={data.cql} language="CQL" />
           </EmptyState>
         )}
       >
@@ -98,10 +96,7 @@ export function RecoveryPlansPage() {
               {data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
               {formatAbsolute(data.fetchedAt)}.
             </p>
-            <details className="query-details">
-              <summary>Show query</summary>
-              <code>{data.cql}</code>
-            </details>
+            <ShowQuery query={data.cql} language="CQL" />
             <table className="issues">
               <caption className="visually-hidden">Recovery pages in Confluence</caption>
               <thead>

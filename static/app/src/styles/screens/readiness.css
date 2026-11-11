@@ -271,21 +271,17 @@
   max-width: 70ch;
 }
 .query-details {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2xs);
   font-size: var(--text-xs);
   color: var(--color-ink-2);
 }
-.query-details summary {
-  cursor: pointer;
-  width: fit-content;
-  border-radius: var(--radius-control);
-}
-.query-details summary:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+.query-details code[hidden] {
+  display: none;
 }
 .query-details code {
   display: block;
-  margin-top: var(--space-2xs);
   overflow-wrap: anywhere;
 }
 .procedure-steps {
