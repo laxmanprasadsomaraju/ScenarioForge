@@ -1,0 +1,35 @@
+# Permissions audit
+
+From the manifests on `integration/lanes-1` @ `7a52db8`, `origin/rovo-test/phase2` @ `abbe8d6` and `origin/m9/mcp` @ `c2b28fc`, plus planned scopes in [../M9_TWG_RUNBOOK.md](../M9_TWG_RUNBOOK.md) and [../M8_PLAN.md](../M8_PLAN.md). No egress (`permissions.external`) on any branch. Content security: `styles: unsafe-inline` everywhere (Atlaskit runtime styles).
+
+## Scopes by environment
+
+| Scope                                                                                | `development` (M1) | `confluence-test` / `integration/lanes-1` | `rovo-test` (`rovo-test/phase2`, `m9/mcp`) | `graph-test` (planned) | M8 (planned)       |
+| ------------------------------------------------------------------------------------ | ------------------ | ----------------------------------------- | ------------------------------------------ | ---------------------- | ------------------ |
+| `read:jira-work`                                                                     | yes                | yes                                       | yes                                        | yes                    | yes                |
+| `read:jira-user`                                                                     | yes                | yes                                       | yes                                        | yes                    | yes                |
+| `search:confluence`                                                                  | no                 | yes                                       | yes                                        | yes                    | yes                |
+| `read:page:confluence`                                                               | no                 | yes                                       | yes                                        | yes                    | yes                |
+| `storage:app`                                                                        | no                 | no                                        | yes                                        | no                     | yes (planned)      |
+| `read:graph:issue:jira`, `read:graph:component:compass`, `read:graph:team:atlassian` | no                 | no                                        | no                                         | yes (not approved)     | no                 |
+| `write:jira-work`                                                                    | no                 | no                                        | no                                         | no                     | yes (not approved) |
+
+Modules: `development` and `confluence-test` have one `global:fullPage` and one function. `rovo-test` adds two `rovo:agent`, four `action` (all `actionVerb: GET`), four functions and the `agent-prompts` resource. `m9/mcp` adds one `rovo:mcp` module exposing the same four actions (no new scopes).
+
+## What each scope allows, where it is used, risk
+
+| Scope                       | Allows                                                          | Used by (code)                                                                                                                                 | Risk                                                                                                          |
+| --------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `read:jira-work`            | Read issues, fields, links the user can see                     | `src/index.ts` (`/rest/api/3/search/jql`, `/issue/{key}`, `/remotelink`, `/field`); `src/remediation/forge.ts` (duplicate check, `serverInfo`) | Low. All calls `asUser()`; no `asApp` Jira calls                                                              |
+| `read:jira-user`            | Read the calling user's profile                                 | `src/index.ts` `/rest/api/3/myself` (connection check)                                                                                         | Low. Account id is not logged                                                                                 |
+| `search:confluence`         | CQL search of content the user can see                          | `src/index.ts` `/wiki/rest/api/search`; CQL built from validated space key (`confluence.test.ts`)                                              | Low. Injection blocked by validation                                                                          |
+| `read:page:confluence`      | Read one page body                                              | `src/index.ts` `/wiki/api/v2/pages/{id}`                                                                                                       | Low. Body is parsed for steps, not stored                                                                     |
+| `storage:app`               | App-owned key-value / entity store                              | `src/ai/forgeStorage.ts` (`ai-governance`, `rehearsal-history` entities); history resolvers                                                    | Medium. Entity names are permanent once deployed; data includes account id as key. Major-version consent      |
+| `read:graph:*` (planned)    | Read Teamwork Graph objects of that type                        | `src/twg/gateway.ts` via `requestTeamworkGraph` (flag `SF_TWG`, off)                                                                           | Medium. Preview API; needs org admin; disabled scopes return empty silently (handled as "not assessed")       |
+| `write:jira-work` (planned) | Create/edit issues, links, comments wherever the user may write | M8 plan only; no write code path exists in `src/`                                                                                              | High. Must stay behind explicit per-request human approval with exact-payload fingerprint (`sf-rem-<16 hex>`) |
+| Rovo modules (no scope)     | Agents call the four GET actions as the user                    | `src/agents/actions.ts`, budget governor `shared/agents`                                                                                       | Medium. Credit cost; capped at 300/user/day; AI off until `SF_ROVO_TEST_AI=enabled`                           |
+| `rovo:mcp` (no scope)       | External MCP clients call the same four actions                 | manifest only (`m9/mcp`)                                                                                                                       | Medium. Preview module; exposure off until a site/org admin enables it                                        |
+
+## Recommendation for the judged build
+
+Ship the `confluence-test` set: four read scopes, no storage, no egress. Any addition (storage, Rovo, MCP, graph, write) needs the owner's explicit approval and changes the judge's consent screen.
