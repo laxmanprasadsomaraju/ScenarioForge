@@ -10,6 +10,7 @@
 @import url('./components/badges.css');
 @import url('./components/states.css');
 @import url('./components/forms.css');
+@import url('./components/buttons.css');
 @import url('./components/tables.css');
 @import url('./screens/overview.css');
 @import url('./screens/simulation.css');
