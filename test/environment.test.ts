@@ -7,7 +7,7 @@ function manifestScopes(): string[] {
   const text = readFileSync(new URL('../manifest.yml', import.meta.url), 'utf8');
   const block = /^permissions:\n\s+scopes:\n((?:\s+(?:#.*|- .*)\n)+)/m.exec(text);
   if (!block) throw new Error('No permissions.scopes block in manifest.yml');
-  return block[1]
+  return (block[1] ?? '')
     .split('\n')
     .map((line) => /^\s+- (\S+)/.exec(line)?.[1])
     .filter((s): s is string => Boolean(s));

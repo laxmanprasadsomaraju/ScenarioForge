@@ -1,7 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import Button from '@atlaskit/button/new';
 import { view } from '@forge/bridge';
 import { analyzeChange } from '@shared/analysis';
 import type { ChangeEvidence, RunbookEvidence } from '@shared/analysis/types';
@@ -118,11 +117,9 @@ function openAt(path: string) {
   return history;
 }
 
-// Screens are lazy chunks, and Atlaskit's first button render logs a feature-gate
-// error once; warm both up so the first test sees a settled tree.
+// Screens are lazy chunks; load them up front so the first test sees a settled tree.
 beforeAll(async () => {
   await Promise.all([import('../src/pages/Readiness'), import('../src/pages/Simulations')]);
-  render(<Button>Warm up</Button>).unmount();
 });
 
 beforeEach(() => {

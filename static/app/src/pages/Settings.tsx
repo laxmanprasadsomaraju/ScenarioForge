@@ -213,8 +213,7 @@ export function SettingsPage() {
         <ul className="settings-list">
           {NOT_REQUESTED_SCOPES.map((s) => (
             <li key={s.scope}>
-              <code>{s.scope}</code>: not granted, so {s.needed.toLowerCase().replace(/\.$/, '')} is
-              off.
+              <code>{s.scope}</code>: not granted, so {s.needed} is off.
             </li>
           ))}
         </ul>

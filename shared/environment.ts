@@ -35,6 +35,6 @@ export const MANIFEST_SCOPES: readonly ManifestScope[] = [
 
 /** Scopes the plans name that this build does not request; shown as not granted. */
 export const NOT_REQUESTED_SCOPES: readonly { scope: string; needed: string }[] = [
-  { scope: 'storage:app', needed: 'Saving rehearsal history on the site.' },
-  { scope: 'write:jira-work', needed: 'Creating fix work items in Jira.' },
+  { scope: 'storage:app', needed: 'saving rehearsal history on the site' },
+  { scope: 'write:jira-work', needed: 'creating fix work items in Jira' },
 ];

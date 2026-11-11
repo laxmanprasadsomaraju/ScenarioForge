@@ -336,3 +336,58 @@
   color: var(--sf-text);
   max-width: 72ch;
 }
+
+/* ---------- How it works (dismissible first-run panel) ---------- */
+.how-it-works {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  border-radius: var(--radius-panel);
+  background: var(--sf-surface-sunken);
+}
+.how-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.how-lead {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--sf-text-subtle);
+}
+.how-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-sm) var(--space-lg);
+  counter-reset: how;
+}
+.how-steps li {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3xs);
+  font-size: var(--text-sm);
+  counter-increment: how;
+}
+.how-step-name {
+  font-weight: 600;
+  color: var(--sf-text);
+}
+.how-step-name::before {
+  content: counter(how) '. ';
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-accent-text);
+}
+.how-step-detail {
+  color: var(--sf-text-subtle);
+}
+.cc-demo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
