@@ -36,8 +36,10 @@ describe('Settings', () => {
       .getAllByRole('rowheader')
       .map((c) => c.textContent);
     expect(scopes).toEqual(MANIFEST_SCOPES.map((s) => s.scope));
-    expect(screen.getByText('storage:app')).toBeInTheDocument();
-    expect(screen.getByText(/not granted, so saving rehearsal history/)).toBeInTheDocument();
+    // storage:app is requested in this build (flag-gated at runtime), so it is
+    // a table row and never also shown as not granted.
+    expect(within(table).getByText('storage:app')).toBeInTheDocument();
+    expect(screen.queryByText(/not granted, so saving rehearsal history/)).toBeNull();
   });
 
   it('reports AI and history as not enabled when the environment says so', async () => {

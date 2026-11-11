@@ -1,5 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import api, { route } from '@forge/api';
+import {
+  crisisStorage as platformCrisisStorage,
+  historyStorage as platformHistoryStorage,
+} from './platform/storageFactory';
 import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
 import type { AnalysisEngine } from './analysis/analyzeChange';
@@ -210,12 +214,11 @@ resolver.define('createRemediationWorkItem', ({ payload, context }) =>
 );
 
 /**
- * Storage for rehearsal history. `storage:app` is not granted in this build,
- * so there is none and every history resolver answers UNAVAILABLE ("not
- * enabled in this environment"). The rovo-test build supplies the Forge
- * adapter here.
+ * Storage for rehearsal history. The Forge adapter is
+ * returned only when SF_STORAGE=enabled; otherwise
+ * null and every history resolver answers UNAVAILABLE.
  */
-const historyStorage = (): StorageAdapter | null => null;
+const historyStorage = (): StorageAdapter | null => platformHistoryStorage();
 
 const history = createHistoryResolvers({
   historyStorage,
@@ -236,12 +239,11 @@ resolver.define('saveRehearsalRun', (request) => guarded(() => history.saveRehea
 resolver.define('saveRetest', (request) => guarded(() => history.saveRetest(request)));
 
 /**
- * Crisis Room (M7). Rooms need storage:app, which is not granted in this
- * build, so `crisisStorage` is null and every crisis resolver answers
- * UNAVAILABLE ("Team rooms need storage that is not enabled in this
- * environment"). There is no realtime channel; the UI polls crisisView.
+ * Crisis Room (M7). Storage comes from the factory and is null unless both
+ * SF_STORAGE=enabled and SF_CRISIS=enabled; while null every crisis resolver
+ * answers UNAVAILABLE. There is no realtime channel; the UI polls crisisView.
  */
-const crisisStorage = (): StorageAdapter | null => null;
+const crisisStorage = (): StorageAdapter | null => platformCrisisStorage();
 
 const crisis = createCrisisResolvers({
   crisisStorage,
@@ -259,3 +261,16 @@ resolver.define('crisisInviteToken', (request) => guarded(() => crisis.crisisInv
 resolver.define('crisisSaveDebrief', (request) => guarded(() => crisis.crisisSaveDebrief(request)));
 
 export const handler = resolver.getDefinitions();
+
+/*
+ * Rovo agents and MCP tools: handlers for the four read-only agent actions
+ * (manifest functions `action-*`). The Phase 1 probe handlers in
+ * src/probes/forge.ts are kept with their tests but no longer exported or
+ * registered in the manifest.
+ */
+export {
+  explainOutcome,
+  findRecoveryRisks,
+  getServiceReadiness,
+  prepareRehearsal,
+} from './agents/forge';

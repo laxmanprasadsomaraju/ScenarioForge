@@ -6,14 +6,123 @@ modules:
       resolver:
         function: resolver
       routePrefix: scenarioforge
+  # ---------------------------------------------------------------------------
+  # release/judged-full (M10, NOT approved for deploy anywhere; review in
+  # docs/proposals/M10_RELEASE_REVIEW.md). Two read-only agents, four GET
+  # actions. AI stays OFF unless the Forge variable SF_AI=enabled is set.
+  # ---------------------------------------------------------------------------
+  rovo:agent:
+    - key: recovery-investigator
+      name: Recovery Investigator
+      description: Explains recovery readiness evidence for one Jira change, citing only the Jira and Confluence sources ScenarioForge returns. Read-only.
+      prompt: resource:agent-prompts;investigator.md
+      conversationStarters:
+        - What recovery risks does this change have?
+        - Which services does this change affect?
+      actions:
+        - find-recovery-risks
+        - get-service-readiness
+    - key: exercise-facilitator
+      name: Exercise Facilitator
+      description: Briefs recovery rehearsals built from real findings and explains stored outcomes. Decisions are taken in the ScenarioForge app. Read-only.
+      prompt: resource:agent-prompts;facilitator.md
+      conversationStarters:
+        - Prepare a rehearsal for this change
+        - Explain the outcome of my rehearsal
+      actions:
+        - find-recovery-risks
+        - prepare-rehearsal
+        - explain-outcome
+  # M9: expose the same four GET actions as
+  # MCP tools. No new scopes, functions or actions. External MCP exposure is
+  # off until a site/org admin enables it (docs/M9_MCP_RUNBOOK.md).
+  rovo:mcp:
+    - key: scenarioforge-mcp
+      name: ScenarioForge Recovery
+      tools:
+        - find-recovery-risks
+        - get-service-readiness
+        - prepare-rehearsal
+        - explain-outcome
+  action:
+    - key: find-recovery-risks
+      name: Find recovery risks
+      function: fn-find-recovery-risks
+      actionVerb: GET
+      description: Read-only. Checks one Jira change against its recovery runbooks and returns findings, evidence ids, unknowns and source warnings. Use for questions about a change's recovery risks.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: false
+          description: Jira issue key of the change, such as MC-62. Leave empty to use the issue in context.
+    - key: get-service-readiness
+      name: Get service readiness
+      function: fn-service-readiness
+      actionVerb: GET
+      description: Read-only. Returns the impact path from one Jira change to services and recovery runbooks, with evidence ids and unassessed links.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: false
+          description: Jira issue key of the change, such as MC-62. Leave empty to use the issue in context.
+    - key: prepare-rehearsal
+      name: Prepare rehearsal
+      function: fn-prepare-rehearsal
+      actionVerb: GET
+      description: Read-only preview. Builds a recovery rehearsal briefing for one finding returned by find-recovery-risks. Nothing is stored; decisions are taken in the app.
+      inputs:
+        changeKey:
+          title: Change issue key
+          type: string
+          required: true
+          description: Jira issue key of the change, such as MC-62.
+        findingId:
+          title: Finding id
+          type: string
+          required: true
+          description: A finding id returned by find-recovery-risks for the same change.
+        restoreTargetMinutes:
+          title: Restore target (minutes)
+          type: integer
+          required: true
+          description: Restore target in whole minutes, 5 to 1440. Ask the user; never assume.
+        notifyTargetMinutes:
+          title: Notify target (minutes)
+          type: integer
+          required: false
+          description: Optional notification target in whole minutes, 1 to 240.
+    - key: explain-outcome
+      name: Explain outcome
+      function: fn-explain-outcome
+      actionVerb: GET
+      description: Read-only. Returns the stored, audit-verified outcome of one of the user's own rehearsal runs, with objectives, decision trail and evidence ids.
+      inputs:
+        sessionId:
+          title: Rehearsal session id
+          type: string
+          required: true
+          description: The rehearsal session id shown in the ScenarioForge app.
   function:
     - key: resolver
       handler: index.handler
+    - key: fn-find-recovery-risks
+      handler: index.findRecoveryRisks
+    - key: fn-service-readiness
+      handler: index.getServiceReadiness
+    - key: fn-prepare-rehearsal
+      handler: index.prepareRehearsal
+    - key: fn-explain-outcome
+      handler: index.explainOutcome
 resources:
   - key: main
     path: static/app/build
     tunnel:
       port: 3000
+  # Agent prompts (rovo:agent prompt: resource:agent-prompts;<file>).
+  - key: agent-prompts
+    path: agents/prompts
 permissions:
   scopes:
     # Search issues and read issue fields (summary, status, type, updated).
@@ -26,11 +135,58 @@ permissions:
     # Read one recovery page body: GET /wiki/api/v2/pages/{id}. v2 lists only
     # this granular scope; no classic scope covers the v2 page endpoint.
     - read:page:confluence
+    # Custom Entity Store (@forge/kvs, src/ai/forgeStorage.ts): AI usage
+    # governance ledger, settings, response cache, rehearsal history and
+    # (flag-gated) crisis rooms. Required by @forge/kvs (D17). Every factory
+    # is null unless SF_STORAGE=enabled.
+    - storage:app
   content:
     styles:
       # Atlaskit components inject runtime style tags.
       - unsafe-inline
 app:
+  storage:
+    # =========================================================================
+    # PROPOSED ENTITIES -- PERMANENT ONCE DEPLOYED TO ANY ENVIRONMENT.
+    # Entity names and attribute names/types cannot be renamed or removed after
+    # a deploy. Owner approval is required before this manifest is deployed
+    # anywhere (docs/proposals/M10_RELEASE_REVIEW.md §Entities). All four share
+    # one shape: one record per key, `version` backs conditional writes,
+    # `payload` is JSON text. No custom indexes: every lookup is by key.
+    # =========================================================================
+    entities:
+      # AI governance ledger, settings, response cache (keys ai-governance:*,
+      # ai-cache:*). Already deployed on rovo-test (M6 Phase 1).
+      - name: ai-governance
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+      # Rehearsal history (keys sfh1:*). Already deployed on rovo-test.
+      - name: rehearsal-history
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+      # Crisis Room event logs (keys sfc1:*). Written only when SF_STORAGE and
+      # SF_CRISIS are both `enabled`. Never deployed anywhere yet.
+      - name: crisis-room
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+      # M8 remediation approval records (keys remediation-item:*). Reserved:
+      # no code path writes it in this build (writer and storage are null).
+      # Never deployed anywhere yet.
+      - name: remediation-item
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
   runtime:
     name: nodejs24.x
     memoryMB: 256

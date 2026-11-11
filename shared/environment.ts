@@ -31,10 +31,14 @@ export const MANIFEST_SCOPES: readonly ManifestScope[] = [
     product: 'Confluence',
     use: 'Read one runbook page body to find its steps.',
   },
+  {
+    scope: 'storage:app',
+    product: 'Forge',
+    use: 'Store rehearsal history, AI usage limits and team rooms in app storage. Off unless an admin enables it.',
+  },
 ];
 
 /** Scopes the plans name that this build does not request; shown as not granted. */
 export const NOT_REQUESTED_SCOPES: readonly { scope: string; needed: string }[] = [
-  { scope: 'storage:app', needed: 'saving rehearsal history on the site' },
   { scope: 'write:jira-work', needed: 'creating fix work items in Jira' },
 ];

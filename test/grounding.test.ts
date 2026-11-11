@@ -165,9 +165,12 @@ describe('agent prompt files', () => {
     }
   });
 
-  it('are not referenced by the manifest yet', () => {
+  it('are the prompt resources of the two Phase 2 agents (rovo-test/phase2)', () => {
     const manifest = readFileSync(join(__dirname, '..', 'manifest.yml'), 'utf8');
-    expect(manifest).not.toContain('agent-prompts');
-    expect(manifest).not.toMatch(/rovo:agent/);
+    expect(manifest).toMatch(/- key: agent-prompts\n\s+path: agents\/prompts\n/);
+    expect([...manifest.matchAll(/^ {6}prompt: (\S+)$/gm)].map((m) => m[1])).toEqual([
+      'resource:agent-prompts;investigator.md',
+      'resource:agent-prompts;facilitator.md',
+    ]);
   });
 });
