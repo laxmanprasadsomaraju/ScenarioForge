@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import api, { route } from '@forge/api';
 import Resolver from '@forge/resolver';
 import type { ApiResult } from '../shared/api';
@@ -21,6 +22,7 @@ import {
 
 import type { StorageAdapter } from '../shared/agents/storage';
 import { createHistoryResolvers } from './history/resolvers';
+import { createCrisisResolvers } from './crisis/resolvers';
 import {
   parseAnalyzeChangeRequest,
   parseGetReadinessGraphRequest,
@@ -232,5 +234,28 @@ resolver.define('getRetestComparison', (request) =>
 );
 resolver.define('saveRehearsalRun', (request) => guarded(() => history.saveRehearsalRun(request)));
 resolver.define('saveRetest', (request) => guarded(() => history.saveRetest(request)));
+
+/**
+ * Crisis Room (M7). Rooms need storage:app, which is not granted in this
+ * build, so `crisisStorage` is null and every crisis resolver answers
+ * UNAVAILABLE ("Team rooms need storage that is not enabled in this
+ * environment"). There is no realtime channel; the UI polls crisisView.
+ */
+const crisisStorage = (): StorageAdapter | null => null;
+
+const crisis = createCrisisResolvers({
+  crisisStorage,
+  historyStorage,
+  trustedScenario: history.trustedScenario,
+  random: (bytes) => randomBytes(bytes).toString('base64url'),
+});
+
+resolver.define('crisisStatus', (request) => guarded(() => crisis.crisisStatus(request)));
+
+resolver.define('crisisOpenRoom', (request) => guarded(() => crisis.crisisOpenRoom(request)));
+resolver.define('crisisView', (request) => guarded(() => crisis.crisisView(request)));
+resolver.define('crisisCommand', (request) => guarded(() => crisis.crisisCommand(request)));
+resolver.define('crisisInviteToken', (request) => guarded(() => crisis.crisisInviteToken(request)));
+resolver.define('crisisSaveDebrief', (request) => guarded(() => crisis.crisisSaveDebrief(request)));
 
 export const handler = resolver.getDefinitions();

@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   listRehearsalHistory: vi.fn(),
   saveRehearsalRun: vi.fn(),
   saveRetest: vi.fn(),
+  crisisStatus: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ api }));
 
@@ -81,26 +82,35 @@ describe('Rehearsal', () => {
   });
 });
 
-describe('Planned screens', () => {
-  it.each([['Crisis room', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
-    '%s says it is coming later, lists planned capabilities and offers a working alternative',
-    async (label, action, dest) => {
-      const user = userEvent.setup();
-      render(<App />);
-      await user.click(nav().getByRole('link', { name: `${label}, coming later` }));
+describe('Crisis room', () => {
+  it('says plainly that team rooms need storage and offers the solo rehearsal', async () => {
+    api.crisisStatus.mockResolvedValue({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Team rooms need storage that is not enabled in this environment.',
+      },
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(nav().getByRole('link', { name: 'Crisis room' }));
 
-      // Lazy screen: the skeleton shows until its chunk resolves.
-      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
-      expect(screen.getByText('Coming later')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: 'Planned capabilities' })).toBeInTheDocument();
-      expect(document.body.textContent).not.toMatch(/\bM[0-9]{1,2}\b/);
-      expect(screen.getByRole('main')).toHaveFocus();
+    // Lazy screen: the skeleton shows until its chunk resolves.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Crisis room' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Team rooms need storage that is not enabled in this environment.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open room' })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bM[0-9]{1,2}\b/);
+    expect(document.body.textContent).not.toMatch(/\blive\b/i);
 
-      await user.click(screen.getByRole('button', { name: action }));
-      expect(await screen.findByRole('heading', { level: 1, name: dest })).toBeInTheDocument();
-      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Rehearsals');
-    },
-  );
+    await user.click(screen.getByRole('button', { name: 'Rehearse solo instead' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Recovery rehearsal' }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('Origin labels', () => {

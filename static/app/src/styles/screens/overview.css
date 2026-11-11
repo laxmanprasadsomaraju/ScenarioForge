@@ -290,37 +290,6 @@
   font-size: var(--text-xs);
 }
 
-/* ---------- Planned screens ---------- */
-.planned {
-  max-width: 60ch;
-  justify-items: start;
-}
-.planned-subtitle {
-  margin-top: var(--space-sm);
-  font-size: var(--text-md);
-  font-weight: 600;
-}
-.planned-list {
-  margin: 0;
-  display: grid;
-  gap: var(--space-sm);
-  font-size: var(--text-sm);
-}
-.planned-item {
-  display: grid;
-  gap: var(--space-3xs);
-  padding-left: var(--space-sm);
-  border-left: 2px dashed var(--sf-status-unknown-border);
-}
-.planned-item dt {
-  font-weight: 600;
-  color: var(--sf-text);
-}
-.planned-item dd {
-  margin: 0;
-  color: var(--sf-text-subtle);
-}
-
 /* ---------- Settings ---------- */
 .settings-subtitle {
   margin-top: var(--space-xs);

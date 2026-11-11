@@ -132,7 +132,7 @@ export function Briefing({
           </section>
         ) : null}
         <p className="briefing-later">
-          Rehearsing as a team with several roles is planned for the{' '}
+          To rehearse as a team, each person in a role, open a{' '}
           <a
             href="/crisis-room"
             onClick={(event) => {
@@ -141,8 +141,8 @@ export function Briefing({
             }}
           >
             Crisis room
-          </a>{' '}
-          (coming later).
+          </a>
+          . Team rooms need app storage.
         </p>
       </aside>
     </div>

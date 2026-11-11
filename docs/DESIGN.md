@@ -36,27 +36,28 @@ Status mapping: resolved / objective met → success; still failing / missed / e
 
 ## Components
 
-| Component                                                                 | File                                    | States                                                                      |
-| ------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------- |
-| Shell (sidebar, rail, mobile drawer)                                      | `components/Shell.tsx`                  | expanded, rail (remembered), drawer with Escape + focus return              |
-| PageHeader                                                                | `components/PageHeader.tsx`             | title, lead, aside                                                          |
-| Button                                                                    | `components/Button.tsx`, `buttons.css`  | primary, secondary, subtle, danger; compact; hover, active, focus, disabled |
-| StatusBadge, OriginBadge, OriginTag                                       | `components/Badge.tsx`, `OriginTag.tsx` | six tones, four origins                                                     |
-| StatusLozenge (Jira status)                                               | `components/StatusLozenge.tsx`          | new, in progress, done, unknown                                             |
-| Notice (section message)                                                  | `components/States.tsx`                 | error, warning, information, optional action                                |
-| ErrorPanel, EmptyState, SkeletonRows, ScreenSkeleton, ScreenErrorBoundary | `components/States.tsx`                 | loading, empty, error with retry                                            |
-| DataRegion                                                                | `components/DataRegion.tsx`             | loading, empty, error, ready                                                |
-| JourneyStrip, StatTile, HowItWorks                                        | `components/command/*`                  | done/current/ahead; value or "Not assessed"; dismissible                    |
-| AnalysisStatement, FindingItem, CoverageFacts, ImpactPath                 | `components/readiness/*`                | findings, no findings, not assessed                                         |
-| AskRovo                                                                   | `components/AskRovo.tsx`                | rendered only when `rovo.isEnabled()` resolves true; hides if open fails    |
-| Briefing, Rehearsal, TimeRail, Debrief, RetestVerdict, RemediationPreview | `components/simulation/*`               | briefing, running, ended; resolved / still failing / inconclusive           |
-| AppearanceControl                                                         | `components/AppearanceControl.tsx`      | system, light, dark                                                         |
+| Component                                                                                           | File                                          | States                                                                                                                     |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Shell (sidebar, rail, mobile drawer)                                                                | `components/Shell.tsx`                        | expanded, rail (remembered), drawer with Escape + focus return                                                             |
+| PageHeader                                                                                          | `components/PageHeader.tsx`                   | title, lead, aside                                                                                                         |
+| Button                                                                                              | `components/Button.tsx`, `buttons.css`        | primary, secondary, subtle, danger; compact; hover, active, focus, disabled                                                |
+| StatusBadge, OriginBadge, OriginTag                                                                 | `components/Badge.tsx`, `OriginTag.tsx`       | six tones, four origins                                                                                                    |
+| StatusLozenge (Jira status)                                                                         | `components/StatusLozenge.tsx`                | new, in progress, done, unknown                                                                                            |
+| Notice (section message)                                                                            | `components/States.tsx`                       | error, warning, information, optional action                                                                               |
+| ErrorPanel, EmptyState, SkeletonRows, ScreenSkeleton, ScreenErrorBoundary                           | `components/States.tsx`                       | loading, empty, error with retry                                                                                           |
+| DataRegion                                                                                          | `components/DataRegion.tsx`                   | loading, empty, error, ready                                                                                               |
+| JourneyStrip, StatTile, HowItWorks                                                                  | `components/command/*`                        | done/current/ahead; value or "Not assessed"; dismissible                                                                   |
+| AnalysisStatement, FindingItem, CoverageFacts, ImpactPath                                           | `components/readiness/*`                      | findings, no findings, not assessed                                                                                        |
+| AskRovo                                                                                             | `components/AskRovo.tsx`                      | rendered only when `rovo.isEnabled()` resolves true; hides if open fails                                                   |
+| Briefing, Rehearsal, TimeRail, Debrief, RetestVerdict, RemediationPreview                           | `components/simulation/*`                     | briefing, running, ended; resolved / still failing / inconclusive                                                          |
+| StartRoom, JoinRoom, Lobby, Running, TeamDebrief, InviteLink (lazy chunk with `screens/crisis.css`) | `components/crisis/*`, `pages/CrisisRoom.tsx` | unavailable, start, join, lobby, running (commander / proposer / observer), debrief, closed, stale-version notice, offline |
+| AppearanceControl                                                                                   | `components/AppearanceControl.tsx`            | system, light, dark                                                                                                        |
 
 Native parts (Button, Notice, lozenge, spinner) replace `@atlaskit/button`, `section-message`, `lozenge` and `spinner` to keep the initial bundle small; they use the same ADS tokens and sizes.
 
 ## States
 
-Every data region has loading (skeleton), empty (with one action), error (with retry) and full states, and an origin badge. Unavailable screens (Crisis room) say "Coming later", list planned capabilities and offer a working alternative; nothing non-functional looks operable.
+Every data region has loading (skeleton), empty (with one action), error (with retry) and full states, and an origin badge. Unavailable features say so in plain words and offer a working alternative; nothing non-functional looks operable. The Crisis room, without app storage, says "Team rooms need storage that is not enabled in this environment" and offers the solo rehearsal; it never shows a pretend room. In a room it polls every 4 s and says "Updates every few seconds" with a manual Refresh, never "live".
 
 ## Responsive
 

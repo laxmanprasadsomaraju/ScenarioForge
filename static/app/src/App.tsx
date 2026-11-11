@@ -26,7 +26,10 @@ const RecoveryPlansPage = lazy(() =>
 const ReadinessPage = lazy(() =>
   import('./pages/Readiness').then((m) => ({ default: m.ReadinessPage })),
 );
-const PlannedPage = lazy(() => import('./pages/Planned').then((m) => ({ default: m.PlannedPage })));
+// The crisis room is the largest screen and few people open it: always its own chunk.
+const CrisisRoomPage = lazy(() =>
+  import('./pages/CrisisRoom').then((m) => ({ default: m.CrisisRoomPage })),
+);
 
 function Screen() {
   const { route } = useRouter();
@@ -40,7 +43,7 @@ function Screen() {
     case 'readiness':
       return <ReadinessPage />;
     case 'crisis-room':
-      return <PlannedPage id={route.id} />;
+      return <CrisisRoomPage />;
     case 'simulations':
       return <SimulationsPage />;
     case 'reports':

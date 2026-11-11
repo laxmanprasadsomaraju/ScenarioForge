@@ -1,7 +1,14 @@
 # M7 plan: collaborative Crisis Room
 
-Status: pure engine built (`shared/crisis/`, tests in `test/crisis.test.ts`). Nothing in this
-lane changes `manifest.yml`, permissions, deployment or `static/app`. No live collaboration is
+Status: engine (`shared/crisis/`), resolvers (`src/crisis/resolvers.ts`: `crisisStatus`,
+`crisisOpenRoom`, `crisisView`, `crisisCommand`, `crisisInviteToken`, `crisisSaveDebrief`, behind a
+null `crisisStorage()` factory) and the Crisis room UI (`static/app/src/pages/CrisisRoom.tsx`,
+polling only) are code complete with automated tests (`test/crisisResolvers.test.ts`,
+`test/crisisLink.test.ts`, `static/app/test/CrisisRoom.test.tsx`). Nothing changes `manifest.yml`,
+permissions or deployment; no `@forge/realtime`. With storage null every environment shows "Team
+rooms need storage that is not enabled in this environment". The shared running timeline is
+`buildTimeline` (`shared/crisis/timeline.ts`), added because `buildDebrief` only works after the
+session completes. No live collaboration is
 claimed until the two-user test in §5 passes on a deployed build.
 
 ## 1. Platform facts (re-verified 2026-11-11)
