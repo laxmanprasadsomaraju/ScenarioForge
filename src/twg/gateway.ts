@@ -52,6 +52,14 @@ const NOT_PERMITTED_CODES = new Set([
 ]);
 
 const QUERY_KEY = /^[0-9a-f-]{36}$/i;
+/** Site ids from the invocation context are interpolated into an ARI: restrict them. */
+const CLOUD_ID = /^[A-Za-z0-9-]{1,64}$/;
+/**
+ * An ARI the app is willing to show or reuse as a query parameter. Anything
+ * else (spaces, markup, control characters, newlines, over-long text) is
+ * dropped as "not a real relationship" rather than rendered.
+ */
+export const SAFE_ARI = /^ari:[A-Za-z0-9:_./\-]{1,300}$/;
 
 export function customQueryText(operationName: string): string {
   return `query ${operationName}($queryKey: String!, $queryParams: CypherRequestParams) {
@@ -119,7 +127,7 @@ export async function runPersistedQuery(
   const rows: TwgRow[] = [];
   for (const edge of conn.edges) {
     const value = edge.node?.columns?.find((c) => c.key === column)?.value;
-    if (value && typeof value.id === 'string' && value.id.startsWith('ari:')) {
+    if (value && typeof value.id === 'string' && SAFE_ARI.test(value.id)) {
       if (!rows.some((r) => r.ari === value.id)) rows.push({ ari: value.id });
     }
   }
@@ -149,8 +157,8 @@ export async function resolveTwgEnrichment(
   ) {
     return { kind: 'not-connected', detail: 'Teamwork Graph query keys are not configured.' };
   }
-  if (!config.cloudId) {
-    return { kind: 'error', detail: 'No site id in the invocation context.' };
+  if (!config.cloudId || !CLOUD_ID.test(config.cloudId)) {
+    return { kind: 'error', detail: 'No usable site id in the invocation context.' };
   }
   const now = deps.now ?? (() => new Date());
   let issueId: string | undefined;
