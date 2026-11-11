@@ -7,7 +7,8 @@ import { authBackupRetiredRemediation } from '@shared/simulation/scenarios/authB
 import { OverviewPage } from '../src/pages/Overview';
 import { useCheckLog, toCheckRecord } from '../src/lib/checkLog';
 import { useExercises, type CompletedExercise } from '../src/lib/exercises';
-import { priorityActions, findingCounts } from '../src/lib/commandCenter';
+import { approvedFixNotRetested, priorityActions, findingCounts } from '../src/lib/commandCenter';
+import { useFixApprovals } from '../src/lib/fixApprovals';
 import { changes, issue, renderInApp } from './helpers';
 
 const api = vi.hoisted(() => ({
@@ -87,15 +88,19 @@ function exercise(met: number, total: number, id = 's1'): CompletedExercise {
 function Seed({
   checks = [],
   runs = [],
+  approvals = {},
 }: {
   checks?: ChangeAnalysis[];
   runs?: CompletedExercise[];
+  approvals?: Record<string, string[]>;
 }) {
   const { record } = useCheckLog();
   const { record: recordRun } = useExercises();
+  const { setApproved } = useFixApprovals();
   useEffect(() => {
     checks.forEach(record);
     runs.forEach(recordRun);
+    Object.entries(approvals).forEach(([id, fixes]) => setApproved(id, fixes));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return null;
@@ -137,6 +142,7 @@ describe('Command center, with session state', () => {
         <Seed
           checks={[analysis([finding('f1', 'confirmed'), finding('f2', 'suspected')])]}
           runs={[exercise(2, 4)]}
+          approvals={{ s1: ['rem-runbook'] }}
         />
         <OverviewPage />
       </>,
@@ -147,6 +153,9 @@ describe('Command center, with session state', () => {
       within(next).getByText('Confirm or review the suspected finding on MC-12'),
     ).toBeInTheDocument();
     expect(within(next).getByText(/^Retest/)).toBeInTheDocument();
+    expect(
+      within(next).getByText(/1 fix approved \(simulated, this tab\) and not yet retested/),
+    ).toBeInTheDocument();
     expect(within(tile('Findings')).getByText('2')).toBeInTheDocument();
     expect(within(tile('Findings')).getByText('1 confirmed, 1 suspected')).toBeInTheDocument();
     expect(within(tile('Rehearsals completed')).getByText('1')).toBeInTheDocument();
@@ -181,14 +190,28 @@ describe('priority action selectors', () => {
     expect(priorityActions([check], [run], null)).toEqual([]);
   });
 
-  it('asks for a retest only while a missed run has none', () => {
+  it('asks for a retest only for a run with an approved fix and no retest', () => {
     const run = exercise(1, 4, 'orig');
-    expect(priorityActions([], [run], null).map((a) => a.kind)).toEqual(['retest']);
+    // Missing objectives alone is not enough: nothing has been approved to retest.
+    expect(priorityActions([], [run], null)).toEqual([]);
+    expect(priorityActions([], [run], null, { other: ['a'] })).toEqual([]);
+
+    const approvals = { orig: ['rem-runbook', 'rem-change-check'] };
+    const actions = priorityActions([], [run], null, approvals);
+    expect(actions.map((a) => a.kind)).toEqual(['retest']);
+    expect(actions[0]!.reason).toMatch(/^2 fixes approved \(simulated, this tab\)/);
+
     const retest = {
       ...exercise(4, 4, 'r'),
       retest: { comparison: {} as never, appliedRemediationIds: ['a'], original: run },
     };
-    expect(priorityActions([], [retest, run], null)).toEqual([]);
+    expect(priorityActions([], [retest, run], null, approvals)).toEqual([]);
+  });
+
+  it('selects approved, unretested runs even when all objectives were met', () => {
+    const run = exercise(4, 4, 'full');
+    expect(approvedFixNotRetested([run], { full: ['a'] })).toEqual([run]);
+    expect(approvedFixNotRetested([run], {})).toEqual([]);
   });
 
   it('counts findings by confidence', () => {

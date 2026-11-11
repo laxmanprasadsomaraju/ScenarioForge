@@ -222,13 +222,15 @@ describe('Opening a saved record', () => {
   function expectNoContent() {
     expect(screen.queryByText(/objectives met$/)).toBeNull();
     expect(screen.queryByText(DEMO.title)).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Decisions and their evidence' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Decision timeline' })).toBeNull();
   }
 
   it('shows a tampered record by status only and says so in the list', async () => {
     const user = await openRun({ status: 'TAMPERED' });
-    const heading = await screen.findByRole('heading', { name: 'Failed integrity check' });
+    const heading = await screen.findByRole('heading', { name: 'Tampered' });
     expect(heading).toHaveFocus();
+    // The state is a word and an icon, never colour alone.
+    expect(heading.querySelector('svg')).not.toBeNull();
     expect(
       screen.getByText('This record failed its integrity check and is not shown.'),
     ).toBeInTheDocument();
@@ -238,7 +240,8 @@ describe('Opening a saved record', () => {
     await user.click(screen.getByRole('button', { name: 'Back to history' }));
     const table = await savedTable();
     const [, demoRow] = within(table).getAllByRole('row');
-    expect(demoRow).toHaveTextContent('Failed integrity check');
+    expect(demoRow).toHaveTextContent('Tampered');
+    expect(within(demoRow!).getByText('Tampered').closest('.badge-danger')).not.toBeNull();
     await waitFor(() =>
       expect(within(demoRow!).getByRole('button', { name: /^Open report/ })).toHaveFocus(),
     );
@@ -251,7 +254,7 @@ describe('Opening a saved record', () => {
         'This record was made by an older engine version or cannot be checked.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Cannot be checked' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Unverifiable' })).toBeInTheDocument();
     expectNoContent();
   });
 
@@ -263,9 +266,7 @@ describe('Opening a saved record', () => {
 
   it('says when the record could not be loaded, with the reason', async () => {
     await openRun({ status: 'UNAVAILABLE', detail: 'History storage could not be reached.' });
-    expect(
-      await screen.findByRole('heading', { name: 'History could not be loaded.' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Unavailable' })).toBeInTheDocument();
     expect(screen.getByText('History storage could not be reached.')).toBeInTheDocument();
   });
 
@@ -276,6 +277,7 @@ describe('Opening a saved record', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '3 of 4 objectives met' })).toHaveFocus();
     expect(screen.getByText('Synthetic demo')).toBeInTheDocument();
+    expect(screen.getByText('Verified').closest('.badge-success')).not.toBeNull();
     // History is read-only: no approvals or retests from here.
     expect(screen.queryByRole('checkbox')).toBeNull();
   });
