@@ -1,6 +1,6 @@
 # M8 plan: real remediation workflow
 
-Prepared 2026-11-10 (Lane D). Status: **plan only**; nothing applied, deployed or consented to. Depends on M6 persistence ([M6_PLAN.md](M6_PLAN.md) §6, `storage:app`, D17).
+Prepared 2026-11-10 (Lane D). Status: plan, with the disabled create path Code complete and Automated tests passed (see the end of this file); nothing deployed or consented to. Depends on M6 persistence ([M6_PLAN.md](M6_PLAN.md) §6, `storage:app`, D17).
 
 **Principle.** ScenarioForge never writes to Jira or Confluence on its own. A person sees the exact work item that will be created, approves it, and the app creates it as that person. Rovo agents and MCP tools get no write action in M8.
 

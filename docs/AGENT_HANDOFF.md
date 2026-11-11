@@ -80,3 +80,7 @@ Changed: MCP tool matrix tests; Teamwork Graph ARI/site-id hardening plus tests;
 Pending owner decisions: drop `remediation-item` (and probably `crisis-room`) before any first deploy; Marketplace option A or B by 27 Nov; Devpost rules check (Marketplace bonus existence, second app id); everything in BONUS_EVIDENCE_CHECKLIST.
 
 Next safe action: owner reviews M10_RELEASE_VALIDATION.md; do not merge this branch anywhere without the F2 exception.
+
+## Handoff 2026-11-11 (integration lane, `release/judged-full-integrate`)
+
+Base `release/judged-full` @ 13513d5 (rollback point). Merged `rovo-test/phase2-confluence-403` (e8550cd), `rovo-test/deeplinks` (850f363), `m78/integration` (ad3d3e0), `release/judged-full-validation` (3ec8633). One code conflict (`src/agents/forge.ts`: kept `siteAiEnabled` from the release plus `linkBase`); one test fix (`test/mcpTools.test.ts` passes `linkBase`). Docs conflicts kept both sections. Manifest and package.json identical to 13513d5. Automated tests passed: 1112 root, 186 app; prettier, Hallmark, audit 0 and forge lint (0 errors, 1 pre-existing approval notice) clean. Not deployed, not live verified, not merged anywhere. No approvals granted or inferred. Next safe action: owner review, then lead decides on moving `release/judged-full`.

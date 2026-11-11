@@ -68,7 +68,7 @@ App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the
 | M10 submission prep                    | In progress (docs)                                                                    | docs/submission/                                                            |
 | Security                               | Server logs record error names only                                                   | e1d2598                                                                     |
 
-Integration tip after these merges: see `git log -1 integration/lanes-1`. Tests: 926 root, 172 app; Hallmark 0/0/0; audit 0; forge lint 0 errors.
+Integration tip after these merges: see `git log -1 integration/lanes-1`. Tests (pre-integration figures; current figures in the release-integrate handoff): 926 root, 172 app; Hallmark 0/0/0; audit 0; forge lint 0 errors.
 
 ## Update 2026-11-11 (Lane 2, `m78/integration`)
 

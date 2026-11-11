@@ -116,6 +116,7 @@ function setup(f: Fake = {}, over: Partial<ForgeActionDeps> = {}) {
     historyStore: () => ({ getRun: history as never }),
     now: NOW,
     aiEnabled: () => true,
+    linkBase: async () => null,
     ...over,
   });
   return { handlers, g, factory, governor, history };
