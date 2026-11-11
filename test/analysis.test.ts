@@ -324,6 +324,7 @@ describe('analyzeChange', () => {
       key: 'DEMO-101',
       summary: ISSUE_A.summary,
       browsePath: '/browse/DEMO-101',
+      updated: '2026-11-09T10:00:00.000Z',
     });
     expect(result.findings[0]!.pageWebuiPath).toBe(RB_AUTH.webuiPath);
     expect(result.findings).toHaveLength(1);

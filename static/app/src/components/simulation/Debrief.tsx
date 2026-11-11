@@ -5,7 +5,6 @@ import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { Consequence, EvidenceReference, SimulationScenario } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
 import type { CompletedExercise } from '../../lib/exercises';
-import { useSite } from '../../lib/site';
 import {
   makeDuplicateChecker,
   makeRemediationCreator,
@@ -62,7 +61,6 @@ export function Debrief({
   workItemSource?: { analysis: ChangeAnalysis; findingId: string };
 }) {
   const { evaluation, session } = exercise;
-  const { accountId } = useSite();
   const trail = decisionTrail(scenario, session);
   const evidence = evidenceByDecision(
     scenario,
@@ -347,7 +345,6 @@ export function Debrief({
               ? makeRemediationCreator({
                   changeKey: workItemSource.analysis.change.key,
                   findingId: workItemSource.findingId,
-                  accountId,
                 })
               : null
           }

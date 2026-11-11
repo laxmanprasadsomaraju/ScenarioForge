@@ -56,7 +56,12 @@ function notAssessed(
 ): ChangeAnalysis {
   return {
     changeKey: change.key,
-    change: { key: change.key, summary: change.summary, browsePath: change.browsePath },
+    change: {
+      key: change.key,
+      summary: change.summary,
+      browsePath: change.browsePath,
+      updated: change.updated,
+    },
     analyzedAt,
     status: 'not-assessed',
     notAssessedReason: reason,
