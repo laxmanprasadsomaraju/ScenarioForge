@@ -8,7 +8,8 @@ import {
   confluenceSourceStatus,
   validateGraph,
 } from '../shared/graph';
-import type { GraphEdge, GraphNode, ReadinessGraph } from '../shared/graph';
+import type { GraphEdge, GraphNode, ReadinessGraph, UnassessedLink } from '../shared/graph';
+import { mergeGraphExtras } from '../shared/graph/twg';
 
 const ANALYZED_AT = '2026-11-10T12:00:00.000Z';
 const BUILT_AT = '2026-11-10T12:00:01.000Z';
@@ -440,5 +441,84 @@ describe('validateGraph', () => {
       reason: 'Not connected.',
     });
     expect(validateGraph(graph)).toEqual(['Unassessed team link starts from missing node page:1.']);
+  });
+});
+
+describe('mergeGraphExtras combined service cap (JSM + Teamwork Graph)', () => {
+  const evidence = (id: string) => [
+    {
+      id,
+      origin: 'live' as const,
+      kind: 'jsm-service' as const,
+      title: id,
+      excerpt: id,
+      url: '/browse/MC-62',
+      retrievedAt: ANALYZED_AT,
+    },
+  ];
+  function part(source: 'jsm' | 'teamwork-graph', count: number, withTeam = false) {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    const unassessed: UnassessedLink[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const id = `service:${source}:${i}`;
+      nodes.push({ id, kind: 'service', label: id, origin: 'live', source });
+      edges.push({
+        id: `edge:impacts:${id}`,
+        kind: 'change-impacts-service',
+        from: 'change:MC-62',
+        to: id,
+        confidence: 'confirmed',
+        basis: 'b',
+        source,
+        evidence: evidence(id),
+      });
+      unassessed.push({ from: id, expected: 'team', source, reason: 'r' });
+    }
+    if (withTeam) {
+      nodes.push({ id: 'team:t', kind: 'team', label: 't', origin: 'live', source });
+      edges.push({
+        id: 'edge:owns:t',
+        kind: 'team-owns-service',
+        from: 'team:t',
+        to: `service:${source}:${count - 1}`,
+        confidence: 'confirmed',
+        basis: 'b',
+        source,
+        evidence: evidence('t'),
+      });
+    }
+    return {
+      nodes,
+      edges,
+      unassessed,
+      sources: [{ source, status: 'used' as const, detail: 'd' }],
+    };
+  }
+
+  it('keeps a valid graph by capping combined services and noting the rest as unassessed', () => {
+    const extras = mergeGraphExtras(
+      part('jsm', 15),
+      part('teamwork-graph', MAX_GRAPH_SERVICES, true),
+    );
+    const graph = buildGraphFromAnalysis(suspected(), BUILT_AT, extras);
+    expect(validateGraph(graph)).toEqual([]);
+    const services = graph.nodes.filter((n) => n.kind === 'service');
+    expect(services).toHaveLength(MAX_GRAPH_SERVICES);
+    expect(services.filter((n) => n.source === 'jsm')).toHaveLength(15);
+    // The team owned only a dropped service, so it goes too.
+    expect(graph.nodes.some((n) => n.kind === 'team')).toBe(false);
+    expect(graph.unassessed.some((u) => u.from === 'service:teamwork-graph:19')).toBe(false);
+    const note = graph.unassessed.filter(
+      (u) => u.from === 'change:MC-62' && u.source === 'teamwork-graph',
+    );
+    expect(note).toHaveLength(1);
+    expect(note[0]?.reason).toMatch(/^15 more service\(s\) .* not assessed/);
+  });
+
+  it('leaves extras untouched under the cap', () => {
+    const extras = mergeGraphExtras(part('jsm', 3), part('teamwork-graph', 2));
+    expect(extras.nodes).toHaveLength(5);
+    expect(extras.unassessed).toHaveLength(5);
   });
 });

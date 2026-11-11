@@ -1,6 +1,6 @@
 # Current status
 
-As of **2026-11-11**, audited from `integration/lanes-1` @ `e864c3f`, `rovo-test/build` @ `77e1262`, `rovo-test/phase2` @ `abbe8d6`, the live-test docs, and read-only `forge environments list` / `forge install list` / `forge variables list`.
+As of **2026-11-11**, audited from `integration/lanes-1` @ `26076b1` (plus Lane QA fixes on `qa/review-1`), `m9/mcp` @ `c2b28fc`, `rovo-test/build` @ `77e1262`, `rovo-test/phase2` @ `abbe8d6`, the live-test docs, and read-only `forge environments list` / `forge install list` / `forge variables list`.
 
 Status vocabulary (use only these): **Not started / In progress / Code complete / Automated tests passed / Deployed / Live verified / Accepted / Blocked**. "Accepted" means the owner accepted it within the documented limits.
 
@@ -8,21 +8,21 @@ Docs on other branches are linked on GitHub: `RT1` = [rovo-test/build docs](http
 
 ## Summary
 
-| Milestone                          | Status                                         | Evidence                                                                                                                                                    | Limits / open                                                              |
-| ---------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| M0 Foundation                      | Accepted                                       | [SETUP_STATUS.md](SETUP_STATUS.md), [MILESTONES.md](MILESTONES.md)                                                                                          | none                                                                       |
-| M1 First Forge app                 | Accepted                                       | [MILESTONES.md](MILESTONES.md) M1 (live issues seen in Jira 2026-11-09)                                                                                     | Console monitoring and live permission-denied path owner-unconfirmed       |
-| M2 Jira/Confluence/JSM context     | Accepted (Confluence)                          | [M2_CONFLUENCE_TEST.md](M2_CONFLUENCE_TEST.md)                                                                                                              | JSM not done; Confluence scopes not on `development`                       |
-| M3 Change-to-recovery intelligence | Accepted                                       | [M3_LIVE_TEST.md](M3_LIVE_TEST.md)                                                                                                                          | Live permission revocation not tested                                      |
-| M4 Readiness graph                 | Accepted (impact path); services/teams Blocked | [M4_M5_LIVE_TEST.md](M4_M5_LIVE_TEST.md), [M4_PERMISSIONS.md](M4_PERMISSIONS.md)                                                                            | Services (JSM Assets) and teams (Teamwork Graph) blocked on sources/scopes |
-| M5 Simulation                      | Accepted (rehearse real finding)               | [M4_M5_LIVE_TEST.md](M4_M5_LIVE_TEST.md)                                                                                                                    | Persistence only on rovo-test; real service-tier targets need a source     |
-| M6 Phase 1 (identity, storage)     | Live verified                                  | RT1 `M6_PHASE1_ACCEPTANCE.md`                                                                                                                               | rovo-test only                                                             |
-| M6 Phase 2 (two read-only agents)  | Deployed                                       | `rovo-test` last deploy 2026-11-10T21:36Z = `abbe8d6`; RT2 `M6_PHASE2_TEST_SCRIPT.md`                                                                       | AI OFF (`SF_ROVO_TEST_AI` unset); live tests **not run**                   |
-| M7 Crisis room                     | Not started                                    | `m7/crisis-room-core` has no commits beyond `e864c3f`                                                                                                       | Plan only                                                                  |
-| M8 Remediation and verification    | Automated tests passed (request prep)          | `shared/remediation`, `src/remediation`, `test/remediation*.test.ts`, [M8_PLAN.md](M8_PLAN.md), D19                                                         | No `write:jira-work`; nothing created; approval storage not deployed       |
-| UI redesign (phases A–E)           | Deployed (`confluence-test`)                   | [UI_REDESIGN_REPORT.md](UI_REDESIGN_REPORT.md); `confluence-test` deploy 2026-11-11T09:57Z after `e864c3f`                                                  | Owner reported sidebar issues; fix in progress on `ui/sidebar-fix`         |
-| M9 Bonus (MCP, TWG, Marketplace)   | Not started                                    | Plans: [BONUS_FEASIBILITY.md](BONUS_FEASIBILITY.md), [TEAMWORK_GRAPH_TEST_PLAN.md](TEAMWORK_GRAPH_TEST_PLAN.md), [MARKETPLACE_PLAN.md](MARKETPLACE_PLAN.md) | `graph-test` env exists, no installation                                   |
-| M10 Release                        | Not started                                    | [CODEGEIST_REQUIREMENTS.md](CODEGEIST_REQUIREMENTS.md)                                                                                                      | Video, write-up, judge install, production deploy all pending              |
+| Milestone                          | Status                                         | Evidence                                                                                                                                                                    | Limits / open                                                                          |
+| ---------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| M0 Foundation                      | Accepted                                       | [SETUP_STATUS.md](SETUP_STATUS.md), [MILESTONES.md](MILESTONES.md)                                                                                                          | none                                                                                   |
+| M1 First Forge app                 | Accepted                                       | [MILESTONES.md](MILESTONES.md) M1 (live issues seen in Jira 2026-11-09)                                                                                                     | Console monitoring and live permission-denied path owner-unconfirmed                   |
+| M2 Jira/Confluence/JSM context     | Accepted (Confluence)                          | [M2_CONFLUENCE_TEST.md](M2_CONFLUENCE_TEST.md)                                                                                                                              | JSM not done; Confluence scopes not on `development`                                   |
+| M3 Change-to-recovery intelligence | Accepted                                       | [M3_LIVE_TEST.md](M3_LIVE_TEST.md)                                                                                                                                          | Live permission revocation not tested                                                  |
+| M4 Readiness graph                 | Accepted (impact path); services/teams Blocked | [M4_M5_LIVE_TEST.md](M4_M5_LIVE_TEST.md), [M4_PERMISSIONS.md](M4_PERMISSIONS.md)                                                                                            | Services (JSM Assets) and teams (Teamwork Graph) blocked on sources/scopes             |
+| M5 Simulation                      | Accepted (rehearse real finding)               | [M4_M5_LIVE_TEST.md](M4_M5_LIVE_TEST.md)                                                                                                                                    | Persistence only on rovo-test; real service-tier targets need a source                 |
+| M6 Phase 1 (identity, storage)     | Live verified                                  | RT1 `M6_PHASE1_ACCEPTANCE.md`                                                                                                                                               | rovo-test only                                                                         |
+| M6 Phase 2 (two read-only agents)  | Deployed                                       | `rovo-test` last deploy 2026-11-10T21:36Z = `abbe8d6`; RT2 `M6_PHASE2_TEST_SCRIPT.md`                                                                                       | AI OFF (`SF_ROVO_TEST_AI` unset); live tests **not run**                               |
+| M7 Crisis room                     | Automated tests passed (core engine)           | `shared/crisis`, `test/crisis.test.ts`; merged into `integration/lanes-1` at `c91f644`                                                                                      | Pure engine only: no UI wiring, no Realtime, not deployed                              |
+| M8 Remediation and verification    | Automated tests passed (request prep)          | `shared/remediation`, `src/remediation`, `test/remediation*.test.ts`, [M8_PLAN.md](M8_PLAN.md), D19                                                                         | No `write:jira-work`; nothing created; approval storage not deployed                   |
+| UI redesign (phases A–E)           | Deployed (`confluence-test` 2.6.0)             | [UI_REDESIGN_REPORT.md](UI_REDESIGN_REPORT.md); `confluence-test` 2.6.0 deployed from `1a517f9` (includes sidebar fix `980b2db`)                                            | Sidebar fix awaiting owner frame-mode check                                            |
+| M9 Bonus (MCP, TWG, Marketplace)   | In progress                                    | TWG: Automated tests passed, merged flag-gated (`SF_TWG` off) at `6921f03`; MCP: Code complete on `m9/mcp` @ `c2b28fc` (not merged); Marketplace drafts merged at `26076b1` | No `graph-test` installation, no `rovo:mcp` manifest change, no Marketplace submission |
+| M10 Release                        | Not started                                    | [CODEGEIST_REQUIREMENTS.md](CODEGEIST_REQUIREMENTS.md)                                                                                                                      | Video, write-up, judge install, production deploy all pending                          |
 
 App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the deploy records reported by the lead; `forge install list` shows major version 2 on all three installs.
 
@@ -36,8 +36,8 @@ App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the
 
 ### M7 Multiplayer crisis room
 
-- **Complete:** nothing beyond the plan line in [MILESTONES.md](MILESTONES.md). UI shows an honest "planned" Crisis room.
-- **Not started:** roles, shared session, Forge Realtime, attribution and replay.
+- **Automated tests passed:** pure crisis-room core engine in `shared/crisis` (merged at `c91f644`). The UI still shows an honest "planned" Crisis room.
+- **Not started:** UI wiring, shared session storage, Forge Realtime, live attribution and replay.
 
 ### M8 Corrective actions and verification
 
@@ -47,8 +47,10 @@ App version numbers (2.2.0 on rovo-test, 2.5.0 on confluence-test) come from the
 
 ### M9 Bonus integrations
 
-- **Complete:** feasibility research and plans only.
-- **Not started:** `rovo:mcp` module, Teamwork Graph calls (`graph-test` deployed 2026-11-10 but not installed), Marketplace listing (owner decision; blocks installation-link sharing).
+- **Automated tests passed:** Teamwork Graph enrichment behind `SF_TWG` (off by default), merged at `6921f03`. Lane QA (`qa/review-1`) fixed a validation failure when JSM and Teamwork Graph services together exceed `MAX_GRAPH_SERVICES`: combined services are now capped deterministically, with an unassessed note per source for the rest.
+- **Code complete:** MCP on `m9/mcp` @ `c2b28fc` (not merged; needs `rovo:mcp` manifest approval).
+- **In progress:** Marketplace drafts merged at `26076b1`; no submission (owner decision; blocks installation-link sharing).
+- **Not started:** `graph-test` installation and live Teamwork Graph calls.
 
 ### M10 Competition release
 
