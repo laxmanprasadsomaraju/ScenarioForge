@@ -8,6 +8,16 @@ import { App } from '../src/App';
 import { changes, issue } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   listRecoveryPages: vi.fn(),

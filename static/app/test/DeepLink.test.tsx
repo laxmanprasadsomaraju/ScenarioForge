@@ -12,6 +12,16 @@ import { App } from '../src/App';
 import { changes, issue } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   listRecoveryPages: vi.fn(),
@@ -274,7 +284,9 @@ describe('URL sync and back/forward', () => {
   it('pushes the canonical path and follows back/forward', async () => {
     const user = userEvent.setup();
     const history = openAt('/readiness-checks');
-    await user.click(await screen.findByRole('button', { name: 'Check recovery impact of MC-62' }));
+    // The Command center (which has the same row action) paints until Forge's history resolves.
+    await screen.findByRole('table', { name: 'Recent Jira changes to check' });
+    await user.click(screen.getByRole('button', { name: 'Check recovery impact of MC-62' }));
     expect(history.path).toBe('/readiness-checks?change=MC-62');
     await screen.findByRole('heading', { name: 'Findings' });
     // The row the user picked fills the header while nothing else is known.

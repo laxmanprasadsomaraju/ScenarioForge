@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { ChangeSelectionProvider } from './lib/changeSelection';
 import { RehearsalSourceProvider } from './lib/rehearsalSource';
+import { CheckLogProvider } from './lib/checkLog';
 import { ExerciseProvider } from './lib/exercises';
 import { RouterProvider, useRouter } from './lib/router';
 import { SiteProvider } from './lib/site';
@@ -76,9 +77,11 @@ function AppContent() {
         <ChangeSelectionProvider>
           <RehearsalSourceProvider>
             <ExerciseProvider>
-              <Shell>
-                <RoutedScreen />
-              </Shell>
+              <CheckLogProvider>
+                <Shell>
+                  <RoutedScreen />
+                </Shell>
+              </CheckLogProvider>
             </ExerciseProvider>
           </RehearsalSourceProvider>
         </ChangeSelectionProvider>

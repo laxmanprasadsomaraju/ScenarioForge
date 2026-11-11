@@ -11,6 +11,16 @@ import {
 import { changes, issue } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
 }));
@@ -156,7 +166,7 @@ describe('Appearance control', () => {
     const user = userEvent.setup();
     render(<App hostTheming={Promise.resolve(true)} />);
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Recovery readiness' }),
+      await screen.findByRole('heading', { level: 1, name: 'Command center' }),
     ).toBeInTheDocument();
     expect(appearance().getByRole('radio', { name: 'Match Jira' })).toBeChecked();
     await user.click(appearance().getByRole('radio', { name: 'Dark' }));

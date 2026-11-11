@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import type { ApiResult, JiraIssueSummary, ListChangesResponse } from '@shared/api';
 import { ChangeSelectionProvider } from '../src/lib/changeSelection';
+import { CheckLogProvider } from '../src/lib/checkLog';
 import { ExerciseProvider } from '../src/lib/exercises';
 import { RehearsalSourceProvider } from '../src/lib/rehearsalSource';
 import { RouterProvider } from '../src/lib/router';
@@ -14,7 +15,9 @@ export function renderInApp(ui: ReactNode) {
       <RouterProvider>
         <ChangeSelectionProvider>
           <RehearsalSourceProvider>
-            <ExerciseProvider>{ui}</ExerciseProvider>
+            <ExerciseProvider>
+              <CheckLogProvider>{ui}</CheckLogProvider>
+            </ExerciseProvider>
           </RehearsalSourceProvider>
         </ChangeSelectionProvider>
       </RouterProvider>

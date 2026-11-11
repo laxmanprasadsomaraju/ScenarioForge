@@ -3,6 +3,7 @@ import type { ApiResult } from '@shared/api';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import type { ReadinessGraph } from '@shared/graph/types';
 import { api } from './api';
+import { useCheckLog } from './checkLog';
 import type { RemoteState } from './useApi';
 
 interface Settled {
@@ -89,6 +90,12 @@ export function useReadinessCheck(issueKey: string): ReadinessCheck {
   }, [issueKey]);
 
   const fresh = settled && settled.issueKey === issueKey && settled.attempt === attempt;
+  // Every finished analysis is logged for the Command center's session figures.
+  const { record } = useCheckLog();
+  const done = fresh && settled.analysis.status === 'ready' ? settled.analysis.data : null;
+  useEffect(() => {
+    if (done) record(done);
+  }, [done, record]);
   return {
     analysis: fresh ? settled.analysis : LOADING,
     graph: fresh ? settled.graph : LOADING,
