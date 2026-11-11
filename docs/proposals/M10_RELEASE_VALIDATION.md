@@ -79,3 +79,23 @@ Feature-disabled behaviour: `test/flagsUnset.test.ts` runs the real storage fact
 Error states: `static/app/test/ErrorStates.test.tsx` runs rate limit, Atlassian down, 403 and not-consented through Changes, Readiness checks and Runbooks: named error, server reason, retry, no rows, no "no conflicts" claim.
 
 Known remaining items: first navigation to a deep link first mounts the Command center and then moves focus to `main` (router starts at `/`); in the preview, errors on Runbooks reuse the fixture's Jira-worded 403 text; the preview cannot run "Rehearse this finding" (fixtures lack rehearsal generation).
+
+### Manifest comparison (read from git, not live)
+
+Deployed sources per [ENVIRONMENTS.md](../ENVIRONMENTS.md): `development` = `feature/m0-m1-foundation`, `confluence-test` = `integration/lanes-1` @ `e864c3f`, `rovo-test` = `rovo-test/phase2` @ `abbe8d6`. Candidate = `release/judged-full` @ `606347c`. `manifest.yml` and all package files on `release/quality` are identical to `606347c`.
+
+| Item                 | development (M1)               | confluence-test (e864c3f)                 | rovo-test (abbe8d6)                                             | judged-full (606347c)                                                                            |
+| -------------------- | ------------------------------ | ----------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Scopes               | read:jira-work, read:jira-user | + search:confluence, read:page:confluence | same four + storage:app                                         | same as rovo-test                                                                                |
+| Storage entities     | none                           | none                                      | ai-governance, rehearsal-history                                | + crisis-room, remediation-item (permanent once deployed)                                        |
+| Modules              | global:fullPage, resolver      | same                                      | + 2 rovo:agent, 4 action, 4 fn                                  | + rovo:mcp (4 tools)                                                                             |
+| Egress / external    | none                           | none                                      | none                                                            | none                                                                                             |
+| Content CSP          | styles unsafe-inline           | same                                      | same                                                            | same                                                                                             |
+| Runtime flags (vars) | none                           | none                                      | `SF_ROVO_TEST_STORAGE`, `SF_ROVO_TEST_USER_DAILY_CAP`; AI unset | code reads `SF_STORAGE`, `SF_AI`, `SF_CRISIS`, `SF_TWG`; build flag `VITE_SF_REMEDIATION_CREATE` |
+
+Upgrade consequences:
+
+- development to judged-full: adds two Confluence scopes and `storage:app`; major version, admin re-consent.
+- confluence-test to judged-full: adds `storage:app` (major version, re-consent), agents, MCP and four permanent entities.
+- rovo-test to judged-full: no scope change, so no scope-driven re-consent; adds `rovo:mcp` and two entities that cannot be removed later. The renamed flags matter: judged-full ignores `SF_ROVO_TEST_*`, so history and the usage cap silently fall back to "not enabled" and defaults on rovo-test until `SF_STORAGE` is set (owner action).
+- No environment currently has `crisis-room` or `remediation-item`; see the entity table above for the recommendation to drop them.
