@@ -1,0 +1,62 @@
+# VARIANT, NOT DEPLOYED, NOT THE ROOT MANIFEST. Nothing reads this file unless
+# someone copies it over manifest.yml by hand. Reference: docs/proposals/MANIFEST_VARIANTS.md
+# M7 Crisis Room test: web app only. No Rovo agents, no MCP, no actions, so
+# `ai-governance` (reached only from src/agents/forge.ts) is not needed.
+# Flags: SF_STORAGE=enabled, SF_CRISIS=enabled. SF_AI, SF_TWG,
+# SF_REMEDIATION_WRITE, SF_USER_DAILY_CAP stay unset.
+modules:
+  global:fullPage:
+    - key: scenarioforge-global-full-page
+      title: ScenarioForge
+      resource: main
+      resolver:
+        function: resolver
+      routePrefix: scenarioforge
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/app/build
+    tunnel:
+      port: 3000
+permissions:
+  scopes:
+    - read:jira-work
+    - read:jira-user
+    - search:confluence
+    - read:page:confluence
+    # Custom Entity Store (@forge/kvs).
+    - storage:app
+  content:
+    styles:
+      - unsafe-inline
+app:
+  storage:
+    # PROPOSED, NOT COMMITTED. Entity names are permanent once deployed.
+    entities:
+      # Rehearsal history (sfh1:*): the Crisis Room saves the finished run into
+      # history (src/crisis/resolvers.ts historyStorage).
+      - name: rehearsal-history
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+      # Crisis Room event logs (sfc1:*): used when SF_STORAGE and SF_CRISIS are enabled.
+      - name: crisis-room
+        attributes:
+          version:
+            type: integer
+          payload:
+            type: string
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/113a7a88-0d52-4161-b72e-791a83bd9355
+  compatibility:
+    jira:
+      required: true
+    confluence:
+      required: false

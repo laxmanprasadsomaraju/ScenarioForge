@@ -1,12 +1,12 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findLogViolations } from './helpers/logCheck';
+import { findForwarders, findLogViolations } from './helpers/logCheck';
 
 function files(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
-    return statSync(path).isDirectory() ? files(path) : path.endsWith('.ts') ? [path] : [];
+    return statSync(path).isDirectory() ? files(path) : /\.tsx?$/.test(path) ? [path] : [];
   });
 }
 
@@ -18,8 +18,19 @@ describe('server log hygiene', () => {
     (f) => !f.includes('/probes/'),
   );
 
+  // The browser console is user-visible and ends up in screenshots and bug reports.
+  const browser = files(join(root, 'static/app/src'));
+  const all = [...sources, ...browser];
+  const forwarders = new Set(all.flatMap((f) => [...findForwarders(readFileSync(f, 'utf8'), f)]));
+
   it('every console/log call in src and shared passes only safe arguments', () => {
-    const found = sources.flatMap((f) => findLogViolations(readFileSync(f, 'utf8'), f));
+    const found = sources.flatMap((f) => findLogViolations(readFileSync(f, 'utf8'), f, forwarders));
+    expect(found).toEqual([]);
+  });
+
+  it('every console call in the browser code (static/app/src) passes only safe arguments', () => {
+    expect(browser.length).toBeGreaterThan(10);
+    const found = browser.flatMap((f) => findLogViolations(readFileSync(f, 'utf8'), f, forwarders));
     expect(found).toEqual([]);
   });
 
@@ -70,10 +81,42 @@ describe('log checker negative cases', () => {
     bad(`deps.log(error.message)`);
     bad(`logger.error(err)`);
   });
+  it('flags calls to functions that merely forward their arguments to console', () => {
+    bad(`function emit(x: unknown) { console.log(x) }`);
+    bad(`const emit = (...a: unknown[]) => console.log(...a)`);
+    bad(`const o = { emit(x: string) { console.warn(\`got \${x}\`) } }`);
+    // Name does not look like a logger: the call site must still be checked.
+    const defs = `const emit = (x: string) => console.log(x)\n`;
+    expect(findLogViolations(`${defs}emit(user.email)`).length).toBeGreaterThan(1);
+    // Cross-file: the forwarder is defined elsewhere, the caller passes an object.
+    expect(findLogViolations(`emit(issue)`, 'b.ts', findForwarders(defs))).not.toEqual([]);
+    expect(findLogViolations(`emit('fixed text')`, 'b.ts', findForwarders(defs))).toEqual([]);
+    expect(findLogViolations(`emit(issue)`, 'b.ts')).toEqual([]); // unknown to this file alone
+    expect([...findForwarders(`function f(x) { return x + 1 }`)]).toEqual([]);
+    expect([...findForwarders(`const g = (n: number) => console.log('n', Number(n))`)]).toEqual([]);
+  });
+  it('flags .code and .status on objects that are not an error or response', () => {
+    bad(`console.log(user.code)`);
+    bad(`console.log(issue.status)`);
+    bad(`console.log({ s: account.status })`);
+    bad(`console.log(row.upstreamStatus)`);
+    bad(`console.log(getThing().code)`);
+    bad('console.log(`state ${page.status}`)');
+    good(`console.log(error.code, response.status, res.status, result.error.code)`);
+    good(`console.log(search.error?.upstreamStatus)`);
+  });
+  it('applies to TSX browser code too', () => {
+    expect(
+      findLogViolations(`const A = () => { console.log(user); return <b/> }`, 'a.tsx'),
+    ).not.toEqual([]);
+    expect(
+      findLogViolations(`const A = () => { console.error('x', e.name); return <b/> }`, 'a.tsx'),
+    ).toEqual([]);
+  });
   it('allows the safe shapes', () => {
     good(`console.error('Resolver failed', error instanceof Error ? error.name : 'unknown')`);
     good(
-      `console.warn(JSON.stringify({ event: 'x', code: s.error.code, upstreamStatus: s.status ?? null }))`,
+      `console.warn(JSON.stringify({ event: 'x', code: s.error.code, upstreamStatus: response.status ?? null }))`,
     );
     good("console.error('x', `${problems.length} problem(s)`)");
     good(`console.warn('x', { problems: Number(n) })`);
