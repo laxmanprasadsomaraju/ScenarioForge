@@ -117,3 +117,7 @@ contributions, audit verification, room isolation, log/message/invite bounds).
   global channel is required (recommended: token on a global channel, since rooms are not tied to
   an issue).
 - Real round-trip latency at 2–5 users.
+
+## 7. Status 2026-11-11 (Lane 2)
+
+Automated tests passed, including `test/crisisLifecycle.test.ts` (all five roles, per-role evidence, no invite hashes or raw log served, proposals, commander approval, communications, hand-off, reconnect, debrief save into history, installation isolation). Realtime is not implemented (polling only). Storage schema: [proposals/M7_STORAGE_SCHEMA.md](proposals/M7_STORAGE_SCHEMA.md). Multiplayer is not claimed: the §5 two-user test has not run.
