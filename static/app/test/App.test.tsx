@@ -107,11 +107,11 @@ describe('Origin labels', () => {
   it('marks live and demo regions on the overview', async () => {
     render(<App />);
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Recovery readiness' }),
+      await screen.findByRole('heading', { level: 1, name: 'Command center' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Live Jira data')).toBeInTheDocument();
-    expect(screen.getByText('Synthetic demo data')).toBeInTheDocument();
-    await screen.findByRole('table', { name: 'Recently updated Jira issues' });
+    expect(screen.getAllByText('This session').length).toBeGreaterThan(0);
+    await screen.findByRole('list', { name: 'Recently updated Jira issues' });
   });
 
   it('marks in-tab reports as synthetic demo data when history is unavailable', async () => {
