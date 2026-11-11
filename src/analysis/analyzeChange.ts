@@ -139,6 +139,14 @@ export async function analyzeChange(
     };
   }
   if (!search.ok) {
+    // Status and code only: never the query, page ids or user details.
+    console.warn(
+      JSON.stringify({
+        event: 'runbook-search-refused',
+        code: search.error.code,
+        upstreamStatus: search.error.upstreamStatus ?? null,
+      }),
+    );
     return {
       ok: true,
       data: notAssessed(

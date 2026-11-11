@@ -228,6 +228,27 @@ describe('analyzeChange orchestration', () => {
     },
   );
 
+  // Regression, M6 Test 3 on rovo-test (2026-11-11): the install was connected to
+  // Jira only, Confluence search answered 403, and the reason blamed the user.
+  it('names an unconnected Confluence as a cause of search HTTP 403 and logs the status only', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const confluence = confluenceGateway(response(403));
+    const result = await run(confluence);
+    const reason = result.ok ? result.data.notAssessedReason : '';
+    expect(result.ok && result.data.status).toBe('not-assessed');
+    expect(reason).toMatch(/HTTP 403/);
+    expect(reason).toMatch(/not be connected to this ScenarioForge installation/);
+    expect(reason).toMatch(/do not have permission/);
+    expect(confluence.getPage).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(warn.mock.calls[0]?.[0]))).toEqual({
+      event: 'runbook-search-refused',
+      code: 'FORBIDDEN',
+      upstreamStatus: 403,
+    });
+    warn.mockRestore();
+  });
+
   it('reports a thrown Confluence search as not-assessed', async () => {
     const confluence = confluenceGateway(async () => {
       throw new Error('socket hang up');
