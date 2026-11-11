@@ -6,8 +6,8 @@ A submission can win at most one main-category prize and one bonus prize.
 
 | Track                           | Requirement                          | Status                                            |
 | ------------------------------- | ------------------------------------ | ------------------------------------------------- |
-| Apps for Software Teams (main)  | Working Forge app for software teams | In progress: M1 deployed to development           |
-| Best Agents (Rovo)              | Rovo agent with real actions         | Not started (M6). **Not eligible yet**            |
+| Apps for Software Teams (main)  | Working Forge app for software teams | In progress: see CURRENT_STATUS.md                |
+| Best Agents (Rovo)              | Rovo agent with real actions         | Phase 2 deployed to rovo-test, not live-tested    |
 | Best app with Atlassian MCP     | `rovo:mcp` module with real tools    | Not started (M9). **Not eligible yet**            |
 | Best Teamwork Graph integration | Real Teamwork Graph API calls        | Not started (M4/M9). **Not eligible yet**         |
 | Best Marketplace app            | Published on Marketplace             | Not started (M9). Publishing needs owner approval |
