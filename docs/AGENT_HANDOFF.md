@@ -60,3 +60,11 @@ Observed: `forge environments list` shows `confluence-test` last deployed 2026-1
 ## Handoff 2026-11-11 (lead)
 
 No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged. Remaining work needs owner approvals (see docs/BONUS_READINESS.md, docs/M8_PLAN.md §12, docs/M7_PLAN.md §5, docs/submission/FINAL_CHECKLIST.md). Known small gaps: M7 observers see proposals as "A decision"; no per-user room-creation limit; M8 browser call path to the create resolver not written (first step after write:jira-work approval).
+
+## Handoff 2026-11-11 (docs lane, branch `docs/feature-complete-release` from `integration/lanes-1` @ `a013f1e`)
+
+- New [proposals/M10_FEATURE_COMPLETE_RELEASE.md](proposals/M10_FEATURE_COMPLETE_RELEASE.md): feature-complete judged build on app `113a7a88-…` (five scopes, four permanent entities, 2 agents, 4 actions, `rovo:mcp`; no `write:jira-work`, no `read:graph:*` recommended). Approval lines F1–F9; **none approved**.
+- [proposals/M9_MARKETPLACE_ELIGIBILITY.md](proposals/M9_MARKETPLACE_ELIGIBILITY.md) "Verification 2026-11-12": Forge app-compatibility page says multiple-app apps with a required app "can only be listed on Marketplace as paid apps; free listings are not supported" — affects the listed app id. Gmail restriction confirmed only for Partner Portal access; individual KYC uncertain.
+- Devpost: all four pages HTTP 403 again; owner-confirm list unchanged.
+- M6 Phase 2 Block A passed (user-facing) 2026-11-11; AI activation still pending owner approval.
+- Next safe action: owner reviews F1–F9 and sends support questions 1–10.

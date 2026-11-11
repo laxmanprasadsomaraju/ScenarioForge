@@ -1,6 +1,6 @@
 # Final submission checklist
 
-Deadline **22 Dec 2026, 12:00 PT** (verified on the Atlassian community announcement; Devpost unverified, see [REQUIREMENTS.md](REQUIREMENTS.md)). Internal target **18 Dec**. **[OWNER]** = only the owner may do it.
+Deadline **22 Dec 2026, 12:00 PT** (verified on the Atlassian community announcement; Devpost still unverified: all Devpost pages returned HTTP 403 again on 2026-11-11, see [REQUIREMENTS.md](REQUIREMENTS.md)). Internal target **18 Dec**. **[OWNER]** = only the owner may do it.
 
 ## Devpost submission
 
@@ -13,6 +13,8 @@ Deadline **22 Dec 2026, 12:00 PT** (verified on the Atlassian community announce
 - [ ] Category: Apps for Software Teams. Screenshots. Repository link if requested.
 - [ ] [OWNER] Bonus (at most one wins): pick one with live evidence. Write a short bonus section citing the dated live-test doc.
 - [ ] [OWNER] Marketplace bonus only: decide the two-app-ID strategy, partner KYC, submit by 1 Dec (latest 7 Dec), paste listing/ticket link ([../marketplace/SUBMISSION_CHECKLIST.md](../marketplace/SUBMISSION_CHECKLIST.md)).
+- [ ] [OWNER] Decide judged build: four-scope ([../proposals/M10_JUDGING_RELEASE.md](../proposals/M10_JUDGING_RELEASE.md)) or feature-complete ([../proposals/M10_FEATURE_COMPLETE_RELEASE.md](../proposals/M10_FEATURE_COMPLETE_RELEASE.md)).
+- [ ] [OWNER] Marketplace: free listings of Jira+Confluence (one required) apps are not supported per the Forge app-compatibility page; decide Jira-only listed build or drop the bonus (Verification 2026-11-12 in M9_MARKETPLACE_ELIGIBILITY.md).
 - [ ] [OWNER] Submit on Devpost; check the confirmation email and the public project page.
 
 ## Dated plan
