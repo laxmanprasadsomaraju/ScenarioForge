@@ -100,3 +100,10 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - URL format from the Forge docs (read 2026-11-11): `{site}/apps/full-page/{installation-id}/{route-prefix}/{app-route}`. The installation id comes from the runtime (`getAppContext()`), the site from `GET /rest/api/3/serverInfo` as the user, accepted only for `https://<label>.atlassian.net`. Unverified until a live call: that `getAppContext()` works inside a Rovo action, that query strings reach the in-app router. If any piece is missing, `appUrl` is null and `appPath` remains.
 - Sloplint was not run (no UI change). Not merged anywhere.
 - Deployment proposal (needs owner approval): `forge deploy -e rovo-test` from `rovo-test/deeplinks`; no install, variables or manifest change; then the owner checks the link on MC-62 after Tests 9 to 12.
+
+## Update 2026-11-11 (lead, integrated judged release)
+
+- `release/judged-full` is now `606347c` (was `13513d5`; rollback point). It merges `rovo-test/phase2-confluence-403` (e8550cd), `rovo-test/deeplinks` (850f363), `m78/integration` (ad3d3e0) and `release/judged-full-validation` (3ec8633), plus one review fix (`buildAppUrl` canonical form). Intermediate branches: `release/judged-full-integrate` aef911c, `review/judged-full-integrate` 606347c.
+- Status: **Automated tests passed** (1113 root, 186 app, prettier, sloplint, audit, forge lint 0 errors with the `storage:app` major-version notice). Independent review: no high or medium defects. Manifest, scopes, entities and package files identical to 13513d5. Not deployed; not live verified; not merged into `integration/lanes-1` or `main`.
+- Review notes: one extra `serverInfo` call per successful action (no caching); crisis timeline shows actor account ids to room participants who already receive them in `participants`; `logHygiene` test is narrow.
+- Pending owner approvals: deep-link deploy to `rovo-test`; M7 storage test; M8 `write-test`; MCP test; entity choices; Marketplace option and Devpost check; API token revocation.
