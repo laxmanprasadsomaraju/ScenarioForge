@@ -17,6 +17,7 @@ import { api } from '../lib/api';
 import { useCheckLog, type CheckRecord } from '../lib/checkLog';
 import { findingCounts, priorityActions, type PriorityAction } from '../lib/commandCenter';
 import { useExercises, type CompletedExercise } from '../lib/exercises';
+import { useFixApprovals } from '../lib/fixApprovals';
 import { formatRelative } from '../lib/format';
 import { useRouter } from '../lib/router';
 import { useApi, type RemoteState } from '../lib/useApi';
@@ -70,6 +71,7 @@ function exerciseResult(ex: CompletedExercise): string {
 export function OverviewPage() {
   const { navigate, navigatePath } = useRouter();
   const { completed } = useExercises();
+  const { approvals } = useFixApprovals();
   const { checks } = useCheckLog();
   const changes = useApi(loadChanges);
   const history = useApi(loadHistory);
@@ -78,7 +80,7 @@ export function OverviewPage() {
   const runs = completed.filter((ex) => !ex.retest);
   const retests = completed.filter((ex) => ex.retest);
   const counts = findingCounts(checks);
-  const actions = priorityActions(checks, completed, saved.items);
+  const actions = priorityActions(checks, completed, saved.items, approvals);
   const appliedFixes = retests.reduce(
     (n, ex) => n + (ex.retest?.appliedRemediationIds.length ?? 0),
     0,

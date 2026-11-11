@@ -10,8 +10,8 @@ import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
 import { Debrief } from '../components/simulation/Debrief';
 import { HistoryDetail, type HistoryTarget } from '../components/history/HistoryDetail';
+import { IntegrityStatus } from '../components/history/IntegrityStatus';
 import {
-  CHECKED_TEXT,
   describeEntry,
   STATE_TEXT,
   VERDICT,
@@ -104,6 +104,7 @@ function HistoryList({
         ) : null}
         {state.status === 'ready' && state.data.status !== 'OK' ? (
           <div className="history-unavailable" role="status">
+            <IntegrityStatus state="unavailable" />
             <p className="history-unavailable-title">{STATE_TEXT.unavailable}</p>
             <p className="region-body">
               {state.data.status === 'CONFLICT'
@@ -130,10 +131,6 @@ function HistoryList({
 }
 
 type RefFor = (key: string) => RefObject<HTMLButtonElement> | undefined;
-
-function statusText(checked: CheckedStatus | undefined): string {
-  return checked ? CHECKED_TEXT[checked] : 'Saved, checked when opened';
-}
 
 function SavedTable({
   items,
@@ -195,8 +192,8 @@ function SavedTable({
                             {r.metCount} of {r.totalCount}
                           </span>{' '}
                           met
-                          {checked[r.id] ? ` (${CHECKED_TEXT[checked[r.id]!]})` : ''}
                         </span>
+                        {checked[r.id] ? <IntegrityStatus state={checked[r.id]!} /> : null}
                         <Button
                           ref={refFor(`saved:${r.id}`)}
                           aria-label={`Open retest ${i + 1} of ${title}`}
@@ -210,7 +207,9 @@ function SavedTable({
                 )}
               </td>
               <td data-label="Status">
-                <span className="history-status">{statusText(checked[run.id])}</span>
+                <span className="history-status">
+                  <IntegrityStatus state={checked[run.id] ?? 'unchecked'} />
+                </span>
                 <Button
                   ref={refFor(`saved:${run.id}`)}
                   aria-label={`Open report: ${title}, ${formatAbsolute(run.completedAt)}`}

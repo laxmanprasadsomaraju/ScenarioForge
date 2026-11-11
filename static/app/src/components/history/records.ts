@@ -17,8 +17,8 @@ export type CheckedStatus = 'verified' | 'tampered' | 'unverifiable' | 'not-foun
 
 export const CHECKED_TEXT: Record<CheckedStatus, string> = {
   verified: 'Verified',
-  tampered: 'Failed integrity check',
-  unverifiable: 'Cannot be checked',
+  tampered: 'Tampered',
+  unverifiable: 'Unverifiable',
   'not-found': 'Not found',
 };
 

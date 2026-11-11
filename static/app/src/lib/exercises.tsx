@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import type { ExerciseEvaluation, ExerciseSession, SimulationScenario } from '@shared/domain/types';
 import type { RetestComparison, ScenarioRemediationModel } from '@shared/simulation/types';
+import { FixApprovalProvider } from './fixApprovals';
 
 export interface CompletedExercise {
   /** The exact scenario version played; a retest runs a remediated version. */
@@ -26,9 +27,8 @@ interface ExerciseLog {
 const ExerciseContext = createContext<ExerciseLog>({ completed: [], record: () => {} });
 
 /**
- * Demo exercise results for this browser session only. They are not persisted
- * and are always presented as demo data. Persistent, auditable exercise
- * records arrive with Forge Storage in M5.
+ * Exercise results for this browser tab only, with the fixes approved
+ * (simulated) for them. Saved, verifiable records live in History.
  */
 export function ExerciseProvider({ children }: { children: ReactNode }) {
   const [completed, setCompleted] = useState<CompletedExercise[]>([]);
@@ -37,7 +37,9 @@ export function ExerciseProvider({ children }: { children: ReactNode }) {
     [],
   );
   return (
-    <ExerciseContext.Provider value={{ completed, record }}>{children}</ExerciseContext.Provider>
+    <ExerciseContext.Provider value={{ completed, record }}>
+      <FixApprovalProvider>{children}</FixApprovalProvider>
+    </ExerciseContext.Provider>
   );
 }
 

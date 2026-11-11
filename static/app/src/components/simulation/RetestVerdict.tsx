@@ -1,13 +1,8 @@
-import type { Consequence, RetestResult } from '@shared/domain/types';
+import type { Consequence } from '@shared/domain/types';
 import { decisionTrail } from '@shared/simulation/engine';
 import type { RetestComparison } from '@shared/simulation/types';
 import type { CompletedExercise } from '../../lib/exercises';
-
-const OUTCOME: Record<RetestResult['outcome'], { label: string; tone: string }> = {
-  resolved: { label: 'Gap resolved', tone: 'met' },
-  'still-failing': { label: 'Gap still failing', tone: 'missed' },
-  inconclusive: { label: 'Inconclusive', tone: 'pending' },
-};
+import { RETEST_OUTCOME, RunComparison, SIMULATION_SCOPE } from './RunComparison';
 
 const STATUS: Record<string, string> = { met: 'Met', missed: 'Missed', absent: 'Not measured' };
 
@@ -43,14 +38,20 @@ export function RetestVerdict({
   retest: CompletedExercise;
   objectiveLabels: Record<string, string>;
 }) {
-  const outcome = OUTCOME[comparison.outcome];
+  const outcome = RETEST_OUTCOME[comparison.outcome];
   return (
     <section className="region verdict" aria-labelledby="verdict-title">
       <h2 id="verdict-title" className={`verdict-title verdict-${outcome.tone}`}>
         Retest verdict: {outcome.label}
       </h2>
+      <p className="verdict-scope">
+        {comparison.outcome === 'resolved' ? 'Resolved in the simulation only. ' : ''}
+        {SIMULATION_SCOPE}
+      </p>
+      <RunComparison original={original} retest={retest} outcome={comparison.outcome} />
       {comparison.gaps.map((gap) => (
         <div key={gap.findingId} className="verdict-gap">
+          <h3 className="verdict-gap-title">Why</h3>
           <p className="region-body">{gap.reason}</p>
           <table className="plain-table verdict-table">
             <caption className="visually-hidden">Objectives before and after the fix</caption>

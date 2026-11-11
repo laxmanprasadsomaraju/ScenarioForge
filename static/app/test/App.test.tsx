@@ -66,9 +66,7 @@ describe('Rehearsal', () => {
     expect(decisions).toBeGreaterThanOrEqual(3);
     const result = screen.getByRole('heading', { level: 2, name: /objectives met$/ });
     expect(result).toHaveFocus();
-    expect(
-      screen.getByRole('heading', { name: 'Decisions and their evidence' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Decision timeline' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rehearse again' })).toBeInTheDocument();
   });
 

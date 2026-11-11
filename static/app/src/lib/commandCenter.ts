@@ -1,6 +1,7 @@
 import type { HistoryListItem } from '@shared/api';
 import type { CheckRecord } from './checkLog';
 import type { CompletedExercise } from './exercises';
+import { approvedFor, type FixApprovals } from './fixApprovals';
 import type { RouteId } from './routes';
 
 /**
@@ -40,15 +41,21 @@ export function rehearsedScenarioIds(
   return ids;
 }
 
-/** Runs in this tab that missed objectives and have no retest yet. */
-export function runsAwaitingRetest(completed: CompletedExercise[]): CompletedExercise[] {
+/**
+ * Runs in this tab with at least one fix approved (simulated, this tab) and no
+ * retest yet. A run with no approved fix is not offered: a retest needs one.
+ */
+export function approvedFixNotRetested(
+  completed: CompletedExercise[],
+  approvals: FixApprovals,
+): CompletedExercise[] {
   const retested = new Set(
     completed.flatMap((ex) => (ex.retest ? [ex.retest.original.session.id] : [])),
   );
   return completed.filter(
     (ex) =>
       !ex.retest &&
-      ex.evaluation.metCount < ex.evaluation.totalCount &&
+      approvedFor(approvals, ex.session.id).length > 0 &&
       !retested.has(ex.session.id),
   );
 }
@@ -57,13 +64,15 @@ const step = (f: { pageTitle: string; stepOrder: number }) => `${f.pageTitle}, s
 
 /**
  * What to do next, most urgent first: confirmed findings not yet rehearsed,
- * then suspected findings to confirm or dismiss, then runs to retest. Empty
+ * then suspected findings to confirm or dismiss, then runs with an approved
+ * fix that has not been retested. Empty
  * when nothing in the current state calls for an action.
  */
 export function priorityActions(
   checks: CheckRecord[],
   completed: CompletedExercise[],
   saved: HistoryListItem[] | null,
+  approvals: FixApprovals = {},
 ): PriorityAction[] {
   const rehearsed = rehearsedScenarioIds(completed, saved);
   const rehearse: PriorityAction[] = [];
@@ -93,14 +102,17 @@ export function priorityActions(
       }
     }
   }
-  const retest: PriorityAction[] = runsAwaitingRetest(completed).map((ex) => ({
-    id: `retest:${ex.session.id}`,
-    kind: 'retest',
-    title: `Retest “${ex.scenario.title}”`,
-    reason: `Met ${ex.evaluation.metCount} of ${ex.evaluation.totalCount} objectives (modelled), with no retest after fixes.`,
-    target: { kind: 'route', id: 'reports' },
-    label: 'Open run to retest',
-  }));
+  const retest: PriorityAction[] = approvedFixNotRetested(completed, approvals).map((ex) => {
+    const count = approvedFor(approvals, ex.session.id).length;
+    return {
+      id: `retest:${ex.session.id}`,
+      kind: 'retest',
+      title: `Retest “${ex.scenario.title}”`,
+      reason: `${count === 1 ? '1 fix' : `${count} fixes`} approved (simulated, this tab) and not yet retested; the run met ${ex.evaluation.metCount} of ${ex.evaluation.totalCount} objectives (modelled).`,
+      target: { kind: 'route', id: 'reports' },
+      label: 'Open run to retest',
+    };
+  });
   return [...rehearse, ...review, ...retest];
 }
 
