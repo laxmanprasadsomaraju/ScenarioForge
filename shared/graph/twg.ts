@@ -190,14 +190,57 @@ export function twgGraphExtras(
   };
 }
 
-/** Merges extras from several sources (JSM, Teamwork Graph) for one build. */
-export function mergeGraphExtras(
-  ...parts: Array<Pick<GraphExtras, 'nodes' | 'edges' | 'unassessed' | 'sources'>>
-): Pick<GraphExtras, 'nodes' | 'edges' | 'unassessed' | 'sources'> {
-  return {
-    nodes: parts.flatMap((p) => p.nodes ?? []),
-    edges: parts.flatMap((p) => p.edges ?? []),
-    unassessed: parts.flatMap((p) => p.unassessed ?? []),
-    sources: parts.flatMap((p) => p.sources ?? []),
-  };
+type ExtrasPart = Pick<GraphExtras, 'nodes' | 'edges' | 'unassessed' | 'sources'>;
+
+/**
+ * Merges extras from several sources (JSM, Teamwork Graph) for one build.
+ *
+ * Each source caps itself at `MAX_GRAPH_SERVICES`, but together they can
+ * exceed it, which would fail `validateGraph` and lose the whole graph. The
+ * combined service nodes are therefore capped deterministically: the first
+ * `MAX_GRAPH_SERVICES` in part order (JSM before Teamwork Graph) are kept;
+ * the rest are dropped with their edges, teams left without an edge, and
+ * their unassessed links. Each source that lost services gets one
+ * unassessed note on the change, so nothing dropped reads as "no service".
+ */
+export function mergeGraphExtras(...parts: ExtrasPart[]): ExtrasPart {
+  const nodes = parts.flatMap((p) => p.nodes ?? []);
+  const edges = parts.flatMap((p) => p.edges ?? []);
+  const unassessed = parts.flatMap((p) => p.unassessed ?? []);
+  const sources = parts.flatMap((p) => p.sources ?? []);
+
+  const services = nodes.filter((n) => n.kind === 'service');
+  if (services.length <= MAX_GRAPH_SERVICES) return { nodes, edges, unassessed, sources };
+
+  const dropped = new Set(services.slice(MAX_GRAPH_SERVICES).map((n) => n.id));
+  const keptEdges = edges.filter((e) => !dropped.has(e.from) && !dropped.has(e.to));
+  const keptNodes = nodes.filter(
+    (n) =>
+      !dropped.has(n.id) &&
+      (n.kind !== 'team' || keptEdges.some((e) => e.from === n.id || e.to === n.id)),
+  );
+  const kept = new Set(keptNodes.map((n) => n.id));
+  const removed = new Set(nodes.filter((n) => !kept.has(n.id)).map((n) => n.id));
+  const keptUnassessed = unassessed.filter((u) => !removed.has(u.from));
+
+  const droppedBySource = new Map<GraphNode['source'], number>();
+  for (const node of services) {
+    if (dropped.has(node.id)) {
+      droppedBySource.set(node.source, (droppedBySource.get(node.source) ?? 0) + 1);
+    }
+  }
+  const changeId = edges.find(
+    (e) => e.kind === 'change-impacts-service' && dropped.has(e.to),
+  )?.from;
+  if (changeId) {
+    for (const [source, count] of droppedBySource) {
+      keptUnassessed.push({
+        from: changeId,
+        expected: 'service',
+        source: source as UnassessedLink['source'],
+        reason: `${count} more service(s) from this source were not assessed: the graph shows at most ${MAX_GRAPH_SERVICES} services across all sources.`,
+      });
+    }
+  }
+  return { nodes: keptNodes, edges: keptEdges, unassessed: keptUnassessed, sources };
 }
