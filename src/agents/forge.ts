@@ -1,4 +1,7 @@
-import api, { route } from '@forge/api';
+import api, { getAppContext, route } from '@forge/api';
+import { buildAppUrl } from '../../shared/links/absoluteLink';
+import { readTrustedSite } from '../remediation/site';
+import { forgeRemediationJira } from '../remediation/forge';
 import type { ActionFailure, M6ActionKey } from '../../shared/agents/contracts';
 import type { HistoryStore, HistoryUser, VerifiedRun } from '../../shared/history';
 import { decisionTrail } from '../../shared/simulation/engine';
@@ -164,6 +167,46 @@ export interface ForgeActionDeps {
   now: () => Date;
   /** Site AI opt-in (SF_ROVO_TEST_AI=enabled). Off: every action is USAGE_LIMITED. */
   aiEnabled: () => boolean;
+  /** Trusted base for absolute links, or null (no link). Never throws. */
+  linkBase: () => Promise<LinkBase | null>;
+}
+
+export interface LinkBase {
+  siteUrl: string;
+  installationId: string;
+}
+
+/**
+ * Site from serverInfo (read as the user, same trust rule as remediation) and
+ * the installation id from the Forge runtime app context. Any failure: null.
+ */
+export async function forgeLinkBase(): Promise<LinkBase | null> {
+  try {
+    const installationId = getAppContext().installationAri.installationId;
+    const site = await readTrustedSite(forgeRemediationJira);
+    return site.ok ? { siteUrl: site.data, installationId } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Adds `appUrl` to a successful output that carries an in-app path; otherwise leaves it null. */
+export async function withAppUrl(
+  result: unknown,
+  linkBase: () => Promise<LinkBase | null>,
+): Promise<unknown> {
+  const out = bag(result);
+  if (!out || out.ok !== true) return result;
+  const appPath = typeof out.appPath === 'string' ? out.appPath : out.rehearsalPath;
+  if (typeof appPath !== 'string') return result;
+  let base: LinkBase | null;
+  try {
+    base = await linkBase();
+  } catch {
+    base = null;
+  }
+  const appUrl = base ? buildAppUrl({ ...base, appPath }) : null;
+  return { ...out, appUrl };
 }
 
 const defaultDeps: ForgeActionDeps = {
@@ -174,6 +217,7 @@ const defaultDeps: ForgeActionDeps = {
   historyStore: () => platformHistoryStore(),
   now: () => new Date(),
   aiEnabled: () => rovoTestAiEnabled(),
+  linkBase: forgeLinkBase,
 };
 
 const governanceUnavailable = (): ActionFailure => ({
@@ -250,7 +294,8 @@ export function createForgeActionHandlers(
         history: historyReaderFor(store, ctx.installContext),
         now: deps.now,
       });
-      return (actions[key] as (p: unknown) => Promise<unknown>)(request);
+      const result = await (actions[key] as (p: unknown) => Promise<unknown>)(request);
+      return withAppUrl(result, deps.linkBase);
     };
   return {
     'find-recovery-risks': make('find-recovery-risks'),

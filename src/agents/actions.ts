@@ -469,6 +469,7 @@ function risksOutput(
     findingsOmitted: analysis.findings.length - shown.length,
     coverage: copyCoverage(analysis.coverage),
     appPath: readinessAppPath(analysis.changeKey),
+    appUrl: null,
   };
 }
 
@@ -501,6 +502,7 @@ function impactOutput(graph: ReadinessGraph, now: Date): { ok: true } & ImpactPa
     unassessed: graph.unassessed.map((u) => ({ ...u })),
     sources: graph.sources.map((s) => ({ ...s })),
     appPath: readinessAppPath(graph.changeKey),
+    appUrl: null,
   };
 }
 
@@ -730,6 +732,7 @@ export function createAgentActions(deps: AgentActionDeps): AgentActions {
           decisionsInAppOnly: true,
           evidence: scenario.evidence.map(toQuote),
           rehearsalPath: rehearsalAppPath(inputs.value),
+          appUrl: null,
         };
         return { kind: 'output', output, cacheable: unknowns.length === 0 };
       },
