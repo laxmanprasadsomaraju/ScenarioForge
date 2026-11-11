@@ -66,7 +66,7 @@ describe('Phase 2 manifest (rovo-test only)', () => {
   const keys = (text: string) => [...text.matchAll(/^ {4}- key: (\S+)$/gm)].map((m) => m[1]);
 
   it('has exactly two agents with the approved actions', () => {
-    const agents = block('rovo:agent', 'action');
+    const agents = block('rovo:agent', '(?:rovo:mcp|action)');
     expect(keys(agents)).toEqual(['recovery-investigator', 'exercise-facilitator']);
     const [investigator, facilitator] = agents.split(/^ {4}- key: exercise-facilitator$/m);
     const actionsOf = (t: string) =>

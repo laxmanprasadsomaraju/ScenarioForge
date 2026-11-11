@@ -35,6 +35,17 @@ modules:
         - find-recovery-risks
         - prepare-rehearsal
         - explain-outcome
+  # M9 (branch m9/mcp, rovo-test only): expose the same four GET actions as
+  # MCP tools. No new scopes, functions or actions. External MCP exposure is
+  # off until a site/org admin enables it (docs/M9_MCP_RUNBOOK.md).
+  rovo:mcp:
+    - key: scenarioforge-mcp
+      name: ScenarioForge Recovery
+      tools:
+        - find-recovery-risks
+        - get-service-readiness
+        - prepare-rehearsal
+        - explain-outcome
   action:
     - key: find-recovery-risks
       name: Find recovery risks
