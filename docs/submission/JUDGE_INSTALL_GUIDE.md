@@ -91,3 +91,7 @@ Source: [../M2_CONFLUENCE_TEST.md](../M2_CONFLUENCE_TEST.md), [../M3_LIVE_TEST.m
 ## Uninstall
 
 Admin → Apps → Manage apps → ScenarioForge → Uninstall. The recommended build stores no data.
+
+## Validation note (Lane 3, 2026-11-11)
+
+This guide describes the four-scope recommendation. `release/judged-full` also requests `storage:app` and declares two Rovo agents and `rovo:mcp`, so its consent screen differs and installing it means a major version upgrade. With `SF_STORAGE` and `SF_AI` unset the extra modules do nothing: agent actions answer "AI features are switched off", history shows "not enabled", Crisis room is unavailable. Judges should only be told to try the steps under "What to try"; do not mention Rovo, MCP, Crisis room or Teamwork Graph until each has a dated live record ([BONUS_EVIDENCE_CHECKLIST.md](BONUS_EVIDENCE_CHECKLIST.md)). Demo script: [DEMO_SCRIPT.md](DEMO_SCRIPT.md).

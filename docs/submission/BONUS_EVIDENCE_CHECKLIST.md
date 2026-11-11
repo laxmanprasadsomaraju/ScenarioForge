@@ -1,0 +1,12 @@
+# Bonus evidence checklist (2026-11-11)
+
+At most one bonus prize per submission (unverified against the 2026 Devpost rules, which could not be fetched). A row is claimable only when every box is ticked with a dated link. Today **none** is claimable. Status words follow [CURRENT_STATUS.md](../CURRENT_STATUS.md). Detail: [BONUS_READINESS.md](../BONUS_READINESS.md).
+
+| Bonus          | Status today                                                        | Needed before claiming                                                                                                                                                               | Owner action                                                   |
+| -------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Rovo agents    | Deployed (rovo-test, AI off). Block A passed; Blocks B to D not run | [ ] AI-on live test transcript or video [ ] credit figures [ ] entry in `M6_PHASE2_LIVE_TEST.md`                                                                                     | Approve `SF_AI=enabled` and credit spend; run RT2 script       |
+| MCP            | Code complete, Automated tests passed (`test/mcpTools.test.ts`)     | [ ] deployed build with `rovo:mcp` [ ] admin enabled exposure [ ] [M9_MCP_EXTERNAL_TEST.md](../M9_MCP_EXTERNAL_TEST.md) run, evidence captured [ ] `asUser` works under MCP          | Approve deploy/install, run the test personally                |
+| Teamwork Graph | Automated tests passed, flag off, scopes not in manifest            | [ ] org-admin consent [ ] graph-test install [ ] live service/team result matching the query builder                                                                                 | Approvals A and B in [M9_TWG_RUNBOOK.md](../M9_TWG_RUNBOOK.md) |
+| Marketplace    | Drafts only. Full app can only be listed paid (compatibility page)  | [ ] owner decision A or B in [M9_MARKETPLACE_OPTIONS.md](../proposals/M9_MARKETPLACE_OPTIONS.md) [ ] written organiser answer on a second app id [ ] verified individual eligibility | Decide by 27 Nov; do the support tickets                       |
+
+Rules: no mocked replies, no screenshots of "planned" screens as working, no claim without a dated evidence link, and no Jira-only replacement listing.

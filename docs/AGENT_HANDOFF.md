@@ -72,3 +72,11 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 ## Handoff 2026-11-11 (Lane 2, `m78/integration` from `release/judged-full` @ 13513d5)
 
 M8 browser create path and M7 lifecycle integration tests added; docs updated. No manifest, scope, entity, env, deploy or Jira/Confluence change. Not merged anywhere. Pending owner approvals (none given): `crisis-room` entity + `SF_STORAGE`/`SF_CRISIS` on a named test env; `write:jira-work` + `remediation-item` entity on a separate write-test env ([proposals/M8_TEST_DEPLOY.md](proposals/M8_TEST_DEPLOY.md)); Realtime. Next safe action: owner reviews [proposals/M7_STORAGE_SCHEMA.md](proposals/M7_STORAGE_SCHEMA.md).
+
+## Lane 3 handoff (2026-11-11, branch `release/judged-full-validation`, based on `release/judged-full` @ `13513d5`)
+
+Changed: MCP tool matrix tests; Teamwork Graph ARI/site-id hardening plus tests; log-hygiene fix and test; docs: `M9_MCP_EXTERNAL_TEST.md`, `scripts/mcp-external-check.mjs` (not run), `proposals/M9_MARKETPLACE_OPTIONS.md`, `proposals/M10_RELEASE_VALIDATION.md`, `submission/DEMO_SCRIPT.md`, `submission/BONUS_EVIDENCE_CHECKLIST.md`, TWG approval requests. No deploy, install, scope, variable, Rovo or Jira/Confluence write. No approvals were granted or inferred.
+
+Pending owner decisions: drop `remediation-item` (and probably `crisis-room`) before any first deploy; Marketplace option A or B by 27 Nov; Devpost rules check (Marketplace bonus existence, second app id); everything in BONUS_EVIDENCE_CHECKLIST.
+
+Next safe action: owner reviews M10_RELEASE_VALIDATION.md; do not merge this branch anywhere without the F2 exception.
