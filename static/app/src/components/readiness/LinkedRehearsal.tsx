@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { RehearsalLink } from '@shared/links/deepLink';
 import { useRouter } from '../../lib/router';
 import { useReadinessCheck } from '../../lib/useReadinessCheck';
 import { OriginTag } from '../OriginTag';
-import { PageHeader } from '../Shell';
+import { PageHeader } from '../PageHeader';
 import { ErrorPanel, SkeletonRows } from '../States';
 import { AnalysisStatement, FindingItem, findingItemId } from './Analysis';
 import { MissingFindingNotice } from './LinkNotice';

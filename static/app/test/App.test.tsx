@@ -66,9 +66,7 @@ describe('Rehearsal', () => {
     expect(decisions).toBeGreaterThanOrEqual(3);
     const result = screen.getByRole('heading', { level: 2, name: /objectives met$/ });
     expect(result).toHaveFocus();
-    expect(
-      screen.getByRole('heading', { name: 'Decisions and their evidence' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Decision timeline' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rehearse again' })).toBeInTheDocument();
   });
 
@@ -84,21 +82,23 @@ describe('Rehearsal', () => {
 });
 
 describe('Planned screens', () => {
-  it.each([['Crisis room', 'M7', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
-    '%s says Planned for %s and offers a working alternative',
-    async (label, m, action, dest) => {
+  it.each([['Crisis room', 'Rehearse solo with the demo scenario', 'Recovery rehearsal']])(
+    '%s says it is coming later, lists planned capabilities and offers a working alternative',
+    async (label, action, dest) => {
       const user = userEvent.setup();
       render(<App />);
-      await user.click(nav().getByRole('link', { name: `${label}, planned for ${m}` }));
+      await user.click(nav().getByRole('link', { name: `${label}, coming later` }));
 
       // Lazy screen: the skeleton shows until its chunk resolves.
       expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
-      expect(screen.getByText(`Planned for ${m}`)).toBeInTheDocument();
+      expect(screen.getByText('Coming later')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Planned capabilities' })).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bM[0-9]{1,2}\b/);
       expect(screen.getByRole('main')).toHaveFocus();
 
       await user.click(screen.getByRole('button', { name: action }));
       expect(await screen.findByRole('heading', { level: 1, name: dest })).toBeInTheDocument();
-      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Simulations');
+      expect(nav().getByRole('link', { current: 'page' })).toHaveTextContent('Rehearsals');
     },
   );
 });
@@ -107,17 +107,17 @@ describe('Origin labels', () => {
   it('marks live and demo regions on the overview', async () => {
     render(<App />);
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Recovery readiness' }),
+      await screen.findByRole('heading', { level: 1, name: 'Command center' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Live Jira data')).toBeInTheDocument();
-    expect(screen.getByText('Synthetic demo data')).toBeInTheDocument();
-    await screen.findByRole('table', { name: 'Recently updated Jira issues' });
+    expect(screen.getAllByText('This session').length).toBeGreaterThan(0);
+    await screen.findByRole('list', { name: 'Recently updated Jira issues' });
   });
 
   it('marks in-tab reports as synthetic demo data when history is unavailable', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(nav().getByRole('link', { name: 'Simulations' }));
+    await user.click(nav().getByRole('link', { name: 'Rehearsals' }));
     await user.click(await screen.findByRole('button', { name: 'Start rehearsal' }));
     for (const label of [
       'Follow RB-AUTH-01 step 3',
@@ -144,7 +144,7 @@ describe('Settings', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(nav().getByRole('link', { name: 'Settings' }));
-    const sources = await screen.findByRole('table');
+    const sources = await screen.findByRole('table', { name: 'Connected sources' });
     expect(
       await within(sources).findByRole('row', { name: /^Jira Not connected/ }),
     ).toBeInTheDocument();

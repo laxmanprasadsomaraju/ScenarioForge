@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ChangeAnalysis } from '@shared/analysis/types';
 import { DEFAULT_NOTIFY_TARGET_MINUTES, generateRehearsal } from '@shared/rehearsal/generate';
 import { useRehearsalSource } from '../../lib/rehearsalSource';
@@ -67,7 +67,7 @@ export function RehearseFinding({
   };
 
   return (
-    <section className="region rehearse-finding" aria-labelledby="rehearse-title">
+    <section className="region rehearse-finding next-action" aria-labelledby="rehearse-title">
       <h2 id="rehearse-title" className="section-title">
         Rehearse a finding
       </h2>
@@ -129,7 +129,7 @@ export function RehearseFinding({
           </span>
         </label>
         <div className="toolbar-action">
-          <Button type="submit" appearance="primary" isDisabled={!targetValid || !notifyValid}>
+          <Button type="submit" variant="primary" isDisabled={!targetValid || !notifyValid}>
             Rehearse this finding
           </Button>
         </div>

@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { ApiResult, GetRehearsalRunResponse, GetRetestComparisonResponse } from '@shared/api';
 import { api } from '../../lib/api';
 import { formatAbsolute } from '../../lib/format';
 import { useApi } from '../../lib/useApi';
-import { PageHeader } from '../Shell';
+import { OriginBadge } from '../Badge';
+import { PageHeader } from '../PageHeader';
 import { ErrorPanel, SkeletonRows } from '../States';
 import { Debrief } from '../simulation/Debrief';
+import { IntegrityStatus, type IntegrityState } from './IntegrityStatus';
 import {
-  CHECKED_TEXT,
   exerciseFromRetest,
   exerciseFromRun,
   STATE_TEXT,
@@ -20,14 +21,17 @@ export type HistoryTarget = { kind: 'run'; id: string } | { kind: 'retest'; id: 
 
 type Response = GetRehearsalRunResponse | GetRetestComparisonResponse;
 
-/** A non-OK answer as a heading and one sentence; never any record content. */
-function StateMessage({ title, children }: { title: string; children: string }) {
+/** A non-OK answer as a state heading (word and icon) and one sentence; never any record content. */
+function StateMessage({ state, children }: { state: IntegrityState; children: string }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
   return (
-    <section className="region history-state" aria-labelledby="history-state-title">
+    <section
+      className={`region history-state history-state-${state}`}
+      aria-labelledby="history-state-title"
+    >
       <h2 id="history-state-title" className="section-title" ref={heading} tabIndex={-1}>
-        {title}
+        <IntegrityStatus state={state} />
       </h2>
       <p className="region-body">{children}</p>
     </section>
@@ -106,28 +110,37 @@ export function HistoryDetail({
 
   const data = state.data;
   if (data.status !== 'OK' || !exercise) {
-    let message: { title: string; body: string };
+    let message: { body: string; state: IntegrityState };
     switch (data.status) {
       case 'TAMPERED':
-        message = { title: CHECKED_TEXT.tampered, body: STATE_TEXT.tampered };
+        message = { body: STATE_TEXT.tampered, state: 'tampered' };
         break;
       case 'UNVERIFIABLE':
-        message = { title: CHECKED_TEXT.unverifiable, body: STATE_TEXT.unverifiable };
+        message = {
+          body: STATE_TEXT.unverifiable,
+          state: 'unverifiable',
+        };
         break;
       case 'NOT_FOUND':
-        message = { title: CHECKED_TEXT['not-found'], body: STATE_TEXT.notFound };
+        message = {
+          body: STATE_TEXT.notFound,
+          state: 'not-found',
+        };
         break;
       case 'UNAVAILABLE':
       case 'IDENTITY_UNAVAILABLE':
-        message = { title: STATE_TEXT.unavailable, body: data.detail };
+        message = { body: data.detail, state: 'unavailable' };
         break;
       default:
-        message = { title: STATE_TEXT.unavailable, body: 'The record could not be read.' };
+        message = {
+          body: 'The record could not be read.',
+          state: 'unavailable',
+        };
     }
     return (
       <>
         <PageHeader title={title} lead="Saved rehearsal" aside={back} />
-        <StateMessage title={message.title}>{message.body}</StateMessage>
+        <StateMessage state={message.state}>{message.body}</StateMessage>
       </>
     );
   }
@@ -148,9 +161,9 @@ export function HistoryDetail({
         lead={exercise.scenario.title}
         aside={
           <>
-            <span className={`origin ${provenance ? 'origin-modelled' : 'origin-demo'}`}>
+            <OriginBadge origin={provenance ? 'modelled' : 'synthetic'}>
               {provenance ? `Modelled from ${provenance.changeKey}` : 'Synthetic demo'}
-            </span>
+            </OriginBadge>
             {back}
           </>
         }
@@ -159,7 +172,10 @@ export function HistoryDetail({
         <dt>Completed</dt>
         <dd>{formatAbsolute(exercise.completedAt)}</dd>
         <dt>Integrity</dt>
-        <dd>{CHECKED_TEXT.verified}: replayed from the saved decisions</dd>
+        <dd className="history-integrity">
+          <IntegrityStatus state="verified" />
+          <span>Replayed from the saved decisions</span>
+        </dd>
         {'retest' in data ? (
           <>
             <dt>Original result</dt>

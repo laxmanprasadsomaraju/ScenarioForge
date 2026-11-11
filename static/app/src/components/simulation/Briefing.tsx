@@ -1,25 +1,44 @@
 import { useEffect, useRef } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { SimulationScenario } from '@shared/domain/types';
+import type { GeneratedRehearsal } from '@shared/rehearsal/types';
+import { useRouter } from '../../lib/router';
 import { EvidenceItem } from './Evidence';
+import { restoreTarget } from './Objectives';
 
+type Provenance = GeneratedRehearsal['provenance'];
+
+const CONFIDENCE: Record<Provenance['confidence'], string> = {
+  confirmed: 'Confirmed finding',
+  suspected: 'Suspected finding, not yet confirmed',
+};
+
+/**
+ * The mission briefing: everything a commander reads before the clock
+ * starts. Quotes are shown verbatim; nothing about consequences appears here.
+ */
 export function Briefing({
   scenario,
+  provenance,
   onStart,
   focusOnMount = false,
 }: {
   scenario: SimulationScenario;
+  provenance?: Provenance;
   onStart: () => void;
   /** Set when returning from a discarded rehearsal, whose controls no longer exist. */
   focusOnMount?: boolean;
 }) {
+  const { navigate } = useRouter();
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (focusOnMount) titleRef.current?.focus();
   }, [focusOnMount]);
   const change = scenario.evidence.find((e) => e.kind === 'jira-issue');
+  const step = scenario.evidence.find((e) => e.kind === 'runbook-step' && e.excerpt);
   const service = scenario.evidence.find((e) => e.kind === 'jsm-service');
   const serviceName = scenario.services[0]?.name;
+  const target = restoreTarget(scenario);
   return (
     <div className="briefing">
       <section className="region briefing-main" aria-labelledby="briefing-title">
@@ -27,22 +46,65 @@ export function Briefing({
           {scenario.title}
         </h2>
         <p className="briefing-summary">{scenario.summary}</p>
-        <dl className="facts">
+
+        <div className="briefing-action">
+          <Button variant="primary" onClick={onStart} aria-describedby="briefing-rules-note">
+            Start rehearsal
+          </Button>
+          <p id="briefing-rules-note" className="briefing-action-note">
+            The clock starts when you press it. Rules of the exercise are below.
+          </p>
+        </div>
+
+        <dl className="facts briefing-facts">
+          <dt>Source change</dt>
+          <dd>
+            <span className="briefing-key">{scenario.changeContext.key}</span>{' '}
+            {scenario.changeContext.summary}
+          </dd>
+          <dt>Confidence</dt>
+          <dd>{provenance ? CONFIDENCE[provenance.confidence] : 'Synthetic scenario'}</dd>
           <dt>Your role</dt>
           <dd>
             Incident commander
             {serviceName ? ` for ${serviceName}` : ' for the capability this runbook recovers'}
           </dd>
-          <dt>Clock</dt>
-          <dd>Simulated minutes; each action costs the time it would take in reality</dd>
-          <dt>Outcome</dt>
-          <dd>Decided by fixed scenario rules, the same every time you make the same choices</dd>
+          {target ? (
+            <>
+              <dt>Restore target</dt>
+              <dd>
+                {target.label} <span className="num">(by T+{target.minutes} min)</span>
+              </dd>
+            </>
+          ) : null}
         </dl>
-        <div className="briefing-action">
-          <Button appearance="primary" onClick={onStart}>
-            Start rehearsal
-          </Button>
-        </div>
+
+        {change?.excerpt || step?.excerpt ? (
+          <div className="briefing-quotes">
+            {change?.excerpt ? (
+              <figure className="briefing-quote">
+                <figcaption>What changed, quoted from {change.title}</figcaption>
+                <blockquote>{change.excerpt}</blockquote>
+              </figure>
+            ) : null}
+            {step?.excerpt ? (
+              <figure className="briefing-quote">
+                <figcaption>Affected runbook step, quoted from {step.title}</figcaption>
+                <blockquote>{step.excerpt}</blockquote>
+              </figure>
+            ) : null}
+          </div>
+        ) : null}
+
+        <h3 className="section-title">Rules of the exercise</h3>
+        <ul className="briefing-rules">
+          <li>The clock is simulated; each action costs the minutes it would take in reality.</li>
+          <li>
+            Outcomes are modelled by fixed scenario rules, not observed. The same choices give the
+            same result every time.
+          </li>
+          <li>You see what an action did only after you choose it.</li>
+        </ul>
       </section>
 
       <aside className="briefing-side" aria-label="Briefing material">
@@ -63,15 +125,25 @@ export function Briefing({
             ))}
           </ol>
         </section>
-        <section className="region">
-          <h3 className="section-title">Context</h3>
-          {service ? <EvidenceItem evidence={service} /> : null}
-          {change ? (
-            <p className="region-body">
-              Recent change on file: {scenario.changeContext.key}, {scenario.changeContext.summary}.
-            </p>
-          ) : null}
-        </section>
+        {service ? (
+          <section className="region">
+            <h3 className="section-title">Service</h3>
+            <EvidenceItem evidence={service} />
+          </section>
+        ) : null}
+        <p className="briefing-later">
+          Rehearsing as a team with several roles is planned for the{' '}
+          <a
+            href="/crisis-room"
+            onClick={(event) => {
+              event.preventDefault();
+              navigate('crisis-room');
+            }}
+          >
+            Crisis room
+          </a>{' '}
+          (coming later).
+        </p>
       </aside>
     </div>
   );

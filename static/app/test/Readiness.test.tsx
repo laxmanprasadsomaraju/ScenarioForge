@@ -10,6 +10,16 @@ import { confluencePath } from '../src/components/readiness/Analysis';
 import { changes, issue, renderInApp } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   analyzeChange: vi.fn(),
@@ -373,19 +383,19 @@ describe('Entry from the Changes page', () => {
     ).toBeInTheDocument();
 
     // Leaving the screen drops the selection: coming back shows the list.
-    await user.click(nav.getByRole('link', { name: 'Overview' }));
+    await user.click(nav.getByRole('link', { name: 'Command center' }));
     await user.click(nav.getByRole('link', { name: 'Readiness checks' }));
     expect(
       await screen.findByRole('table', { name: 'Recent Jira changes to check' }),
     ).toBeInTheDocument();
   });
 
-  it('points the overview findings region at readiness checks without running one', async () => {
+  it('offers a first check from the Command center without running one', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const findings = await screen.findByRole('region', { name: 'Findings' });
-    expect(within(findings).getByText(/Nothing is checked automatically/)).toBeInTheDocument();
-    await user.click(within(findings).getByRole('button', { name: 'Open readiness checks' }));
+    const next = await screen.findByRole('region', { name: 'Next action' });
+    expect(within(next).getByText('Pick a change to check')).toBeInTheDocument();
+    await user.click(within(next).getByRole('button', { name: 'Check a recent change' }));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Readiness checks' }),
     ).toBeInTheDocument();

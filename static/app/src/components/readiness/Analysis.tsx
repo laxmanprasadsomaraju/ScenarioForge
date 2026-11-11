@@ -1,5 +1,8 @@
+import { QuestionCircleIcon } from '../icons';
 import type { Ref } from 'react';
-import Button from '@atlaskit/button/new';
+import { StatusBadge } from '../Badge';
+import { AskRovo } from '../AskRovo';
+import { Button } from '../Button';
 import type {
   AnalysisCoverage,
   CheckedPage,
@@ -89,6 +92,19 @@ export function AnalysisStatement({
           {plural(confirmed, 'finding', 'findings')} confirmed by an explicit link, {suspected}{' '}
           suspected from a text match.
         </p>
+        <div className="verdict-facts">
+          {confirmed > 0 ? (
+            <StatusBadge tone="warning">{confirmed} confirmed, explicit link</StatusBadge>
+          ) : null}
+          {suspected > 0 ? (
+            <StatusBadge tone="suspected">{suspected} suspected, text match</StatusBadge>
+          ) : null}
+          <CoverageLine coverage={coverage} />
+        </div>
+        <AskRovo
+          agent="investigator"
+          prompt={`What recovery risks does ${changeKey} have? Cite the ScenarioForge evidence.`}
+        />
       </div>
     );
   }
@@ -107,6 +123,10 @@ export function AnalysisStatement({
           This is not a readiness pass. Only the runbooks listed under Pages checked were read;
           pages that were not found or not read can still depend on this change.
         </p>
+        <div className="verdict-facts">
+          <StatusBadge tone="unknown">No findings in checked sources</StatusBadge>
+          <CoverageLine coverage={coverage} />
+        </div>
       </div>
     );
   }
@@ -118,12 +138,25 @@ export function AnalysisStatement({
         ref={headingRef}
         tabIndex={-1}
       >
+        <QuestionCircleIcon label="" />
         Not assessed
       </h2>
       <p className="analysis-sub">
         {analysis.notAssessedReason ?? 'The analysis did not say why this change was not assessed.'}
       </p>
+      <div className="verdict-facts">
+        <CoverageLine coverage={coverage} />
+      </div>
     </div>
+  );
+}
+
+/** How much was read, next to the answer it qualifies. */
+function CoverageLine({ coverage }: { coverage: AnalysisCoverage }) {
+  return (
+    <span className="verdict-coverage">
+      Read {coverage.pagesRead} of {plural(coverage.pagesFound, 'runbook', 'runbooks')} found
+    </span>
   );
 }
 
@@ -233,7 +266,7 @@ function SourceQuote({
   link: { label: string; onClick: () => void } | null;
 }) {
   return (
-    <figure className="source">
+    <figure className="source source-quoted">
       <figcaption className="source-caption">
         <span className="source-label">{label}</span>
         <span className="source-title">{title}</span>
@@ -245,7 +278,7 @@ function SourceQuote({
       )}
       {link ? (
         <div>
-          <Button appearance="subtle" spacing="compact" onClick={link.onClick}>
+          <Button spacing="compact" onClick={link.onClick}>
             {link.label}
           </Button>
         </div>
@@ -295,15 +328,18 @@ export function FindingItem({
       {...(linked ? { tabIndex: -1, 'aria-current': true } : {})}
     >
       <div className="finding-head">
-        <span className={`confidence confidence-${finding.confidence}`}>
+        <StatusBadge tone={finding.confidence === 'confirmed' ? 'warning' : 'suspected'}>
           {CONFIDENCE_LABELS[finding.confidence]}
-        </span>
+        </StatusBadge>
         <h3 id={titleId} className="finding-title">
           Step {finding.stepOrder} of {finding.pageTitle}
         </h3>
       </div>
       {linked ? <p className="finding-explanation">Opened from a link</p> : null}
-      <p className="finding-explanation">{finding.explanation}</p>
+      <div className="finding-generated">
+        <span className="finding-basis-label">ScenarioForge summary</span>
+        <p className="finding-explanation">{finding.explanation}</p>
+      </div>
       <div className="finding-basis">
         <span className="finding-basis-label">Why it is linked</span>
         <ul>
@@ -314,7 +350,7 @@ export function FindingItem({
       </div>
       <div className="finding-sources">
         <SourceQuote
-          label="What the change says"
+          label="Jira change, quoted"
           title={changeEvidence?.title ?? finding.changeKey}
           excerpt={changeEvidence?.excerpt ?? finding.subject.excerpt}
           missing="The change text was not returned with this finding."
@@ -324,7 +360,7 @@ export function FindingItem({
           }}
         />
         <SourceQuote
-          label="What the runbook says"
+          label="Confluence step, quoted"
           title={stepEvidence?.title ?? `${finding.pageTitle}, step ${finding.stepOrder}`}
           excerpt={stepEvidence?.excerpt}
           missing="The runbook step was not returned with this finding."

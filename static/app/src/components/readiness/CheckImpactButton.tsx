@@ -1,4 +1,4 @@
-import Button from '@atlaskit/button/new';
+import { Button } from '../Button';
 import type { JiraIssueSummary } from '@shared/api';
 import { useChangeSelection } from '../../lib/changeSelection';
 
@@ -8,6 +8,7 @@ export function CheckImpactButton({ issue }: { issue: JiraIssueSummary }) {
   return (
     <Button
       spacing="compact"
+      variant="primary"
       onClick={() => checkChange(issue)}
       aria-label={`Check recovery impact of ${issue.key}`}
     >

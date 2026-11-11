@@ -10,6 +10,16 @@ import { sourcePath } from '../src/components/readiness/ImpactPath';
 import { changes, issue, renderInApp } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   analyzeChange: vi.fn(),
@@ -394,6 +404,18 @@ describe('Impact path', () => {
     expect(api.getReadinessGraph).toHaveBeenCalledTimes(2);
     expect(api.analyzeChange).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('heading', { name: 'Findings' })).toBeInTheDocument();
+  });
+
+  it('says a confirmed link is a real dependency, not a sign that recovery works', async () => {
+    const { region } = await openCheck();
+    expect(
+      within(region).getByText(
+        /A confirmed link means the dependency is real, not that recovery still works\./,
+      ),
+    ).toBeInTheDocument();
+    expect(within(region).getAllByText('Confirmed')[0]!.closest('.badge')).toHaveClass(
+      'badge-warning',
+    );
   });
 });
 

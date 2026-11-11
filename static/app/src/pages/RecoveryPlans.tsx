@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Button from '@atlaskit/button/new';
+import { Button } from '../components/Button';
 import type { ConfluencePageSummary } from '@shared/api';
 import { RECOVERY_TERMS } from '@shared/api';
 import { api } from '../lib/api';
@@ -7,7 +7,10 @@ import { formatAbsolute, formatRelative } from '../lib/format';
 import { useSite } from '../lib/site';
 import { useApi } from '../lib/useApi';
 import { OriginTag } from '../components/OriginTag';
-import { PageHeader } from '../components/Shell';
+import { StatusBadge } from '../components/Badge';
+import { ShowQuery } from '../components/readiness/ShowQuery';
+import { DataRegion } from '../components/DataRegion';
+import { PageHeader } from '../components/PageHeader';
 import { EmptyState, ErrorPanel, SkeletonRows } from '../components/States';
 
 // Mirrors the server-side check so the user gets feedback before a round trip;
@@ -70,30 +73,30 @@ export function RecoveryPlansPage() {
         </div>
       </form>
 
-      <section
-        className="region"
-        aria-labelledby="plans-results"
-        aria-busy={state.status === 'loading'}
-      >
-        <h2 id="plans-results" className="visually-hidden">
-          Recovery pages
-        </h2>
-        {state.status === 'loading' ? <SkeletonRows rows={5} label="Searching Confluence" /> : null}
-        {state.status === 'error' ? (
-          <ErrorPanel error={state.error} onRetry={retry} product="Confluence" />
-        ) : null}
-        {state.status === 'ready' && state.data.pages.length === 0 ? (
+      <DataRegion
+        id="plans-results"
+        title="Recovery pages"
+        hideTitle
+        state={state}
+        loading={{ label: 'Searching Confluence', rows: 5 }}
+        onRetry={retry}
+        product="Confluence"
+        isEmpty={(data) => data.pages.length === 0}
+        empty={(data) => (
           <EmptyState title="No recovery pages found">
-            Confluence returned no pages you can view for <code>{state.data.cql}</code>.
+            Confluence returned no pages you can view.
+            <ShowQuery query={data.cql} language="CQL" />
           </EmptyState>
-        ) : null}
-        {state.status === 'ready' && state.data.pages.length > 0 ? (
+        )}
+      >
+        {(data) => (
           <>
             <p className="results-meta">
-              {state.data.pages.length} pages
-              {state.data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
-              {formatAbsolute(state.data.fetchedAt)} with <code>{state.data.cql}</code>
+              {data.pages.length} pages
+              {data.truncated ? ' (Confluence has more; narrow by space)' : ''}. Fetched{' '}
+              {formatAbsolute(data.fetchedAt)}.
             </p>
+            <ShowQuery query={data.cql} language="CQL" />
             <table className="issues">
               <caption className="visually-hidden">Recovery pages in Confluence</caption>
               <thead>
@@ -106,7 +109,7 @@ export function RecoveryPlansPage() {
                 </tr>
               </thead>
               <tbody>
-                {state.data.pages.map((page) => (
+                {data.pages.map((page) => (
                   <tr key={page.id}>
                     <th scope="row" data-label="Page">
                       <button
@@ -131,8 +134,8 @@ export function RecoveryPlansPage() {
               </tbody>
             </table>
           </>
-        ) : null}
-      </section>
+        )}
+      </DataRegion>
     </>
   );
 }
@@ -159,9 +162,7 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
       <div className="procedure-actions">
         <Button onClick={onBack}>Back to recovery pages</Button>
         {webuiPath ? (
-          <Button appearance="subtle" onClick={() => openInJira(`/wiki${webuiPath}`)}>
-            Open in Confluence
-          </Button>
+          <Button onClick={() => openInJira(`/wiki${webuiPath}`)}>Open in Confluence</Button>
         ) : null}
       </div>
 
@@ -180,16 +181,26 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
         {state.status === 'ready' ? (
           <>
             {state.data.stepSource === 'ordered-list' ? (
+              <p className="results-meta">
+                {state.data.steps.length} numbered{' '}
+                {state.data.steps.length === 1 ? 'step' : 'steps'}, in page order
+              </p>
+            ) : null}
+            {state.data.stepSource === 'ordered-list' ? (
               <ol className="runbook-steps procedure-steps">
                 {state.data.steps.map((step) => (
                   <li key={step.order}>{step.instruction}</li>
                 ))}
               </ol>
             ) : (
-              <p className="region-body">
-                This page has no numbered list, so ScenarioForge did not guess any steps. The text
-                below is the page as written.
-              </p>
+              <div className="steps-missing">
+                <StatusBadge tone="unknown">No numbered steps</StatusBadge>
+                <p className="region-body">
+                  This page has no numbered list, so ScenarioForge did not guess any steps.
+                  Readiness checks cannot compare a change against it. The text below is the page as
+                  written.
+                </p>
+              </div>
             )}
             <dl className="facts procedure-facts">
               <dt>Source</dt>
@@ -198,11 +209,13 @@ function ProcedureView({ page, onBack }: { page: ConfluencePageSummary; onBack: 
               <dd>{formatAbsolute(state.data.lastUpdated)}</dd>
               <dt>Read at</dt>
               <dd>{formatAbsolute(state.data.evidence.retrievedAt ?? null)}</dd>
+              <dt>Read with</dt>
+              <dd>Your Confluence permissions</dd>
               <dt>Dependencies</dt>
-              <dd>Not inferred yet. Mapping steps to services and changes arrives in M3.</dd>
+              <dd>Shown on the readiness check of a change that touches this page.</dd>
             </dl>
-            <h3 className="section-title">Page text</h3>
-            <blockquote className="procedure-excerpt">
+            <h3 className="section-title">Page text, quoted</h3>
+            <blockquote className="quote procedure-excerpt">
               {state.data.excerpt}
               {state.data.excerptTruncated ? ' …' : ''}
             </blockquote>

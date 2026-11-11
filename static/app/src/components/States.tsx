@@ -1,7 +1,49 @@
 import { Component, type ReactNode } from 'react';
-import Button from '@atlaskit/button/new';
-import SectionMessage, { SectionMessageAction } from '@atlaskit/section-message';
+import { Button } from './Button';
+import { StatusErrorIcon, StatusInformationIcon, StatusWarningIcon } from './icons';
 import type { ApiError } from '@shared/api';
+
+const NOTICE_ICON = {
+  error: StatusErrorIcon,
+  warning: StatusWarningIcon,
+  information: StatusInformationIcon,
+} as const;
+
+/**
+ * A titled message with an icon, a word-bearing title and an optional action:
+ * the ADS section message pattern, native, so it costs no Atlaskit runtime.
+ */
+export function Notice({
+  tone,
+  title,
+  children,
+  action,
+}: {
+  tone: keyof typeof NOTICE_ICON;
+  title: string;
+  children: ReactNode;
+  action?: { label: string; onClick: () => void };
+}) {
+  const Icon = NOTICE_ICON[tone];
+  return (
+    <section className={`notice notice-${tone}`} aria-label={title}>
+      <span className="notice-icon">
+        <Icon label="" color="currentColor" />
+      </span>
+      <div className="notice-body">
+        <h3 className="notice-title">{title}</h3>
+        {children}
+        {action ? (
+          <p className="notice-actions">
+            <Button variant="subtle" spacing="compact" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
 
 /** Placeholder for a screen whose code is still loading: a heading bar, a lead and rows. */
 export function ScreenSkeleton({ label }: { label: string }) {
@@ -36,17 +78,13 @@ export class ScreenErrorBoundary extends Component<{ children: ReactNode }, { fa
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <SectionMessage
-        appearance="error"
+      <Notice
+        tone="error"
         title="This screen could not be loaded"
-        actions={
-          <SectionMessageAction onClick={() => window.location.reload()}>
-            Reload ScenarioForge
-          </SectionMessageAction>
-        }
+        action={{ label: 'Reload ScenarioForge', onClick: () => window.location.reload() }}
       >
         <p>Part of the app did not download. Check your connection, then reload.</p>
-      </SectionMessage>
+      </Notice>
     );
   }
 }
@@ -101,20 +139,16 @@ export function ErrorPanel({
   product?: Product;
 }) {
   return (
-    <SectionMessage
-      appearance="error"
+    <Notice
+      tone="error"
       title={errorTitle(error.code, product)}
-      actions={
-        onRetry ? (
-          <SectionMessageAction onClick={onRetry}>Try again</SectionMessageAction>
-        ) : undefined
-      }
+      action={onRetry ? { label: 'Try again', onClick: onRetry } : undefined}
     >
       <p>
         {error.message}
         {error.upstreamStatus ? ` (HTTP ${error.upstreamStatus})` : ''}
       </p>
-    </SectionMessage>
+    </Notice>
   );
 }
 
@@ -132,7 +166,7 @@ export function EmptyState({
       <h3 className="empty-title">{title}</h3>
       <p className="empty-body">{children}</p>
       {action ? (
-        <Button appearance="default" onClick={action.onClick}>
+        <Button variant="secondary" onClick={action.onClick}>
           {action.label}
         </Button>
       ) : null}

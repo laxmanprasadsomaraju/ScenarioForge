@@ -1,13 +1,13 @@
-import SectionMessage from '@atlaskit/section-message';
+import { Notice } from '../States';
 import type { ParsedLink } from '@shared/links/deepLink';
 
 /** Shown when a link was refused as a whole; the screen below is the default one. */
 export function RejectedLinkNotice({ link }: { link: Extract<ParsedLink, { kind: 'rejected' }> }) {
   return (
     <div role="status">
-      <SectionMessage appearance="warning" title="This link could not be opened">
+      <Notice tone="warning" title="This link could not be opened">
         <p>{link.reason} Nothing from it was applied.</p>
-      </SectionMessage>
+      </Notice>
     </div>
   );
 }
@@ -20,12 +20,12 @@ export function RejectedLinkNotice({ link }: { link: Extract<ParsedLink, { kind:
 export function MissingFindingNotice({ changeKey }: { changeKey: string }) {
   return (
     <div role="status">
-      <SectionMessage appearance="information" title="Linked finding not found">
+      <Notice tone="information" title="Linked finding not found">
         <p>
           This link points to a finding that is not in your current result for {changeKey}. Your
           current result is shown below.
         </p>
-      </SectionMessage>
+      </Notice>
     </div>
   );
 }

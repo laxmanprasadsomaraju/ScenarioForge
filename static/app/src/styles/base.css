@@ -8,25 +8,35 @@ body {
   overflow-x: clip;
 }
 html {
-  scrollbar-color: var(--color-muted) var(--color-paper);
-  scroll-padding-top: var(--space-3xl);
+  scrollbar-color: var(--sf-text-subtlest) var(--sf-surface);
+  scroll-padding-top: var(--scroll-pad);
+}
+/* Before Jira's theme arrives, index.html paints the device's Canvas; once
+ * html carries a colour mode, the ground is the theme's surface. */
+html[data-color-mode] {
+  background: var(--sf-surface);
 }
 body {
   margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink);
+  color: var(--sf-text);
   font-family: var(--font-body);
   font-size: var(--text-md);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  caret-color: var(--color-accent);
+  caret-color: var(--sf-accent-bold);
 }
 ::selection {
-  background: color-mix(in oklab, var(--color-accent) 22%, transparent);
-  color: var(--color-ink);
+  background: color-mix(in oklab, var(--sf-accent-bold) 22%, transparent);
+  color: var(--sf-text);
+}
+/* The app root carries the ground, so a Light or Dark override (a subtree theme) fills the frame. */
+.app-root {
+  min-height: 100vh;
+  background: var(--sf-surface);
+  color: var(--sf-text);
 }
 :focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--sf-focus);
   outline-offset: 2px;
 }
 a {
@@ -94,8 +104,8 @@ td.num {
   overflow: hidden;
   background: linear-gradient(
     160deg,
-    var(--color-paper-2, var(--color-paper)),
-    var(--color-paper-3, var(--color-paper))
+    var(--sf-surface-hover, var(--sf-surface)),
+    var(--sf-surface-sunken, var(--sf-surface))
   );
 }
 [data-slot] > img {

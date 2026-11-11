@@ -1,4 +1,5 @@
 import type { DataOrigin } from '@shared/domain/types';
+import { OriginBadge } from './Badge';
 
 /** Every data region states where its content comes from. */
 export function OriginTag({
@@ -8,6 +9,9 @@ export function OriginTag({
   origin: DataOrigin;
   product?: 'Jira' | 'Confluence' | 'Jira and Confluence';
 }) {
-  const label = origin === 'live' ? `Live ${product} data` : 'Synthetic demo data';
-  return <span className={`origin origin-${origin}`}>{label}</span>;
+  return origin === 'live' ? (
+    <OriginBadge origin="live">{`Live ${product} data`}</OriginBadge>
+  ) : (
+    <OriginBadge origin="synthetic">Synthetic demo data</OriginBadge>
+  );
 }

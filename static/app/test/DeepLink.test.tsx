@@ -1,7 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import Button from '@atlaskit/button/new';
 import { view } from '@forge/bridge';
 import { analyzeChange } from '@shared/analysis';
 import type { ChangeEvidence, RunbookEvidence } from '@shared/analysis/types';
@@ -12,6 +11,16 @@ import { App } from '../src/App';
 import { changes, issue } from './helpers';
 
 const api = vi.hoisted(() => ({
+  // The Command center reads saved history; it is not enabled in these tests.
+  listRehearsalHistory: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      data: {
+        status: 'UNAVAILABLE',
+        detail: 'Rehearsal history is not enabled in this environment.',
+      },
+    }),
+  ),
   getConnectionStatus: vi.fn(),
   listRecentChanges: vi.fn(),
   listRecoveryPages: vi.fn(),
@@ -108,11 +117,9 @@ function openAt(path: string) {
   return history;
 }
 
-// Screens are lazy chunks, and Atlaskit's first button render logs a feature-gate
-// error once; warm both up so the first test sees a settled tree.
+// Screens are lazy chunks; load them up front so the first test sees a settled tree.
 beforeAll(async () => {
   await Promise.all([import('../src/pages/Readiness'), import('../src/pages/Simulations')]);
-  render(<Button>Warm up</Button>).unmount();
 });
 
 beforeEach(() => {
@@ -274,7 +281,9 @@ describe('URL sync and back/forward', () => {
   it('pushes the canonical path and follows back/forward', async () => {
     const user = userEvent.setup();
     const history = openAt('/readiness-checks');
-    await user.click(await screen.findByRole('button', { name: 'Check recovery impact of MC-62' }));
+    // The Command center (which has the same row action) paints until Forge's history resolves.
+    await screen.findByRole('table', { name: 'Recent Jira changes to check' });
+    await user.click(screen.getByRole('button', { name: 'Check recovery impact of MC-62' }));
     expect(history.path).toBe('/readiness-checks?change=MC-62');
     await screen.findByRole('heading', { name: 'Findings' });
     // The row the user picked fills the header while nothing else is known.
@@ -296,7 +305,7 @@ describe('URL sync and back/forward', () => {
   it('follows a link pushed while the app is open', async () => {
     const history = openAt('/');
     const nav = within(await screen.findByRole('navigation', { name: 'ScenarioForge' }));
-    expect(nav.getByRole('link', { name: /Overview/ })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: /Command center/ })).toBeInTheDocument();
     act(() => history.push(readinessLinkPath('MC-62', FINDING)));
     expect(await screen.findByText('Opened from a link')).toBeInTheDocument();
     act(() => history.back());
