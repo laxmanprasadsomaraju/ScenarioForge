@@ -580,7 +580,9 @@ export async function previewCall(
   mode: PreviewMode,
   payload?: object,
 ): Promise<ApiResult<unknown>> {
-  await new Promise((r) => setTimeout(r, 400));
+  // `?delay=ms` holds every call, so the loading states can be inspected and screenshotted.
+  const delay = Number(new URLSearchParams(window.location.search).get('delay'));
+  await new Promise((r) => setTimeout(r, Number.isFinite(delay) && delay > 0 ? delay : 400));
   if (mode === 'error') {
     return {
       ok: false,

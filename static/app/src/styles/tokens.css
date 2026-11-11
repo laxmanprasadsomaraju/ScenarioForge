@@ -42,6 +42,8 @@
   --sidebar: 248px;
   --rail: 64px;
   --topbar-h: 56px;
+  /* Height of the sticky app bar, so other sticky bars sit under it (0 on desktop). */
+  --app-bar-offset: 0px;
   /* Room kept above a focused or scrolled-to element; grows when the app bar shows. */
   --scroll-pad: var(--space-lg);
   --control-h: 36px;
@@ -121,11 +123,13 @@
     0 1px 1px rgb(30 31 33 / 0.25),
     0 0 1px rgb(30 31 33 / 0.31)
   );
+
   --sf-shadow-overlay: var(
     --ds-shadow-overlay,
     0 8px 12px rgb(30 31 33 / 0.15),
     0 0 1px rgb(30 31 33 / 0.31)
   );
+  --sf-blanket: var(--ds-blanket, rgb(5 12 31 / 0.46));
 }
 
 /* Brand (forge copper) and the command band, dark. html[...] outranks :root, so order is free;

@@ -11,10 +11,12 @@ import {
   SettingsIcon,
   SidebarCollapseIcon,
   SidebarExpandIcon,
+  ThemeIcon,
 } from './icons';
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type ComponentType,
@@ -23,6 +25,7 @@ import {
 import { ROUTES, type NavGroup, type RouteDef, type RouteId } from '../lib/routes';
 import { useRouter } from '../lib/router';
 import { previewMode } from '../lib/preview';
+import { useMedia } from '../lib/useMedia';
 import { AppearanceControl } from './AppearanceControl';
 
 type IconType = ComponentType<{ label: string; size?: 'small' | 'medium' }>;
@@ -69,24 +72,63 @@ function writeNavPreference(value: Exclude<NavPreference, null>) {
 
 /** Matches the CSS: a rail by default from 60rem to 80rem, the full sidebar above. */
 const NARROW_DESKTOP = '(max-width: 80rem)';
+/** Matches the CSS: under 60rem the sidebar becomes a modal drawer. */
+const DRAWER = '(max-width: 60rem)';
 
-function useMedia(query: string): boolean {
-  const get = () => {
-    try {
-      return typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
-    } catch {
-      return false;
-    }
-  };
-  const [matches, setMatches] = useState(get);
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/** The drawer's focus ring. Its head (rail toggle) and the rail's theme menu are not shown in the drawer. */
+function focusables(root: HTMLElement | null): HTMLElement[] {
+  if (!root) return [];
+  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (el) => !el.closest('[hidden], .sidebar-head, .theme-menu'),
+  );
+}
+
+/** Rail only: the appearance choice behind one button, so the rail stays icons. */
+function ThemeMenu() {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return;
-    const media = window.matchMedia(query);
-    const onChange = (event: MediaQueryListEvent) => setMatches(event.matches);
-    media.addEventListener?.('change', onChange);
-    return () => media.removeEventListener?.('change', onChange);
-  }, [query]);
-  return matches;
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setOpen(false);
+      buttonRef.current?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [open]);
+  return (
+    <div className="theme-menu" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="rail-toggle theme-menu-button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        title="Appearance"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <ThemeIcon label="" />
+        <span className="visually-hidden">Appearance</span>
+      </button>
+      <div id={panelId} className="theme-menu-panel" hidden={!open}>
+        <AppearanceControl compact />
+      </div>
+    </div>
+  );
 }
 
 function Mark() {
@@ -143,8 +185,11 @@ export function Shell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [navPreference, setNavPreference] = useState<NavPreference>(readNavPreference);
   const narrowDesktop = useMedia(NARROW_DESKTOP);
+  const drawerLayout = useMedia(DRAWER);
   const rail = navPreference === 'rail' || (navPreference === null && narrowDesktop);
+  const drawerOpen = menuOpen && drawerLayout;
   const mainRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   // After navigation (not on first load), move focus to the new screen so
@@ -157,17 +202,41 @@ export function Shell({ children }: { children: ReactNode }) {
     }
   }, [route.id]);
 
-  // The mobile menu closes on Escape and hands focus back to its toggle.
+  // The drawer is modal: the screen behind is inert, Tab cycles between the
+  // toggle and the drawer, Escape closes it and hands focus back to the toggle.
   useEffect(() => {
-    if (!menuOpen) return;
+    const main = mainRef.current;
+    if (!drawerOpen || !main) return;
+    main.setAttribute('inert', '');
+    const first = focusables(navRef.current)[0];
+    first?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setMenuOpen(false);
-      toggleRef.current?.focus();
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        toggleRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const ring = [toggleRef.current, ...focusables(navRef.current)].filter(
+        (el): el is HTMLElement => el !== null,
+      );
+      const index = ring.indexOf(document.activeElement as HTMLElement);
+      const next = event.shiftKey
+        ? index <= 0
+          ? ring.length - 1
+          : index - 1
+        : index === -1 || index === ring.length - 1
+          ? 0
+          : index + 1;
+      event.preventDefault();
+      ring[next]?.focus();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
+    return () => {
+      main.removeAttribute('inert');
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [drawerOpen]);
 
   const toggleRail = useCallback(() => {
     const next = rail ? 'expanded' : 'rail';
@@ -205,7 +274,15 @@ export function Shell({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      <nav id="primary-nav" className="sidebar" data-open={menuOpen} aria-label="ScenarioForge">
+      <div className="scrim" hidden={!drawerOpen} onClick={() => setMenuOpen(false)} />
+
+      <nav
+        ref={navRef}
+        id="primary-nav"
+        className="sidebar"
+        data-open={menuOpen}
+        aria-label="ScenarioForge"
+      >
         <div className="sidebar-head">
           <span className="brand brand-sidebar">
             <Mark />
@@ -225,30 +302,32 @@ export function Shell({ children }: { children: ReactNode }) {
             </span>
           </button>
         </div>
-        {GROUPS.map((group) => {
-          const items = ROUTES.filter((r) => r.group === group.id);
-          const labelId = `nav-group-${group.id}`;
-          return (
-            <div key={group.id} className="nav-group">
-              {group.label ? (
-                <span id={labelId} className="nav-group-label">
-                  {group.label}
-                </span>
-              ) : null}
-              <ul className="nav-list" aria-labelledby={group.label ? labelId : undefined}>
-                {items.map((r) => (
-                  <NavItem
-                    key={r.id}
-                    route={r}
-                    current={r.id === route.id}
-                    rail={rail}
-                    onNavigate={go}
-                  />
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+        <div className="sidebar-nav">
+          {GROUPS.map((group) => {
+            const items = ROUTES.filter((r) => r.group === group.id);
+            const labelId = `nav-group-${group.id}`;
+            return (
+              <div key={group.id} className="nav-group">
+                {group.label ? (
+                  <span id={labelId} className="nav-group-label">
+                    {group.label}
+                  </span>
+                ) : null}
+                <ul className="nav-list" aria-labelledby={group.label ? labelId : undefined}>
+                  {items.map((r) => (
+                    <NavItem
+                      key={r.id}
+                      route={r}
+                      current={r.id === route.id}
+                      rail={rail}
+                      onNavigate={go}
+                    />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
         <div className="sidebar-foot">
           <ul className="nav-list">
             <NavItem
@@ -258,6 +337,7 @@ export function Shell({ children }: { children: ReactNode }) {
               onNavigate={go}
             />
           </ul>
+          {rail ? <ThemeMenu /> : null}
           <AppearanceControl compact />
         </div>
       </nav>

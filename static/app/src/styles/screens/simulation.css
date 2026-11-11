@@ -107,7 +107,7 @@
 /* ---------- Simulation: rehearsal ---------- */
 .rehearsal-bar {
   position: sticky;
-  top: 0;
+  top: var(--app-bar-offset);
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
