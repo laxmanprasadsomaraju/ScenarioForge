@@ -125,14 +125,31 @@ resolver.define('analyzeChange', ({ payload }) =>
   }),
 );
 
-resolver.define('getReadinessGraph', ({ payload }) =>
+/** Teamwork Graph (M9): off unless `SF_TWG=enabled`; needs the graph-test scopes. */
+const forgeTwg = {
+  request: (query: string, variables: Record<string, unknown>, operationName: string) =>
+    api.asUser().requestTeamworkGraph(query, variables, operationName),
+};
+
+resolver.define('getReadinessGraph', ({ payload, context }) =>
   guarded(async () => {
     const parsed = parseGetReadinessGraphRequest(payload);
     if (!parsed.ok) {
       return { ok: false, error: { code: 'INVALID_REQUEST', message: parsed.message } };
     }
     return getReadinessGraph(
-      { jira: forgeJira, confluence: forgeConfluence, engine: analysisEngine },
+      {
+        jira: forgeJira,
+        confluence: forgeConfluence,
+        engine: analysisEngine,
+        twg: forgeTwg,
+        twgConfig: {
+          flag: process.env.SF_TWG,
+          impactsKey: process.env.TWG_QK_IMPACTS,
+          ownersKey: process.env.TWG_QK_OWNERS,
+          cloudId: (context as { cloudId?: string } | undefined)?.cloudId,
+        },
+      },
       parsed.value,
     );
   }),

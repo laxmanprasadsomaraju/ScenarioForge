@@ -8,9 +8,15 @@ import { analyzeChange } from '../analysis/analyzeChange';
 import type { JiraFieldGateway } from '../jira/affectedServices';
 import { probeAffectedServices } from '../jira/affectedServices';
 import type { JiraIssueGateway } from '../jira/client';
+import { mergeGraphExtras, twgGraphExtras } from '../../shared/graph/twg';
+import type { TeamworkGraphGateway, TwgConfig } from '../twg/gateway';
+import { resolveTwgEnrichment } from '../twg/gateway';
 
 export interface ReadinessGraphDeps extends AnalyzeChangeDeps {
   jira: JiraIssueGateway & JiraFieldGateway;
+  /** Teamwork Graph (M9). Used only when `twgConfig.flag` is `enabled`. */
+  twg?: TeamworkGraphGateway;
+  twgConfig?: TwgConfig;
 }
 
 /**
@@ -38,11 +44,22 @@ export async function getReadinessGraph(
   }
   const now = deps.now ?? (() => new Date());
   const probe = await probeAffectedServices(deps.jira, analysis.data.changeKey, now);
-  const graph = buildGraphFromAnalysis(
-    analysis.data,
-    now().toISOString(),
-    jsmGraphExtras(analysis.data, probe),
-  );
+  const jsm = jsmGraphExtras(analysis.data, probe);
+  const extras =
+    deps.twg && deps.twgConfig
+      ? mergeGraphExtras(
+          jsm,
+          twgGraphExtras(
+            analysis.data,
+            await resolveTwgEnrichment(
+              { twg: deps.twg, jira: deps.jira, now },
+              deps.twgConfig,
+              analysis.data.changeKey,
+            ),
+          ),
+        )
+      : jsm;
+  const graph = buildGraphFromAnalysis(analysis.data, now().toISOString(), extras);
   const problems = validateGraph(graph);
   if (problems.length > 0) {
     console.error('Readiness graph failed validation', `${problems.length} problem(s)`);
