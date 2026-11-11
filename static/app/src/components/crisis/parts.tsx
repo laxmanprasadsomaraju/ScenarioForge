@@ -80,7 +80,7 @@ export function NewEventsAnnouncer({ timeline }: { timeline: TimelineEntry[] }) 
 export function ParticipantList({ view, isOwnerOf }: { view: RoleView; isOwnerOf: string | null }) {
   const name = namer(view);
   return (
-    <ul className="crisis-people">
+    <ul className="crisis-people" aria-label="Participants and roles">
       {view.participants.map((p) => (
         <li key={p.accountId} className={p.active ? undefined : 'crisis-person-left'}>
           <span className="crisis-person-name">{name(p.accountId)}</span>
@@ -100,7 +100,7 @@ export function Timeline({ entries, view }: { entries: TimelineEntry[]; view: Ro
   // Room housekeeping (invites) stays out of the shared exercise log.
   const shown = entries.filter((e) => e.type !== 'invite-issued' && e.type !== 'invite-revoked');
   return (
-    <ol className="crisis-timeline">
+    <ol className="crisis-timeline" aria-label="Incident timeline">
       {shown.map((e) => (
         <li key={e.seq} className={`crisis-event crisis-event-${e.type}`}>
           <span className="crisis-event-time num">
@@ -140,7 +140,7 @@ export function Communications({
   return (
     <div className="crisis-comms">
       {view.communications.length ? (
-        <ol className="crisis-comms-list">
+        <ol className="crisis-comms-list" aria-label="Messages">
           {view.communications.map((c) => (
             <li key={c.seq}>
               <span className="crisis-comms-meta">
