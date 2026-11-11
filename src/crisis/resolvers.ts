@@ -332,7 +332,11 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
     return typeof id === 'string' && CRISIS_ROOM_ID.test(id) ? id : null;
   }
 
-  function respond(record: RoomRecord, state: CrisisRoomState, user: HistoryUser): CrisisRoomResponse {
+  function respond(
+    record: RoomRecord,
+    state: CrisisRoomState,
+    user: HistoryUser,
+  ): CrisisRoomResponse {
     const room = snapshot(record, state, user);
     return room ? { status: 'OK', room } : rejected('NOT_PARTICIPANT', null);
   }
@@ -428,7 +432,8 @@ export function createCrisisResolvers(deps: CrisisResolverDeps) {
       const alias = participantAlias(loaded.record, gated.user.installation, roomId);
       const wanted = cmd.type === 'assign-role' ? cmd.participantId : cmd.toParticipantId;
       const target = loaded.state.participants.find((p) => alias(p.accountId) === wanted);
-      if (!target) return data(rejected('INVALID_INPUT', loaded.state.version, 'Unknown participant.'));
+      if (!target)
+        return data(rejected('INVALID_INPUT', loaded.state.version, 'Unknown participant.'));
       command =
         cmd.type === 'assign-role'
           ? { type: 'assign-role', accountId: target.accountId, role: cmd.role }

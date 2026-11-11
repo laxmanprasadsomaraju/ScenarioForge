@@ -259,7 +259,11 @@ describe('crisis lifecycle over the in-memory adapter', () => {
       cur = snap(await t.view(A.owner));
       const first = snap(await t.view(A.eng)).view.options[0]!.id;
       seen.push(
-        await t.run(A.eng, cur.view.version, { type: 'propose', decisionId: first, rationale: 'r' }),
+        await t.run(A.eng, cur.view.version, {
+          type: 'propose',
+          decisionId: first,
+          rationale: 'r',
+        }),
       );
       cur = snap(await t.view(A.owner));
       seen.push(

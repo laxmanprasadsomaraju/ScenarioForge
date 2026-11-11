@@ -1,6 +1,6 @@
 import api, { getAppContext, route } from '@forge/api';
 import { buildAppUrl } from '../../shared/links/absoluteLink';
-import { readTrustedSite } from '../remediation/site';
+import { readTrustedSite, trustedSiteUrl } from '../remediation/site';
 import { forgeRemediationJira } from '../remediation/forge';
 import type { ActionFailure, M6ActionKey } from '../../shared/agents/contracts';
 import type { HistoryStore, HistoryUser, VerifiedRun } from '../../shared/history';
@@ -176,19 +176,81 @@ export interface LinkBase {
   installationId: string;
 }
 
+export const LINK_BASE_TTL_MS = 10 * 60_000;
+export const LINK_BASE_FAILURE_TTL_MS = 5_000;
+export const LINK_BASE_MAX_ENTRIES = 32;
+
+export interface LinkBaseResolverDeps {
+  installationId: () => string;
+  /** The trusted site (serverInfo read as the user). Throwing or !ok is a failure. */
+  readSite: () => Promise<{ ok: true; data: string } | { ok: false }>;
+  now: () => number;
+}
+
+/**
+ * Link base with a small per-installation cache so a successful action does not
+ * pay a serverInfo round trip every time. The site is per installation, not per
+ * user. Only a validated https `*.atlassian.net` origin is cached (10 min);
+ * failures are remembered for 5 s only, so an outage cannot suppress links for
+ * long. Bounded to 32 installations (oldest evicted); concurrent misses share
+ * one request. Never throws.
+ */
+export function createLinkBaseResolver(deps: LinkBaseResolverDeps): () => Promise<LinkBase | null> {
+  type Entry = { value: LinkBase | null; until: number };
+  const cache = new Map<string, Entry>();
+  const inflight = new Map<string, Promise<LinkBase | null>>();
+  const remember = (key: string, value: LinkBase | null) => {
+    cache.delete(key);
+    cache.set(key, {
+      value,
+      until: deps.now() + (value ? LINK_BASE_TTL_MS : LINK_BASE_FAILURE_TTL_MS),
+    });
+    while (cache.size > LINK_BASE_MAX_ENTRIES) {
+      cache.delete(cache.keys().next().value as string);
+    }
+  };
+  return async () => {
+    let installationId: string;
+    try {
+      installationId = deps.installationId();
+    } catch {
+      return null;
+    }
+    if (typeof installationId !== 'string' || !INSTALLATION_ID.test(installationId)) return null;
+    const hit = cache.get(installationId);
+    if (hit && hit.until > deps.now()) return hit.value;
+    const pending = inflight.get(installationId);
+    if (pending) return pending;
+    const load = (async (): Promise<LinkBase | null> => {
+      let value: LinkBase | null = null;
+      try {
+        const site = await deps.readSite();
+        // Re-validate whatever the gateway returned before it can be cached.
+        const trusted = site.ok ? trustedSiteUrl({ baseUrl: site.data }) : null;
+        if (site.ok && trusted && trusted === site.data)
+          value = { siteUrl: trusted, installationId };
+      } catch {
+        value = null;
+      }
+      remember(installationId, value);
+      return value;
+    })().finally(() => inflight.delete(installationId));
+    inflight.set(installationId, load);
+    return load;
+  };
+}
+
+const INSTALLATION_ID = /^[A-Za-z0-9-]{8,64}$/;
+
 /**
  * Site from serverInfo (read as the user, same trust rule as remediation) and
  * the installation id from the Forge runtime app context. Any failure: null.
  */
-export async function forgeLinkBase(): Promise<LinkBase | null> {
-  try {
-    const installationId = getAppContext().installationAri.installationId;
-    const site = await readTrustedSite(forgeRemediationJira);
-    return site.ok ? { siteUrl: site.data, installationId } : null;
-  } catch {
-    return null;
-  }
-}
+export const forgeLinkBase: () => Promise<LinkBase | null> = createLinkBaseResolver({
+  installationId: () => getAppContext().installationAri.installationId,
+  readSite: () => readTrustedSite(forgeRemediationJira),
+  now: () => Date.now(),
+});
 
 /** Adds `appUrl` to a successful output that carries an in-app path; otherwise leaves it null. */
 export async function withAppUrl(

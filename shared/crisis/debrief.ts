@@ -21,7 +21,10 @@ import type {
 /** Server-only: the report stored in the owner's own history keeps real ids. */
 export const identityAlias: ParticipantAlias = (accountId) => accountId;
 
-export function buildDebrief(events: readonly CrisisEvent[], alias: ParticipantAlias): CrisisDebrief {
+export function buildDebrief(
+  events: readonly CrisisEvent[],
+  alias: ParticipantAlias,
+): CrisisDebrief {
   const state = rebuildRoom(events);
   if (!state.session || state.session.status !== 'completed') {
     throw new CrisisLogError('The debrief needs a completed session.');

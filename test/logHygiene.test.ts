@@ -70,7 +70,7 @@ describe('log checker negative cases', () => {
     good(
       `console.warn(JSON.stringify({ event: 'x', code: s.error.code, upstreamStatus: s.status ?? null }))`,
     );
-    good('console.error(\'x\', `${problems.length} problem(s)`)');
+    good("console.error('x', `${problems.length} problem(s)`)");
     good(`console.warn('x', { problems: Number(n) })`);
   });
 });

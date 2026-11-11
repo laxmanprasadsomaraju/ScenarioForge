@@ -212,7 +212,10 @@ describe('permissions per role', () => {
     expect(
       r.try('acc-stranger', { type: 'communicate', kind: 'status-update', text: 'x' }),
     ).toMatchObject({ reason: 'NOT_PARTICIPANT' });
-    expect(roleView(r.state, 'acc-stranger', alias)).toEqual({ ok: false, reason: 'NOT_PARTICIPANT' });
+    expect(roleView(r.state, 'acc-stranger', alias)).toEqual({
+      ok: false,
+      reason: 'NOT_PARTICIPANT',
+    });
   });
   it('rejects proposals and commits outside the running state or for unavailable decisions', () => {
     const r = new Room();
