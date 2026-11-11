@@ -83,3 +83,8 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Minor gap: `appPath` is a relative route, so the agent shows no clickable link. Fix needs a code change and deploy (not approved).
 - `rovo-test/phase2-confluence-403` (`e8550cd`, deployed as 2.4.0) is still unmerged.
 - Next: owner runs Test 4 and reports the result; no injection tests before then.
+
+## Update 2026-11-11 (lead, Test 4 passed)
+
+- Test 4 (service impact on MC-62) passed live, owner-reported. Tests 3 and 4 are live verified for user-facing behaviour; M6 Phase 2 is not accepted.
+- Next: Blocks B 5–8, C, D, E. Block B needs two synthetic fixtures (a Confluence page and a Jira issue) that only the owner may create; approval requested in chat. Credit meter reading pending from the owner.

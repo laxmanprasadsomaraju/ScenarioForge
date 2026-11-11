@@ -49,6 +49,18 @@ Nothing was invented: no finding was produced. Retest after the connection is co
 
 `appPath` (`/readiness-checks?change=MC-62`) is an in-app route, not a URL. `src/agents/output.ts` `readinessAppPath` returns it relative to the ScenarioForge page, and no action output carries the site URL or the app/environment ids needed to make an absolute link, so the agent has nothing it can render as clickable. The action output is otherwise correct, so this is a single missing field, not a broader output problem. A fix needs a code change and a deploy; neither is approved. Options to propose later: return an absolute link built from the request context, or have the prompt tell the user which ScenarioForge page to open.
 
+## Test 4: MC-62 service impact (2026-11-11, owner, Recovery Investigator)
+
+Status: **Passed, live verified for the user-facing behaviour (owner-reported).** Prompt: "Which services does MC-62 affect?" Reported result: 1 finding (1 confirmed, 0 suspected); 4 impact-path edges; 3 links not assessed. The agent named the LegacyAuth to NimbusID replacement and RB-AUTH-01 step 3, said JSM affected-services is empty and Teamwork Graph is not connected, reported services and owning teams as not assessed, and invented no service or team names.
+
+Logs: `forge logs -e rovo-test --since 2h` returned no entries, so no WARN or ERROR lines, no sensitive data and no failed actions were logged. As for Test 3, the success path writes no log lines, so this shows absence of errors only. The owner's invocation records for Tests 3 and 4 were not supplied to the lead; the results above are the owner's report.
+
+Credit monitoring: **pending** (the owner will supply the Atlassian meter reading; the app's own ledger has not been read).
+
+Deep links: see the gap above. Both agents refer to the ScenarioForge app because `appPath` is a relative route; the cause is the same for Test 4 (`get-service-readiness` uses the same `readinessAppPath`). Minor; no broader integration failure seen.
+
+M6 Phase 2 is **not accepted**: injection (Block B 5–8), Exercise Facilitator (Block C), rate-limit and kill switch (Block D) and cross-user (Block E) are outstanding.
+
 ## Blocks B–D
 
 Not run. Waiting for Test 3 to pass on MC-62, then Test 4.
