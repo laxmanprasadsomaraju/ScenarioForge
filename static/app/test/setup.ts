@@ -8,6 +8,7 @@ import { afterEach, vi } from 'vitest';
 vi.mock('@forge/bridge', () => ({
   invoke: vi.fn(() => Promise.reject(new Error('invoke is not mocked in this test'))),
   router: { open: vi.fn(() => Promise.resolve()) },
+  rovo: { isEnabled: vi.fn(() => Promise.resolve(false)), open: vi.fn(() => Promise.resolve()) },
   view: {
     theme: { enable: vi.fn(() => Promise.resolve()) },
     createHistory: vi.fn(() => Promise.reject(new Error('No Forge history in tests'))),

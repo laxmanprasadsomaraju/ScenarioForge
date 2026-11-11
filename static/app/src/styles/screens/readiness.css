@@ -302,3 +302,8 @@
 .analysis-grid + .region {
   margin-top: var(--space-xl);
 }
+
+/* Rovo entry: rendered only when rovo.isEnabled() resolves true. */
+.ask-rovo {
+  margin-top: var(--space-xs);
+}
