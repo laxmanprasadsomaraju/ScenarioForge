@@ -1,5 +1,7 @@
 # Milestones
 
+Live status and evidence: [CURRENT_STATUS.md](CURRENT_STATUS.md) (authoritative). This file keeps the acceptance checklists.
+
 Status values: **Done** (acceptance criteria verified), **Partly done** (named criteria still open), **Not started**.
 
 ## M0: Environment and project foundation, Done
