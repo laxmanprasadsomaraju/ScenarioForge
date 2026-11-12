@@ -116,3 +116,10 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - Open design limit: approval records (`approvedAt`, `approver`) come from the browser, so the 24 h age check is forgeable. Not an escalation (actor must equal approver), but fix with server-issued approvals before any `write-test` run. Also: a created item with a failed link is never retried automatically, and the UI text "check again" is misleading.
 - Upgrade note: `rovo-test` uses `SF_ROVO_TEST_*`; this code reads `SF_STORAGE`, `SF_AI`, `SF_CRISIS`, `SF_TWG`, `SF_REMEDIATION_WRITE`.
 - Owner Facilitator Tests 9 to 12 still pending; `rovo-test` untouched.
+
+## Update 2026-11-12 (lead)
+
+- `rovo-test` now runs app **2.5.0** = `rovo-test/session-id` @ `9d442d6` (= deployed 2.4.0 `e8550cd` + a History "Session ID" row with Copy button; UI only). Owner-approved. Manifest, scopes, entities and variables unchanged (`SF_ROVO_TEST_AI`/`STORAGE`/`USER_DAILY_CAP` as before). Deployed; not yet live verified. Needed for Test 12. Not the deep-link build.
+- `release/judged-full` is now `e70de12` (fast-forward from `054195d`): server-issued approvals, manifest variants (undeployed files in `manifests/`), log-checker hardening, plus two review fixes (stored work item not revealed to a different approver; stdout/stderr writes checked). Automated tests passed (1222 root, 200 app); independent review: no critical or high defects. Rollback points: `054195d`, `606347c`, `13513d5`.
+- Open (low): approval records grow without a cap (needs a cap or cleanup before any write-test); real Forge KVS conditional-write behaviour unverified.
+- Pending: owner Test 12 and the Test 11 link address; `ui/history-session-id` (54d9a18) is the judged-line version of the Session ID row, not yet merged into `release/judged-full`.
