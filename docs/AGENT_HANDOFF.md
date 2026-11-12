@@ -112,3 +112,9 @@ Merged `ui/history-session-id`; added `test/explainOutcomeSavedRun.test.ts` (fro
 ## 2026-11-12 `verify/unified`
 
 Branch `verify/unified` (from `release/unified` @ 4e216a7 + `docs/unified-test-env` @ 63885b1). Added the feature matrix, corrected `docs/proposals/UNIFIED_TEST_ENV.md` to 4e216a7 (notably: `manifests/judged-release.yml` is stale against the explain-outcome fix; the test script still uses `SF_ROVO_TEST_*` names), updated the rovo-test last-deploy time in `docs/ENVIRONMENTS.md`, preview-only crypto shim. No manifest/package change, no deploy, no approvals used. Next safe action: owner review of the unified-test-env proposal; lead merge on `integration/lanes-1`.
+
+## Update 2026-11-12 (lead, release/unified 9265e32)
+
+- `release/unified` = `release/judged-full` e70de12 + Session ID row in the redesigned History + Test 12 routing fix (prompt, action descriptions, messages) + feature matrix and preview crypto shim (`verify/unified` a6e58c5) + two review nits (prompt says "unavailable" plainly; Session ID no longer shows a stale "Copied"). Automated tests passed (1232 root, 204 app, prettier, sloplint, audit 0, forge lint 0 errors with the major-version notice). Independent review of 4e216a7: no defects. Manifest differs from e70de12 in description/starter text only; scopes, entities, modules, package files unchanged.
+- Not deployed anywhere. Not live verified: Rovo choosing `explain-outcome`, the two-user Crisis Room, real Jira duplicate search/approval. `rovo-test` (2.5.0, old UI) and `confluence-test` untouched.
+- Proposal for the new environment: `docs/proposals/UNIFIED_TEST_ENV.md`. Next approval needed from the owner: create and deploy the unified test environment (see that doc).
