@@ -92,3 +92,9 @@ Integration tip after these merges: see `git log -1 integration/lanes-1`. Tests 
 ## Update 2026-11-11 (integration lane, `release/judged-full-integrate3`)
 
 Merged `m8/server-approvals` (8564c8c) and `release/manifest-variants` (4a14e75) onto `release/judged-full` (054195d) with no conflicts. Automated tests passed: root Vitest 43 files / 1220 tests, component suite 24 files / 200 tests, prettier clean, sloplint clean, `npm audit` 0 vulnerabilities, `forge lint` 0 errors (one MAJOR_VERSION_RULE approval notice against the deployed default environment). Not deployed, not live verified.
+
+## Update 2026-11-12 (`release/unified`, from `release/judged-full` @ e70de12)
+
+- History Session ID row + Copy merged from `ui/history-session-id` (54d9a18), no conflicts: Code complete, Automated tests passed (component tests in `static/app/test/History.test.tsx`; cross-account isolation already asserted in `test/historyResolvers.test.ts` "never shows one user the runs of another user or installation").
+- M6 Test 12 routing fix: facilitator prompt Routing section, `explain-outcome` / sibling action descriptions (manifest description text only, 255-char limit respected), clearer sessionId and history-unavailable messages. Code complete, Automated tests passed (root 1230, app 204). **Not live verified**: Rovo's tool selection cannot be proven offline.
+- Live test that would confirm: on rovo-test (owner-approved AI/credits only) ask the Exercise Facilitator "Explain the outcome of rehearsal <UUID from History>" and check the action log shows `explain-outcome`, not `find-recovery-risks`.

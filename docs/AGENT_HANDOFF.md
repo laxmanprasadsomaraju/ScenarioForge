@@ -104,3 +104,7 @@ Base `release/judged-full` @ 606347c (unmoved rollback point). Merged `m8/write-
 ## Integration lane 2026-11-11 (`release/judged-full-integrate3`, from `054195d`)
 
 Merged `m8/server-approvals` (8564c8c) and `release/manifest-variants` (4a14e75); no conflicts. Added isolation tests for `remediation-approval:` keys. No new storage entity needed: approvals live in `rehearsal-history`. Root `manifest.yml` and all `package*.json` unchanged vs 054195d. Not deployed, not merged to main/integration, no approvals granted or inferred. Docs updated: ENVIRONMENTS, CURRENT_STATUS, DECISIONS D21-D24. Next safe action: lead reviews; any deploy needs owner approval per environment.
+
+## Handoff 2026-11-12 (unified-release lane, `release/unified` from `release/judged-full` @ e70de12)
+
+Merged `ui/history-session-id`; added `test/explainOutcomeSavedRun.test.ts` (from rovo-test/explain-outcome-fix 2acd4ed, plus no-session-id case) and `test/explainOutcomeRouting.test.ts`; rewrote `agents/prompts/facilitator.md` routing; manifest diff is description / conversation-starter text only. Automated tests passed; forge lint 0 errors (1 pre-existing approval notice). Not deployed, not live verified, not merged. No approvals granted or inferred. Next safe action: lead review; live confirmation of tool selection needs owner-approved rovo-test run.

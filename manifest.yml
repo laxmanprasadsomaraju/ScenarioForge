@@ -28,7 +28,7 @@ modules:
       prompt: resource:agent-prompts;facilitator.md
       conversationStarters:
         - Prepare a rehearsal for this change
-        - Explain the outcome of my rehearsal
+        - Explain the outcome of rehearsal <Session ID from ScenarioForge History>
       actions:
         - find-recovery-risks
         - prepare-rehearsal
@@ -49,7 +49,7 @@ modules:
       name: Find recovery risks
       function: fn-find-recovery-risks
       actionVerb: GET
-      description: Read-only. Checks one Jira change against its recovery runbooks and returns findings, evidence ids, unknowns and source warnings. Use for questions about a change's recovery risks.
+      description: Read-only. Returns recovery risks of one Jira change with evidence ids. Takes no session id and cannot explain a saved rehearsal; use explain-outcome for that.
       inputs:
         changeKey:
           title: Change issue key
@@ -71,7 +71,7 @@ modules:
       name: Prepare rehearsal
       function: fn-prepare-rehearsal
       actionVerb: GET
-      description: Read-only preview. Builds a recovery rehearsal briefing for one finding returned by find-recovery-risks. Nothing is stored; decisions are taken in the app.
+      description: Read-only preview of a rehearsal briefing for one find-recovery-risks finding. Takes no session id and cannot explain a saved rehearsal; use explain-outcome. Nothing is stored.
       inputs:
         changeKey:
           title: Change issue key
@@ -97,13 +97,13 @@ modules:
       name: Explain outcome
       function: fn-explain-outcome
       actionVerb: GET
-      description: Read-only. Returns the stored, audit-verified outcome of one of the user's own rehearsal runs, with objectives, decision trail and evidence ids.
+      description: Read-only. The ONLY action for saved rehearsals. Takes the Session ID shown in ScenarioForge History (a UUID) and returns that stored outcome. Use for any rehearsal or session id, or to explain or debrief a saved rehearsal.
       inputs:
         sessionId:
           title: Rehearsal session id
           type: string
           required: true
-          description: The rehearsal session id shown in the ScenarioForge app.
+          description: The Session ID shown in ScenarioForge History for a saved rehearsal run (a UUID). Copy it exactly as the user wrote it; do not shorten or guess it.
   function:
     - key: resolver
       handler: index.handler

@@ -116,7 +116,8 @@ export const MESSAGES = {
   restoreTarget:
     'restoreTargetMinutes is required: a whole number of minutes from 5 to 1440. It is never assumed.',
   notifyTarget: 'notifyTargetMinutes must be a whole number of minutes from 1 to 240.',
-  sessionId: 'sessionId must be a rehearsal session id (letters, digits, - or _).',
+  sessionId:
+    'sessionId is required: the Session ID shown in ScenarioForge History for a saved rehearsal (a UUID such as 1459b9cf-a8b0-464a-88c1-c2737e36098e). Ask the user for it; do not guess one.',
   noIdentity:
     'ScenarioForge could not identify the signed-in user, so it read nothing. It never falls back to app-level access.',
   noUserClient:
@@ -125,7 +126,8 @@ export const MESSAGES = {
     `Issue ${key} was not found, or you do not have permission to view it.`,
   sessionNotFound: 'That rehearsal was not found, or you do not have access to it.',
   jiraUnreachable: 'ScenarioForge could not reach Jira. Try again shortly.',
-  historyUnreachable: 'ScenarioForge could not read rehearsal history. Try again shortly.',
+  historyUnreachable:
+    'Rehearsal history is unavailable, so ScenarioForge could not read that rehearsal. Nothing was assessed. Try again shortly.',
   auditFailed:
     'Not assessed: the stored rehearsal did not pass its audit check, so its outcome is not reported.',
   trailUngrounded:
