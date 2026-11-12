@@ -123,3 +123,10 @@ No lanes running. All unblocked work for M7, M8, M9 prep and M10 docs is merged.
 - `release/judged-full` is now `e70de12` (fast-forward from `054195d`): server-issued approvals, manifest variants (undeployed files in `manifests/`), log-checker hardening, plus two review fixes (stored work item not revealed to a different approver; stdout/stderr writes checked). Automated tests passed (1222 root, 200 app); independent review: no critical or high defects. Rollback points: `054195d`, `606347c`, `13513d5`.
 - Open (low): approval records grow without a cap (needs a cap or cleanup before any write-test); real Forge KVS conditional-write behaviour unverified.
 - Pending: owner Test 12 and the Test 11 link address; `ui/history-session-id` (54d9a18) is the judged-line version of the Session ID row, not yet merged into `release/judged-full`.
+
+## Update 2026-11-12 (lead, unified-test deploy)
+
+- Owner approved A1 to A4 (A5 deferred; two-user Crisis Room test BLOCKED). Done: environment `unified-test` created (id `f984ebc2-32c6-419a-b75b-027b2e9eaccb`); `SF_STORAGE=enabled` and `SF_CRISIS=enabled` set there only; `deploy/unified-test` @ `aa54ae6` (= `release/unified-package` 2b4ba15 with `manifests/unified-test.yml` copied to `manifest.yml`) deployed as app version 2.0.0 at 2026-11-12. Deployed; not installed yet; not live verified.
+- Install (Jira, then Confluence) needs the owner's interactive consent: the CLI listed exactly the five approved scopes and stopped at the prompt in the non-TTY session. Owner runs `forge install -e unified-test -p Jira -s one-atlas-cegq.atlassian.net`, then `-p Confluence`.
+- Learned: variable changes apply only on deploy. The four root-manifest tests (mcpManifest x2, storageFactory entities, unifiedTestManifest diff) fail on the deploy branch by design because it carries the variant as `manifest.yml`.
+- Unchanged: rovo-test (2.5.0), confluence-test, development, staging, production. SF_AI, SF_TWG, SF_REMEDIATION_WRITE not set.
