@@ -394,3 +394,54 @@ describe('Saving a completed rehearsal', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('Session ID', () => {
+  async function open(response: GetRehearsalRunResponse) {
+    api.getRehearsalRun.mockResolvedValue(ok(response));
+    const user = userEvent.setup();
+    renderInApp(<ReportsPage />);
+    const table = await savedTable();
+    const [, demoRow] = within(table).getAllByRole('row');
+    await user.click(within(demoRow!).getByRole('button', { name: /^Open report/ }));
+    await screen.findByRole('heading', { name: 'Timeline' });
+    return user;
+  }
+  const okRun: GetRehearsalRunResponse = { status: 'OK', run: verifiedRun };
+
+  it('shows the id with helper text', async () => {
+    await open(okRun);
+    expect(screen.getByText('Session ID')).toBeInTheDocument();
+    expect(screen.getByText(RUN_ID)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Use this ID when asking the Exercise Facilitator to explain this rehearsal.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('copies the id and announces it', async () => {
+    const user = await open(okRun);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await user.click(screen.getByRole('button', { name: 'Copy session ID' }));
+    expect(writeText).toHaveBeenCalledWith(RUN_ID);
+    expect(await screen.findByText('Copied')).toBeInTheDocument();
+  });
+
+  it('selects the text when the clipboard fails', async () => {
+    const user = await open(okRun);
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await user.click(screen.getByRole('button', { name: 'Copy session ID' }));
+    expect(await screen.findByText(/Press Ctrl\+C or Cmd\+C/)).toBeInTheDocument();
+    expect(window.getSelection()?.toString()).toBe(RUN_ID);
+  });
+
+  it('shows no id when the record has none', async () => {
+    await open({
+      status: 'OK',
+      run: { ...verifiedRun, audit: { ...verifiedRun.audit, sessionId: '' } },
+    });
+    expect(screen.queryByText('Session ID')).toBeNull();
+  });
+});

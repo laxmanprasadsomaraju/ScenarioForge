@@ -7,6 +7,7 @@ import { useApi } from '../../lib/useApi';
 import { PageHeader } from '../Shell';
 import { ErrorPanel, SkeletonRows } from '../States';
 import { Debrief } from '../simulation/Debrief';
+import { SessionId } from './SessionId';
 import {
   CHECKED_TEXT,
   exerciseFromRetest,
@@ -158,6 +159,7 @@ export function HistoryDetail({
       <dl className="facts history-facts">
         <dt>Completed</dt>
         <dd>{formatAbsolute(exercise.completedAt)}</dd>
+        <SessionId id={run.audit?.sessionId} />
         <dt>Integrity</dt>
         <dd>{CHECKED_TEXT.verified}: replayed from the saved decisions</dd>
         {'retest' in data ? (
