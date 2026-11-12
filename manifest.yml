@@ -1,3 +1,8 @@
+# VARIANT, NOT DEPLOYED, NOT THE ROOT MANIFEST. Reference: docs/proposals/UNIFIED_TEST_PLAN.md
+# For the isolated `unified-test` environment only. Derived from the root manifest.yml:
+# the root minus the reserved `remediation-item` entity and minus the `rovo:mcp`
+# module. Same app id, same five scopes, no write scope. Flags: SF_STORAGE=enabled,
+# SF_CRISIS=enabled; SF_AI optional (Phase 2); SF_TWG, SF_REMEDIATION_WRITE unset.
 modules:
   global:fullPage:
     - key: scenarioforge-global-full-page
@@ -31,17 +36,6 @@ modules:
         - Explain the outcome of rehearsal <Session ID from ScenarioForge History>
       actions:
         - find-recovery-risks
-        - prepare-rehearsal
-        - explain-outcome
-  # M9: expose the same four GET actions as
-  # MCP tools. No new scopes, functions or actions. External MCP exposure is
-  # off until a site/org admin enables it (docs/M9_MCP_RUNBOOK.md).
-  rovo:mcp:
-    - key: scenarioforge-mcp
-      name: ScenarioForge Recovery
-      tools:
-        - find-recovery-risks
-        - get-service-readiness
         - prepare-rehearsal
         - explain-outcome
   action:
@@ -150,7 +144,7 @@ app:
     # PROPOSED ENTITIES -- PERMANENT ONCE DEPLOYED TO ANY ENVIRONMENT.
     # Entity names and attribute names/types cannot be renamed or removed after
     # a deploy. Owner approval is required before this manifest is deployed
-    # anywhere (docs/proposals/M10_RELEASE_REVIEW.md §Entities). All four share
+    # anywhere (docs/proposals/M10_RELEASE_REVIEW.md §Entities). All three share
     # one shape: one record per key, `version` backs conditional writes,
     # `payload` is JSON text. No custom indexes: every lookup is by key.
     # =========================================================================
@@ -173,15 +167,6 @@ app:
       # Crisis Room event logs (keys sfc1:*). Written only when SF_STORAGE and
       # SF_CRISIS are both `enabled`. Never deployed anywhere yet.
       - name: crisis-room
-        attributes:
-          version:
-            type: integer
-          payload:
-            type: string
-      # M8 remediation approval records (keys remediation-item:*). Reserved:
-      # no code path writes it in this build (writer and storage are null).
-      # Never deployed anywhere yet.
-      - name: remediation-item
         attributes:
           version:
             type: integer
