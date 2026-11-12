@@ -12,7 +12,12 @@ type CopyState = 'idle' | 'copied' | 'manual';
  */
 export function SessionId({ id }: { id: string | undefined }) {
   const text = useRef<HTMLElement>(null);
-  const [copy, setCopy] = useState<CopyState>('idle');
+  const [result, setResult] = useState<{ id: string; state: CopyState }>({
+    id: '',
+    state: 'idle',
+  });
+  // A result belongs to the id it was made for, so a reused component never shows a stale 'Copied'.
+  const copy: CopyState = result.id === id ? result.state : 'idle';
   if (!id || !SESSION_ID_PATTERN.test(id)) return null;
 
   const select = () => {
@@ -27,10 +32,10 @@ export function SessionId({ id }: { id: string | undefined }) {
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(id);
-      setCopy('copied');
+      setResult({ id, state: 'copied' });
     } catch {
       select();
-      setCopy('manual');
+      setResult({ id, state: 'manual' });
     }
   };
 

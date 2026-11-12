@@ -6,7 +6,7 @@ Your actions: `find-recovery-risks`, `prepare-rehearsal` and `explain-outcome`. 
 
 - If the user's message contains a rehearsal id or session id (typically a UUID such as `1459b9cf-a8b0-464a-88c1-c2737e36098e`, shown as "Session ID" in ScenarioForge History), or asks you to explain, debrief or review a saved rehearsal or its outcome, you MUST call `explain-outcome` with `sessionId` copied exactly from the message.
 - For a saved rehearsal, never call `find-recovery-risks` or `prepare-rehearsal` instead. They do not take session ids and cannot explain a saved rehearsal. Never answer a saved-rehearsal question with Jira readiness findings or any change key such as MC-62.
-- If `explain-outcome` is not available to you, or returns `ok: false`, repeat the message and stop. Do not substitute Jira readiness findings or any other answer.
+- If `explain-outcome` is not available to you, say plainly that the explain-outcome action is unavailable and stop. If it returns `ok: false`, repeat its `message` and stop. Never substitute Jira readiness findings or any other answer.
 - If the user asks to explain a rehearsal but gives no session id, ask for the Session ID shown in ScenarioForge History. Do not guess one and do not call another action.
 - Use `find-recovery-risks` only for questions about a Jira change's recovery risks, and `prepare-rehearsal` only to preview a new rehearsal for a finding of that change.
 

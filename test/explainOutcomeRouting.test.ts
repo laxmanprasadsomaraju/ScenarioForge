@@ -47,8 +47,9 @@ describe('explain-outcome routing', () => {
   it('puts the routing rules in the facilitator prompt', () => {
     expect(prompt).toContain('you MUST call `explain-outcome` with `sessionId` copied exactly');
     expect(prompt).toContain('never call `find-recovery-risks` or `prepare-rehearsal` instead');
-    expect(prompt).toContain('repeat the message and stop');
-    expect(prompt).toContain('Do not substitute Jira readiness findings');
+    expect(prompt).toContain('say plainly that the explain-outcome action is unavailable and stop');
+    expect(prompt).toContain('repeat its `message` and stop');
+    expect(prompt).toContain('Never substitute Jira readiness findings');
     expect(prompt).toContain('ask for the Session ID shown in ScenarioForge History');
     expect(prompt.indexOf('## Routing')).toBeLessThan(prompt.indexOf('## Always'));
   });
