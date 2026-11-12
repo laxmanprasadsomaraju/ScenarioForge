@@ -46,3 +46,25 @@
 .history-facts {
   margin-bottom: var(--space-lg);
 }
+.session-id-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.session-id-value {
+  font-family: var(--font-outlier);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.session-id-status {
+  font-size: var(--text-sm);
+  color: var(--sf-status-success);
+}
+.session-id-help {
+  display: block;
+  margin-top: var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--sf-text-subtle);
+}
