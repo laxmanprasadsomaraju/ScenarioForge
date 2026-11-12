@@ -108,3 +108,7 @@ Merged `m8/server-approvals` (8564c8c) and `release/manifest-variants` (4a14e75)
 ## Handoff 2026-11-12 (unified-release lane, `release/unified` from `release/judged-full` @ e70de12)
 
 Merged `ui/history-session-id`; added `test/explainOutcomeSavedRun.test.ts` (from rovo-test/explain-outcome-fix 2acd4ed, plus no-session-id case) and `test/explainOutcomeRouting.test.ts`; rewrote `agents/prompts/facilitator.md` routing; manifest diff is description / conversation-starter text only. Automated tests passed; forge lint 0 errors (1 pre-existing approval notice). Not deployed, not live verified, not merged. No approvals granted or inferred. Next safe action: lead review; live confirmation of tool selection needs owner-approved rovo-test run.
+
+## 2026-11-12 `verify/unified`
+
+Branch `verify/unified` (from `release/unified` @ 4e216a7 + `docs/unified-test-env` @ 63885b1). Added the feature matrix, corrected `docs/proposals/UNIFIED_TEST_ENV.md` to 4e216a7 (notably: `manifests/judged-release.yml` is stale against the explain-outcome fix; the test script still uses `SF_ROVO_TEST_*` names), updated the rovo-test last-deploy time in `docs/ENVIRONMENTS.md`, preview-only crypto shim. No manifest/package change, no deploy, no approvals used. Next safe action: owner review of the unified-test-env proposal; lead merge on `integration/lanes-1`.

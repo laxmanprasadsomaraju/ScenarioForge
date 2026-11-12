@@ -14,7 +14,11 @@ export default defineConfig(({ command }) => {
       alias: {
         '@shared': path.resolve(import.meta.dirname, '../../shared'),
         ...(stubBridge
-          ? { '@forge/bridge': path.resolve(import.meta.dirname, 'src/dev/bridgeStub.ts') }
+          ? {
+              '@forge/bridge': path.resolve(import.meta.dirname, 'src/dev/bridgeStub.ts'),
+              // The Crisis room preview runs the real resolvers in the browser.
+              'node:crypto': path.resolve(import.meta.dirname, 'src/dev/nodeCryptoShim.ts'),
+            }
           : {}),
       },
     },

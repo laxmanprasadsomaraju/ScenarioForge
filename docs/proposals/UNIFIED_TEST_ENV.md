@@ -1,17 +1,17 @@
 # Unified test environment (approval proposal)
 
-Status: **proposal only. Nothing created, deployed, installed or set.** Prepared 2026-11-12 on `docs/unified-test-env` from `release/judged-full` @ `e70de12`. `release/unified` (adds the Session ID History row and the Exercise Facilitator explain-outcome fix) is built by another lane. Every code claim below is read from `e70de12` and must be re-checked on the `release/unified` SHA before approval.
+Status: **proposal only. Nothing created, deployed, installed or set.** Prepared 2026-11-12 on `docs/unified-test-env` from `e70de12`; **re-checked 2026-11-12 on `release/unified` @ `4e216a7`** (adds the Session ID History row and the explain-outcome routing fix) by the `verify/unified` lane. Manifest, flags, entities, scopes and code claims below were read from `4e216a7`. If `release/unified` moves, re-check again before approval.
 
 Goal: one new, isolated environment (suggested name **`unified-test`**) running the redesigned UI and every feature of `release/unified`, so the owner can test it without touching `development`, `confluence-test` or `rovo-test`.
 
 ## (a) Manifest to deploy
 
-Use a **variant file**, not the unmodified root `manifest.yml`. Reasons from `e70de12`:
+Use a **variant file**, not the unmodified root `manifest.yml`. Reasons (still true at `4e216a7`):
 
 - The root declares four entities. `remediation-item` is unused (`remediationStorage()` uses `rehearsal-history`; `remediation-item:` is only a key prefix, per `src/platform/storageFactory.ts` and [MANIFEST_VARIANTS](MANIFEST_VARIANTS.md)). Entity names are permanent, so it must not ship.
-- `manifests/judged-release.yml` is the closest existing variant but has no `crisis-room`, so a Crisis Room test would fail at runtime (the resolver answers an error; nothing else breaks).
+- `manifests/judged-release.yml` is the closest existing variant but has no `crisis-room`, so a Crisis Room test would fail at runtime (the resolver answers an error; nothing else breaks). It is also **stale against `4e216a7`**: it still carries the old facilitator conversation starter ("Explain the outcome of my rehearsal") and the old action descriptions, so deploying it would lose the explain-outcome routing fix. Do not use it as is.
 
-Proposed file `manifests/unified-test.yml` (not yet written; to be made from the `release/unified` root, and its contents approved by the owner): root minus `remediation-item`, minus `rovo:mcp`. It is deployed by copying it over `manifest.yml` in a throwaway branch or scratch directory. It is never merged over the root and never committed to a branch that deploys elsewhere.
+Proposed file `manifests/unified-test.yml` (not yet written; to be made from the `4e216a7` root manifest, not from `judged-release.yml`, and its contents approved by the owner): root minus `remediation-item`, minus `rovo:mcp`. It is deployed by copying it over `manifest.yml` in a throwaway branch or scratch directory. It is never merged over the root and never committed to a branch that deploys elsewhere.
 
 | Item        | Value                                                                                                                                                                                                           |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -32,7 +32,7 @@ Scopes (five, all already in the root, so no new scope anywhere):
 | `read:page:confluence` | Read one runbook body (`GET /wiki/api/v2/pages/{id}`; no classic scope covers it) |
 | `storage:app`          | Forge KVS for the three entities (required by `@forge/kvs`, D17)                  |
 
-`content.styles: unsafe-inline` (Atlaskit style tags) is unchanged. `forge lint` on the variants gave 0 errors, 0 warnings, 1 approval (`MAJOR_VERSION_RULE`) on 2026-11-11; re-run on the final file (read-only).
+`content.styles: unsafe-inline` (Atlaskit style tags) is unchanged. `forge lint` gave 0 errors, 0 warnings, 1 approval (`MAJOR_VERSION_RULE`) on the variants (2026-11-11) and on the `4e216a7` root (2026-11-12); re-run on the final file (read-only).
 
 **MCP recommendation: keep it out.** It adds an external-exposure surface that stays off until a site or org admin enables it ([M9_MCP_RUNBOOK](../M9_MCP_RUNBOOK.md)). Nothing in the in-app or Rovo-agent tests needs it, and adding a module later is a normal deploy. Test it in a later, separately approved step.
 
@@ -47,7 +47,7 @@ Scopes (five, all already in the root, so no new scope anywhere):
 | `SF_TWG`               | **Unset**                                      | Teamwork Graph reads. The manifest has no `read:graph:*` scope, so it cannot work.                                                                                                                                  |
 | `SF_REMEDIATION_WRITE` | **Unset**                                      | Builds the Jira write gateway. There is no `write:jira-work` scope, so it could not write anyway; unset makes the create path answer WRITE_NOT_PERMITTED. Remediation stays preview-only.                           |
 
-Rovo tests that need AI (Tests 3, 4, 9 to 12 as the owner numbers them; the mapping to the blocks in `docs/M6_PHASE2_TEST_SCRIPT.md` on `rovo-test/phase2` is unverified) cannot run with AI off. Plan: phase 1 (AI off) covers everything else plus Block A (AI-off behaviour). Phase 2 sets `SF_AI=enabled` (and the cap) only after a separate written approval, and unsets it afterwards.
+Rovo tests that need AI (Tests 3, 4, 9 to 12) cannot run with AI off. They are numbered rows 3, 4 (Block B, Investigator) and 9 to 12 (Block C, Facilitator) in `docs/M6_PHASE2_TEST_SCRIPT.md` (present on `4e216a7`). **That script still names the old variables `SF_ROVO_TEST_AI` / `SF_ROVO_TEST_STORAGE`; this code reads `SF_AI` / `SF_STORAGE`, so substitute them when following it.** Plan: phase 1 (AI off) covers everything else plus Block A (AI-off behaviour). Phase 2 sets `SF_AI=enabled` (and the cap) only after a separate written approval, and unsets it afterwards.
 
 ## (c) Forge commands the owner would approve (in order)
 
@@ -124,9 +124,10 @@ The owner answers yes or no, in their own message, to each:
 
 ## Open unknowns
 
-- The final `release/unified` SHA and root manifest, and whether the Session ID row or the explain-outcome fix touch the manifest or flags.
+- Resolved: the Session ID row and explain-outcome fix (`e70de12..4e216a7`) change only manifest description and conversation-starter text; no scope, entity, module or flag change.
 - Any Forge limit on environments or installations per app or site; whether an environment can be deleted.
 - Whether variable changes take effect without a redeploy or upgrade.
 - Whether uninstalling purges KVS data.
-- The mapping of the owner's "Tests 3, 4, 9 to 12" to the test script.
-- `docs/ENVIRONMENTS.md` shows `rovo-test` last deployed 2026-11-11T16:52Z; `forge environments list` now shows 2026-11-12T00:05Z.
+- Whether the live Facilitator now routes a History UUID to `explain-outcome` (code complete and automated tests passed only; needs the AI-on phase).
+- The test script's variable names are stale (see section b); fix it or substitute at run time.
+- Resolved: `rovo-test` last deploy is 2026-11-12T00:05Z (`forge environments list`); `docs/ENVIRONMENTS.md` updated. Its variables were not re-read.

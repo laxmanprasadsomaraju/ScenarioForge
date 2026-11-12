@@ -98,3 +98,8 @@ Merged `m8/server-approvals` (8564c8c) and `release/manifest-variants` (4a14e75)
 - History Session ID row + Copy merged from `ui/history-session-id` (54d9a18), no conflicts: Code complete, Automated tests passed (component tests in `static/app/test/History.test.tsx`; cross-account isolation already asserted in `test/historyResolvers.test.ts` "never shows one user the runs of another user or installation").
 - M6 Test 12 routing fix: facilitator prompt Routing section, `explain-outcome` / sibling action descriptions (manifest description text only, 255-char limit respected), clearer sessionId and history-unavailable messages. Code complete, Automated tests passed (root 1230, app 204). **Not live verified**: Rovo's tool selection cannot be proven offline.
 - Live test that would confirm: on rovo-test (owner-approved AI/credits only) ask the Exercise Facilitator "Explain the outcome of rehearsal <UUID from History>" and check the action log shows `explain-outcome`, not `find-recovery-risks`.
+
+## Update 2026-11-12 (`verify/unified`, feature-retention check of `release/unified` @ 4e216a7)
+
+- Feature-retention matrix: [proposals/UNIFIED_FEATURE_MATRIX.md](proposals/UNIFIED_FEATURE_MATRIX.md). All 11 feature rows: Automated tests passed, plus dev-preview browser checks on synthetic fixtures (not live). No functional gap against the old `rovo-test/session-id` UI; label and layout differences listed there.
+- Fixed a dev-preview-only defect (Crisis room did not load in the Vite preview: `node:crypto` in the browser). Not in the Forge bundle. Two tests added. Not Live verified.

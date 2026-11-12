@@ -21,8 +21,8 @@ const K = new Uint32Array([
 
 const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n));
 
-export function sha256Hex(text: string): string {
-  const bytes = new TextEncoder().encode(text);
+/** SHA-256 over raw bytes, as 32 bytes. */
+export function sha256Bytes(bytes: Uint8Array): Uint8Array {
   const bitLength = bytes.length * 8;
   // Message + 0x80 + zero padding + 64-bit length, to a multiple of 64 bytes.
   const total = Math.ceil((bytes.length + 9) / 64) * 64;
@@ -72,5 +72,14 @@ export function sha256Hex(text: string): string {
     h[6] = h[6]! + g;
     h[7] = h[7]! + hh;
   }
-  return Array.from(h, (x) => x.toString(16).padStart(8, '0')).join('');
+  const out = new Uint8Array(32);
+  const outView = new DataView(out.buffer);
+  h.forEach((x, i) => outView.setUint32(i * 4, x));
+  return out;
+}
+
+export function sha256Hex(text: string): string {
+  return Array.from(sha256Bytes(new TextEncoder().encode(text)), (x) =>
+    x.toString(16).padStart(2, '0'),
+  ).join('');
 }
