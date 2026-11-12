@@ -739,6 +739,19 @@ describe('record binding and growth', () => {
     expect(creates(t.sent)).toHaveLength(1);
   });
 
+  it('does not reveal a stored work item to a different person with an identical request', async () => {
+    const t = await setup();
+    await createRemediationWorkItem(t.deps, t.request, ME);
+    const theirs = await t.approve(SOMEONE_ELSE);
+    const r = await createRemediationWorkItem(t.deps, theirs, SOMEONE_ELSE);
+    expect(r).toMatchObject({ ok: false, error: { code: 'CONFLICT' } });
+    expect(JSON.stringify(r)).not.toContain('OPS-7');
+    expect(creates(t.sent)).toHaveLength(1);
+    // The original approver still reads it back.
+    const mine = await createRemediationWorkItem(t.deps, t.request, ME);
+    expect(mine).toMatchObject({ ok: true, data: { outcome: 'created' } });
+  });
+
   it('caps the audit trail so repeated checks cannot grow the record without bound', async () => {
     const t = await setup(async () => {
       throw new Error('crash');

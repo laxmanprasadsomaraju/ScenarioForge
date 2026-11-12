@@ -205,7 +205,13 @@ export function findLogViolations(
     if (ts.isCallExpression(node)) {
       const c = node.expression;
       const isConsoleCall = ts.isPropertyAccessExpression(c) && isConsole(c.expression);
-      if (isConsoleCall || isWrapperCallee(c, extra)) {
+      // `process.stdout.write(x)` / `process.stderr.write(x)` reach the same log stream.
+      const isStreamWrite =
+        ts.isPropertyAccessExpression(c) &&
+        c.name.text === 'write' &&
+        ts.isPropertyAccessExpression(c.expression) &&
+        /^std(out|err)$/.test(c.expression.name.text);
+      if (isConsoleCall || isStreamWrite || isWrapperCallee(c, extra)) {
         for (const arg of node.arguments) {
           if (!isSafe(arg)) at(arg, `unsafe log argument: ${arg.getText(sf).slice(0, 60)}`);
         }

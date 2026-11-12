@@ -412,6 +412,18 @@ export async function createRemediationWorkItem(
   // 3. Existing record: never create twice.
   if (storedRecord) {
     const status = storedRecord.state.status;
+    // The stored item belongs to the person who approved it. Someone else with an
+    // identical request (and their own approval) must not learn its key or drive recovery.
+    if (
+      status !== 'failed' &&
+      'approval' in storedRecord.state &&
+      storedRecord.state.approval.approverAccountId !== actorAccountId
+    ) {
+      return fail(
+        'CONFLICT',
+        'A work item for this fix was already started by someone else. A person needs to decide.',
+      );
+    }
     if (status === 'created') {
       // The label is per change/finding/fix, not per project or person. A different
       // request (other project, summary or approver view) must not learn the key or URL

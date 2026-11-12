@@ -95,6 +95,11 @@ describe('log checker negative cases', () => {
     expect([...findForwarders(`function f(x) { return x + 1 }`)]).toEqual([]);
     expect([...findForwarders(`const g = (n: number) => console.log('n', Number(n))`)]).toEqual([]);
   });
+  it('flags writes to process.stdout and process.stderr', () => {
+    bad(`process.stderr.write(accountId)`);
+    bad(`process.stdout.write(String(e))`);
+    good(`process.stderr.write('fixed text')`);
+  });
   it('flags .code and .status on objects that are not an error or response', () => {
     bad(`console.log(user.code)`);
     bad(`console.log(issue.status)`);
